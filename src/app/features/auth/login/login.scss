@@ -1,0 +1,30 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    /* Sem cor de fundo fixa para pegar o tema dark/light global */
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.full-width {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.error-msg {
+    color: var(--mat-sys-error);
+    /* Usa a cor de erro do tema atual */
+    text-align: center;
+    margin-top: 10px;
+}

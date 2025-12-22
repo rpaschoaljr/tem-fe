@@ -1,0 +1,29 @@
+.generic-list-container {
+    padding: 0;
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.search-bar {
+    flex: 1;
+    font-size: 14px;
+}
+
+.table-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+}
+
+.mat-column-actions {
+    width: 100px;
+    text-align: right;
+}

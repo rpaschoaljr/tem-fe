@@ -1,0 +1,51 @@
+<div class="page-container">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <mat-card class="kpi-card total">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>inventory_2</mat-icon></div>
+                <div class="info">
+                    <span class="label">Total de Itens</span>
+                    <span class="value">{{ totalItems }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card warning">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>priority_high</mat-icon></div>
+                <div class="info">
+                    <span class="label">Estoque Baixo</span>
+                    <span class="value">{{ lowStockCount }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card danger">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>no_sim</mat-icon></div>
+                <div class="info">
+                    <span class="label">Em Falta (Zerado)</span>
+                    <span class="value">{{ outOfStockCount }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <div class="actions-row">
+        <button mat-flat-button color="primary" (click)="onNewItem()">
+            <mat-icon>add_box</mat-icon> Novo Item
+        </button>
+    </div>
+
+    <!-- LISTA -->
+    <mat-card>
+        <mat-card-content>
+            <h3>Controle de Estoque</h3>
+            <app-generic-list [data]="items" [columns]="tableColumns" (editAction)="onEdit($event)"
+                (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
+            </app-generic-list>
+        </mat-card-content>
+    </mat-card>
+</div>

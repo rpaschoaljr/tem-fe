@@ -1,1 +1,48 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+// Inicializa o CSS base
+@include mat.core();
+
+// 1. Definição das Paletas
+$tem-fe-light: mat.define-theme((color: (theme-type: light,
+        primary: mat.$violet-palette,
+        tertiary: mat.$orange-palette )));
+
+$tem-fe-dark: mat.define-theme((color: (theme-type: dark,
+        primary: mat.$violet-palette,
+        tertiary: mat.$orange-palette )));
+
+// 2. Configuração Global
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, sans-serif;
+  // Transição suave para quando trocar o tema não piscar
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+// 3. Aplicação do Tema LIGHT (Padrão)
+html {
+  // Isso gera as variáveis CSS (ex: --mat-sys-background: #fff)
+  @include mat.all-component-themes($tem-fe-light);
+
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+// 4. Aplicação do Tema DARK (Override)
+// Importante: html.dark-theme tem mais peso que apenas html
+html.dark-theme {
+  // Isso sobrescreve as variáveis (ex: --mat-sys-background: #121212)
+  @include mat.all-component-themes($tem-fe-dark);
+
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
+
+  // Garante que o body também pegue a cor
+  body {
+    background-color: #121212 !important;
+    color: #e0e0e0 !important;
+  }
+}

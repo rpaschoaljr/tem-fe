@@ -1,0 +1,87 @@
+<div class="dashboard-container">
+
+    <!-- Cabeçalho -->
+    <header class="header">
+        <div class="welcome-text">
+            <h1>Saravá</h1>
+        </div>
+    </header>
+
+    <!-- GRID DE MÓDULOS -->
+    <div class="cards-grid">
+
+        <!-- Perfil -->
+        <mat-card class="module-card" (click)="navigate('profile')">
+            <mat-card-content class="card-content">
+                <div class="icon-circle profile">
+                    <mat-icon>person</mat-icon>
+                </div>
+                <h3>Meu Perfil</h3>
+                <span>Dados Cadastrais</span>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Membros -->
+        <mat-card class="module-card" (click)="navigate('members')">
+            <mat-card-content class="card-content">
+                <div class="icon-circle members">
+                    <mat-icon>groups</mat-icon>
+                </div>
+                <h3>Membros</h3>
+                <span>Gestão da Corrente</span>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Financeiro -->
+        <mat-card class="module-card" (click)="navigate('finance')">
+            <mat-card-content class="card-content">
+                <div class="icon-circle finance">
+                    <mat-icon>attach_money</mat-icon>
+                </div>
+                <h3>Financeiro</h3>
+                <span>Caixa e Doações</span>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Estoque -->
+        <mat-card class="module-card" (click)="navigate('stock')">
+            <mat-card-content class="card-content">
+                <div class="icon-circle stock">
+                    <mat-icon>inventory_2</mat-icon>
+                </div>
+                <h3>Estoque</h3>
+                <span>Velas e Materiais</span>
+            </mat-card-content>
+        </mat-card>
+
+    </div>
+
+    <!-- QUADRO DE AVISOS -->
+    <div class="news-section">
+        <h2><mat-icon>campaign</mat-icon> Quadro de Avisos</h2>
+
+        <mat-card class="news-item">
+            <mat-card-header>
+                <mat-icon mat-card-avatar class="news-icon">event</mat-icon>
+                <mat-card-title>Próxima Gira: Caboclos</mat-card-title>
+                <mat-card-subtitle>Sexta-feira, 20:00h</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <p>Avisar a todos os médiuns para chegarem 1h antes para a firmeza da porteira. Trazer guia verde e
+                    cocar quem tiver.</p>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="news-item">
+            <mat-card-header>
+                <mat-icon mat-card-avatar class="news-icon">payments</mat-icon>
+                <mat-card-title>Mensalidade do Terreiro</mat-card-title>
+                <mat-card-subtitle>Vencimento dia 10</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <p>Lembrete da tesouraria: Ajudem a manter a casa aberta. O aluguel vence na próxima semana.</p>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+</div>

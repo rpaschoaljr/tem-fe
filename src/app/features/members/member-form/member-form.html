@@ -1,0 +1,234 @@
+<div class="page-container">
+
+    <div class="header">
+        <h1>{{ isEditMode ? 'Editar Membro' : 'Novo Membro' }}</h1>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" animationDuration="0ms">
+
+            <!-- ABA 1: IDENTIFICAÇÃO -->
+            <mat-tab label="Dados Pessoais">
+                <div class="tab-content">
+                    <mat-card>
+                        <mat-card-content>
+                            <div class="row">
+                                <mat-form-field appearance="outline" class="col-2">
+                                    <mat-label>Nome Completo</mat-label>
+                                    <input matInput formControlName="name" placeholder="Ex: João da Silva">
+                                    <mat-error>Obrigatório</mat-error>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>CPF</mat-label>
+                                    <input matInput type="text" formControlName="cpf" appInputMask="cpf" maxlength="14"
+                                        placeholder="000.000.000-00">
+                                    <mat-error *ngIf="form.get('cpf')?.hasError('invalidCpf')">CPF Inválido</mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>E-mail</mat-label>
+                                    <input matInput formControlName="email" type="email">
+                                    <mat-error>E-mail inválido</mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Whatsapp/Telefone</mat-label>
+                                    <input matInput type="text" formControlName="phone" appInputMask="phone"
+                                        maxlength="15" placeholder="(00) 00000-0000">
+                                </mat-form-field>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- ABA 2: ENDEREÇO -->
+            <mat-tab label="Endereço">
+                <div class="tab-content" formGroupName="address">
+                    <mat-card>
+                        <mat-card-content>
+                            <div class="row">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>CEP</mat-label>
+                                    <input matInput type="text" formControlName="cep" appInputMask="cep"
+                                        (blur)="onCepBlur()" placeholder="00000-000" maxlength="9">
+                                    <mat-hint>Digite para buscar</mat-hint>
+                                    <mat-icon matSuffix (click)="onCepBlur()" style="cursor: pointer">search</mat-icon>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <mat-form-field appearance="outline" class="col-2">
+                                    <mat-label>Logradouro (Rua/Av)</mat-label>
+                                    <input matInput formControlName="street">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Número</mat-label>
+                                    <input matInput formControlName="number">
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Complemento</mat-label>
+                                    <input matInput formControlName="complement">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Bairro</mat-label>
+                                    <input matInput formControlName="neighborhood">
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <mat-form-field appearance="outline" class="col-2">
+                                    <mat-label>Cidade</mat-label>
+                                    <input matInput formControlName="city">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>UF</mat-label>
+                                    <input matInput formControlName="state" maxlength="2">
+                                </mat-form-field>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- ABA 3: VIDA ESPIRITUAL -->
+            <mat-tab label="Vida Espiritual">
+                <div class="tab-content">
+                    <mat-card>
+                        <mat-card-content>
+                            <h3>Vínculo e Datas</h3>
+                            <div class="row">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Tipo de Membro</mat-label>
+                                    <mat-select formControlName="role">
+                                        <mat-option *ngFor="let r of roles" [value]="r">{{ r }}</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Status</mat-label>
+                                    <mat-select formControlName="status">
+                                        <mat-option value="Ativo">Ativo</mat-option>
+                                        <mat-option value="Inativo">Inativo</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Data de Entrada</mat-label>
+                                    <!-- IMPORTANTE: type="text" e maxlength="10" -->
+                                    <input matInput type="text" [matDatepicker]="pickerEntry"
+                                        formControlName="entryDate" appInputMask="date" maxlength="10"
+                                        placeholder="DD/MM/AAAA">
+                                    <mat-datepicker-toggle matIconSuffix [for]="pickerEntry"></mat-datepicker-toggle>
+                                    <mat-datepicker #pickerEntry></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Data de Saída</mat-label>
+                                    <input matInput type="text" [matDatepicker]="pickerExit" formControlName="exitDate"
+                                        appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+                                    <mat-datepicker-toggle matIconSuffix [for]="pickerExit"></mat-datepicker-toggle>
+                                    <mat-datepicker #pickerExit></mat-datepicker>
+                                    <mat-hint>Apenas se saiu da casa</mat-hint>
+                                </mat-form-field>
+                            </div>
+
+                            <mat-form-field appearance="outline" class="full-width">
+                                <mat-label>Observações</mat-label>
+                                <textarea matInput formControlName="observations" rows="3"></textarea>
+                            </mat-form-field>
+
+                            <mat-divider style="margin: 20px 0"></mat-divider>
+
+                            <h3>Rituais de Iniciação</h3>
+                            <div formGroupName="rituals" class="dates-grid">
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Lavagem / Iniciação</mat-label>
+                                    <input matInput type="text" [matDatepicker]="p1" formControlName="initiation"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="p1"></mat-datepicker-toggle>
+                                    <mat-datepicker #p1></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Batismo</mat-label>
+                                    <input matInput type="text" [matDatepicker]="p2" formControlName="baptism"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="p2"></mat-datepicker-toggle>
+                                    <mat-datepicker #p2></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Batismo (1 Ano)</mat-label>
+                                    <input matInput type="text" [matDatepicker]="p3" formControlName="baptism1Year"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="p3"></mat-datepicker-toggle>
+                                    <mat-datepicker #p3></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Coroação</mat-label>
+                                    <input matInput type="text" [matDatepicker]="p4" formControlName="coronation"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="p4"></mat-datepicker-toggle>
+                                    <mat-datepicker #p4></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Lavagem de Coroa</mat-label>
+                                    <input matInput type="text" [matDatepicker]="p5" formControlName="crownWashing"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="p5"></mat-datepicker-toggle>
+                                    <mat-datepicker #p5></mat-datepicker>
+                                </mat-form-field>
+
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- ABA 4: CONSAGRAÇÕES (ORIXÁS) -->
+            <mat-tab label="Consagrações (Orixás)">
+                <div class="tab-content">
+                    <mat-card>
+                        <mat-card-content>
+                            <p class="hint-text">Informe a data de consagração para cada força.</p>
+
+                            <div formGroupName="consecrations" class="orixas-grid">
+                                <mat-form-field appearance="outline" *ngFor="let o of orixas">
+                                    <mat-label>Consagração {{ o.label }}</mat-label>
+                                    <input matInput type="text" [matDatepicker]="pOrixa" [formControlName]="o.key"
+                                        appInputMask="date" maxlength="10">
+                                    <mat-datepicker-toggle matIconSuffix [for]="pOrixa"></mat-datepicker-toggle>
+                                    <mat-datepicker #pOrixa></mat-datepicker>
+                                </mat-form-field>
+                            </div>
+
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+        </mat-tab-group>
+
+        <div class="actions-bar">
+            <button mat-button type="button" (click)="onCancel()">CANCELAR</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+                <mat-icon>save</mat-icon> SALVAR MEMBRO
+            </button>
+        </div>
+    </form>
+</div>

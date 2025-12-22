@@ -1,0 +1,35 @@
+<div class="page-container">
+
+    <!-- Cabeçalho com Ações e KPIs -->
+    <div class="actions-grid">
+        <!-- Botão Novo Membro -->
+        <mat-card class="action-card add-new" (click)="openRegisterDialog()">
+            <mat-card-content>
+                <mat-icon>person_add</mat-icon>
+                <span>Novo Membro</span>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Card de Contagem -->
+        <mat-card class="info-card">
+            <mat-card-content>
+                <span class="number">{{ totalActive }}</span>
+                <span class="label">Membros Ativos</span>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- Lista Genérica (Tabela) -->
+    <mat-card>
+        <mat-card-content>
+            <h3>Gestão de Membros</h3>
+
+            <!-- Aqui usamos o componente que criamos antes -->
+            <app-generic-list [data]="members" [columns]="tableColumns" (editAction)="onEdit($event)"
+                (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
+            </app-generic-list>
+
+        </mat-card-content>
+    </mat-card>
+
+</div>

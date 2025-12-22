@@ -1,0 +1,66 @@
+<div class="page-container">
+
+    <!-- CARDS DE KPI (Resumo Financeiro) -->
+    <div class="kpi-grid">
+
+        <!-- Entrada -->
+        <mat-card class="kpi-card income">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>arrow_upward</mat-icon></div>
+                <div class="info">
+                    <span class="label">Entradas</span>
+                    <span class="value">{{ totalIncome | currency:'BRL' }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Saída -->
+        <mat-card class="kpi-card expense">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>arrow_downward</mat-icon></div>
+                <div class="info">
+                    <span class="label">Saídas</span>
+                    <span class="value">{{ totalExpense | currency:'BRL' }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Saldo -->
+        <mat-card class="kpi-card balance">
+            <mat-card-content>
+                <div class="icon-box"><mat-icon>account_balance_wallet</mat-icon></div>
+                <div class="info">
+                    <span class="label">Saldo em Caixa</span>
+                    <span class="value" [class.negative]="totalBalance < 0">
+                        {{ totalBalance | currency:'BRL' }}
+                    </span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+    </div>
+
+    <!-- BOTÕES DE AÇÃO -->
+    <div class="actions-row">
+        <button mat-flat-button color="primary" (click)="onNewEntry()">
+            <mat-icon>add</mat-icon> Nova Entrada
+        </button>
+        <button mat-flat-button color="warn" (click)="onNewExpense()">
+            <mat-icon>remove</mat-icon> Nova Saída
+        </button>
+    </div>
+
+    <!-- LISTA DE LANÇAMENTOS -->
+    <mat-card>
+        <mat-card-content>
+            <h3>Extrato Financeiro</h3>
+
+            <!-- AQUI ESTAVA FALTANDO LIGAR OS EVENTOS -->
+            <app-generic-list [data]="transactions" [columns]="tableColumns" (editAction)="onEdit($event)"
+                (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
+            </app-generic-list>
+
+        </mat-card-content>
+    </mat-card>
+
+</div>
