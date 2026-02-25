@@ -16,15 +16,6 @@ services:
       # Permite recarregar as rules sem rebuild da imagem
       - ./firestore.rules:/app/firestore.rules:ro
       - ./storage.rules:/app/storage.rules:ro
-    environment:
-      - FIREBASE_EMULATOR_HUB=0.0.0.0:4400
-    command: >
-      firebase emulators:start
-        --only auth,firestore,storage
-        --project sistematemfe
-        --host 0.0.0.0
-        --import /app/emulator-data
-        --export-on-exit /app/emulator-data
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
       interval: 10s

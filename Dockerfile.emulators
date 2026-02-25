@@ -27,4 +27,6 @@ EXPOSE 4000 4400 9099 8080 9199
 
 CMD ["firebase", "emulators:start", \
      "--only", "auth,firestore,storage", \
-     "--project", "sistematemfe"]
+     "--project", "sistematemfe", \
+     "--import", "/app/emulator-data", \
+     "--export-on-exit", "/app/emulator-data"]

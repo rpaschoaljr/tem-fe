@@ -10,9 +10,8 @@
     "emulators": "docker compose up --build -d firebase-emulators",
     "emulators:logs": "docker compose logs -f firebase-emulators",
     "emulators:stop": "docker compose down",
-    "emulators:wsl": "wsl bash -c \"source ~/.sdkman/bin/sdkman-init.sh && export JAVA_HOME=~/.sdkman/candidates/java/current && npx firebase emulators:start --only auth,firestore,storage --project sistematemfe\"",
     "seed": "node scripts/seed-emulator.mjs",
-    "dev:local": "concurrently -k -n \"APP\" -c \"green\" \"wait-on http://localhost:9099 && node scripts/seed-emulator.mjs && ng serve\""
+    "dev:local": "node scripts/dev-local.mjs"
   },
   "prettier": {
     "printWidth": 100,
