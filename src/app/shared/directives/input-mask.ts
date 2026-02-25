@@ -10,6 +10,18 @@ export class InputMaskDirective {
 
   constructor(private el: ElementRef, private control: NgControl) { }
 
+  @HostListener('blur', ['$event'])
+  onBlur(event: any): void {
+    if (this.maskType !== 'date') return;
+    const input = event.target;
+    const val = (input.value || '').trim();
+    // Se a digitação ficou incompleta, limpa o campo e o control
+    if (val.length > 0 && val.length < 10) {
+      input.value = '';
+      this.control?.control?.setValue(null, { emitEvent: true });
+    }
+  }
+
   @HostListener('input', ['$event'])
   onInput(event: any): void {
     const input = event.target;
@@ -17,36 +29,56 @@ export class InputMaskDirective {
     let value = input.value.replace(/\D/g, '');
     let formatted = '';
 
-    // --- MÁSCARA DATA (DD/MM/AAAA ou DD/MM/AA) ---
+    // --- MÁSCARA DATA (DD/MM/AAAA) ---
     if (this.maskType === 'date') {
       // Limite máximo: 8 dígitos (DDMMAAAA)
       if (value.length > 8) value = value.substring(0, 8);
 
       // Validação básica de Dia e Mês enquanto digita
-      // Se tiver pelo menos 2 dígitos (DIA), verifica se é > 31
       if (value.length >= 2) {
         const day = parseInt(value.substring(0, 2));
         if (day > 31) value = '31' + value.substring(2);
         if (day === 0) value = '01' + value.substring(2);
       }
-
-      // Se tiver pelo menos 4 dígitos (MÊS), verifica se é > 12
       if (value.length >= 4) {
         const month = parseInt(value.substring(2, 4));
         if (month > 12) value = value.substring(0, 2) + '12' + value.substring(4);
         if (month === 0) value = value.substring(0, 2) + '01' + value.substring(4);
       }
 
-      // Formatação Visual
+      // Formatação visual
       if (value.length > 4) {
-        // DD/MM/AAAA
         formatted = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
       } else if (value.length > 2) {
-        // DD/MM
         formatted = `${value.slice(0, 2)}/${value.slice(2)}`;
       } else {
         formatted = value;
       }
+
+      // Atualiza display sem mover cursor
+      input.value = formatted;
+
+      // Para campos com matDatepicker: seta um Date quando completo, null quando vazio.
+      // Isso evita o conflito entre a máscara (string) e o datepicker (Date).
+      if (this.control?.control) {
+        if (formatted.length === 10) {
+          const parts = formatted.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (parts) {
+            const date = new Date(+parts[3], +parts[2] - 1, +parts[1]);
+            const ctrl = this.control.control;
+            if (!isNaN(date.getTime())) {
+              ctrl.setValue(date, { emitEvent: true });
+            } else {
+              ctrl.setValue(null, { emitEvent: true });
+            }
+          }
+        } else if (formatted.length === 0) {
+          this.control.control.setValue(null, { emitEvent: true });
+        }
+        // Se digitação parcial (< 10 chars): não altera o control — o DateAdapter
+        // tentará parsear no blur via matDatepicker
+      }
+      return;
     }
 
     // --- CPF ---
