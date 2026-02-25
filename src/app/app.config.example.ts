@@ -1,4 +1,5 @@
-// Renomei o arquivo para app.config.ts e coloque suas credenciais do Firebase
+// Para rodar com emuladores locais: npm run dev:local
+// Para produção: preencha as credenciais reais do Firebase Console
 
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -13,18 +14,17 @@ import { getAuth, provideAuth, connectAuthEmulator } from '@angular/fire/auth';
 import { getFirestore, provideFirestore, connectFirestoreEmulator } from '@angular/fire/firestore';
 import { getStorage, provideStorage, connectStorageEmulator } from '@angular/fire/storage';
 
-// Configuração do ambiente
+// Em modo dev (isDevMode), o SDK se conecta aos emuladores locais.
+// O projectId deve bater com o .firebaserc. As demais chaves podem ser fake para emulador.
+// Para produção, substitua por credenciais reais do Firebase Console.
 const firebaseConfig = {
-  // Cole aqui suas credenciais do console do Firebase (apiKey, authDomain, etc.)
-  // Mesmo para emulador, ele precisa dessas chaves para inicializar o app SDK.
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-  measurementId: ""
-
+  apiKey: 'fake-api-key-emulator',
+  authDomain: 'sistematemfe.firebaseapp.com',
+  projectId: 'sistematemfe',
+  storageBucket: 'sistematemfe.appspot.com',
+  messagingSenderId: '000000000000',
+  appId: '1:000000000000:web:0000000000000000',
+  measurementId: ''
 };
 
 export const appConfig: ApplicationConfig = {
