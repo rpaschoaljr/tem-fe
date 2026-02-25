@@ -1,0 +1,37 @@
+services:
+  firebase-emulators:
+    build:
+      context: .
+      dockerfile: Dockerfile.emulators
+    container_name: tem-fe-emulators
+    ports:
+      - "4000:4000"   # Emulator UI
+      - "4400:4400"   # Emulator Hub
+      - "9099:9099"   # Auth
+      - "8080:8080"   # Firestore
+      - "9199:9199"   # Storage
+    volumes:
+      # Persiste os dados dos emuladores entre reinicializações
+      - emulator-data:/app/emulator-data
+      # Permite recarregar as rules sem rebuild da imagem
+      - ./firestore.rules:/app/firestore.rules:ro
+      - ./storage.rules:/app/storage.rules:ro
+    environment:
+      - FIREBASE_EMULATOR_HUB=0.0.0.0:4400
+    command: >
+      firebase emulators:start
+        --only auth,firestore,storage
+        --project sistematemfe
+        --host 0.0.0.0
+        --import /app/emulator-data
+        --export-on-exit /app/emulator-data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  emulator-data:
