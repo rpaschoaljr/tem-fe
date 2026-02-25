@@ -43,7 +43,8 @@
     <mat-card>
         <mat-card-content>
             <h3>Controle de Estoque</h3>
-            <app-generic-list [data]="items" [columns]="tableColumns" (editAction)="onEdit($event)"
+            <app-generic-list [data]="items" [columns]="tableColumns" [showAdjust]="true"
+                (adjustAction)="onAdjust($event)" (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
             </app-generic-list>
         </mat-card-content>

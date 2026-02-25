@@ -1,4 +1,4 @@
-import { Component, ViewChild, inject } from '@angular/core';
+import { Component, ViewChild, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
@@ -11,6 +11,7 @@ import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
+import { Auth, signOut, authState } from '@angular/fire/auth';
 
 @Component({
   selector: 'app-main-layout',
@@ -33,9 +34,12 @@ import { ThemeService } from '../../services/theme.service';
 export class MainLayoutComponent {
   private breakpointObserver = inject(BreakpointObserver);
   private router = inject(Router);
+  private auth = inject(Auth);
 
   @ViewChild('drawer') drawer!: MatSidenav;
-  themeService = inject(ThemeService)
+  themeService = inject(ThemeService);
+
+  currentUser$ = authState(this.auth);
   // Detecta se é celular (Handset)
   isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
     .pipe(
@@ -60,8 +64,8 @@ export class MainLayoutComponent {
     });
   }
 
-  logout() {
-    // Aqui viria a lógica de deslogar do Firebase
+  async logout() {
+    await signOut(this.auth);
     this.router.navigate(['/login']);
   }
 }

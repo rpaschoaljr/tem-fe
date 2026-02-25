@@ -1,0 +1,48 @@
+<h2 mat-dialog-title>Ajuste de Estoque — {{ item.name }}</h2>
+
+<mat-dialog-content>
+  <p style="opacity:0.7; margin-top:0">Qtd. atual: <strong>{{ item.quantity }} {{ item.unit }}</strong></p>
+
+  <form [formGroup]="form" class="form-grid">
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Operação</mat-label>
+        <mat-select formControlName="operation">
+          <mat-option value="entrada">
+            <mat-icon style="vertical-align:middle;color:#69f0ae">add_circle</mat-icon> Entrada
+          </mat-option>
+          <mat-option value="saida">
+            <mat-icon style="vertical-align:middle;color:#ff5252">remove_circle</mat-icon> Saída / Consumo
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Quantidade</mat-label>
+        <input matInput type="number" formControlName="quantity" min="1">
+        <mat-hint>{{ item.unit }}</mat-hint>
+        <mat-error>Mínimo 1</mat-error>
+      </mat-form-field>
+    </div>
+
+    <p class="new-total" [class.danger]="newTotal < 0">
+      Novo saldo: <strong>{{ newTotal }} {{ item.unit }}</strong>
+      <span *ngIf="newTotal < 0"> ⚠️ ficará negativo</span>
+    </p>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">CANCELAR</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="form.invalid">
+    CONFIRMAR AJUSTE
+  </button>
+</mat-dialog-actions>
+
+<style>
+  .form-grid { display:flex; flex-direction:column; gap:0; min-width:340px; padding-top:8px; }
+  .row { display:flex; gap:12px; }
+  .row mat-form-field { flex:1; }
+  .new-total { font-size:1rem; margin:8px 0 0; }
+  .new-total.danger { color:#ff5252; }
+</style>

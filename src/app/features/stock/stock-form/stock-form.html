@@ -1,0 +1,58 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Editar Item' : 'Novo Item de Estoque' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="form-grid">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nome do Item</mat-label>
+      <input matInput formControlName="name" placeholder="Ex: Vela Branca Palito">
+      <mat-error>Obrigatório (mín. 2 caracteres)</mat-error>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Categoria</mat-label>
+        <mat-select formControlName="category">
+          <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
+        </mat-select>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Unidade</mat-label>
+        <mat-select formControlName="unit">
+          <mat-option *ngFor="let u of units" [value]="u">{{ u }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Quantidade Atual</mat-label>
+        <input matInput type="number" formControlName="quantity" min="0">
+        <mat-error>Mínimo 0</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Estoque Mínimo (alerta)</mat-label>
+        <input matInput type="number" formControlName="minStock" min="0" placeholder="Opcional">
+        <mat-hint>Abaixo disso exibe alerta laranja</mat-hint>
+      </mat-form-field>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">CANCELAR</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()">
+    {{ isEdit ? 'SALVAR' : 'CADASTRAR' }}
+  </button>
+</mat-dialog-actions>
+
+<style>
+  .form-grid { display: flex; flex-direction: column; gap: 0; min-width: 380px; padding-top: 8px; }
+  .row { display: flex; gap: 12px; }
+  .row mat-form-field { flex: 1; }
+  .full-width { width: 100%; }
+</style>

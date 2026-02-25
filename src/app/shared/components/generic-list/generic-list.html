@@ -50,10 +50,13 @@
                 <th mat-header-cell *matHeaderCellDef> Ações </th>
                 <td mat-cell *matCellDef="let element">
                     <ng-container *ngIf="!element.deleted">
-                        <button mat-icon-button color="primary" (click)="editAction.emit(element)">
+                        <button mat-icon-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element)" matTooltip="Ajustar quantidade">
+                            <mat-icon>swap_vert</mat-icon>
+                        </button>
+                        <button mat-icon-button color="primary" (click)="editAction.emit(element)" matTooltip="Editar">
                             <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button color="warn" (click)="confirmDelete(element)">
+                        <button mat-icon-button color="warn" (click)="confirmDelete(element)" matTooltip="Mover para lixeira">
                             <mat-icon>delete</mat-icon>
                         </button>
                     </ng-container>

@@ -43,6 +43,39 @@
     margin-bottom: 40px;
 }
 
+/* KPI STRIP */
+.kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.kpi-chip {
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    &:hover { transform: translateY(-3px); }
+
+    mat-card-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px !important;
+    }
+
+    mat-icon { font-size: 28px; height: 28px; width: 28px; opacity: 0.8; }
+
+    .kpi-value { display: block; font-size: 1.4rem; font-weight: 600; line-height: 1; }
+    .kpi-label { display: block; font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
+
+    &.members  { border-left: 4px solid #388e3c; }
+    &.finance  { border-left: 4px solid #f57c00; }
+    &.finance.negative { border-left-color: #d32f2f; .kpi-value { color: #d32f2f; } }
+    &.stock    { border-left: 4px solid #7b1fa2; }
+    &.stock.alert { border-left-color: #d32f2f; .kpi-value { color: #d32f2f; } }
+}
+
 .module-card {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;

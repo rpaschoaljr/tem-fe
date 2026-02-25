@@ -29,10 +29,12 @@ export interface ColumnDef {
 export class GenericListComponent implements OnChanges, AfterViewInit {
   @Input() data: any[] = [];
   @Input() columns: ColumnDef[] = [];
+  @Input() showAdjust = false;
 
   @Output() editAction = new EventEmitter<any>();
   @Output() deleteAction = new EventEmitter<any>();
   @Output() restoreAction = new EventEmitter<any>();
+  @Output() adjustAction = new EventEmitter<any>();
 
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = [];

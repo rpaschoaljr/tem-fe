@@ -50,6 +50,29 @@
         </button>
     </div>
 
+    <!-- FILTRO POR PERÍODO -->
+    <div class="filter-row">
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Mês</mat-label>
+            <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="applyFilter()">
+                <mat-option [value]="null">Todos</mat-option>
+                <mat-option *ngFor="let m of months" [value]="m.value">{{ m.label }}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Ano</mat-label>
+            <mat-select [(ngModel)]="selectedYear" (ngModelChange)="applyFilter()">
+                <mat-option [value]="null">Todos</mat-option>
+                <mat-option *ngFor="let y of years" [value]="y">{{ y }}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <button mat-icon-button (click)="clearFilter()" matTooltip="Limpar filtro" *ngIf="selectedMonth !== null || selectedYear !== null">
+            <mat-icon>filter_alt_off</mat-icon>
+        </button>
+    </div>
+
     <!-- LISTA DE LANÇAMENTOS -->
     <mat-card>
         <mat-card-content>

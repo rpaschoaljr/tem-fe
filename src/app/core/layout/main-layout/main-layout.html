@@ -28,9 +28,9 @@
 
             <div class="user-profile-header">
                 <mat-icon class="avatar">account_circle</mat-icon>
-                <div class="user-info">
-                    <span class="name">Admin</span>
-                    <span class="role">Diretoria</span>
+                <div class="user-info" *ngIf="currentUser$ | async as user">
+                    <span class="name">{{ user.displayName || 'Usuário' }}</span>
+                    <span class="role">{{ user.email }}</span>
                 </div>
             </div>
 

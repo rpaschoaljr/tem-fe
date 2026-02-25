@@ -7,19 +7,41 @@
         </div>
     </header>
 
-    <!-- GRID DE MÓDULOS -->
-    <div class="cards-grid">
-
-        <!-- Perfil -->
-        <mat-card class="module-card" (click)="navigate('profile')">
-            <mat-card-content class="card-content">
-                <div class="icon-circle profile">
-                    <mat-icon>person</mat-icon>
+    <!-- KPIs REAIS -->
+    <div class="kpi-strip">
+        <mat-card class="kpi-chip members" (click)="navigate('members')">
+            <mat-card-content>
+                <mat-icon>groups</mat-icon>
+                <div>
+                    <span class="kpi-value">{{ kpis.activeMembers }}</span>
+                    <span class="kpi-label">Membros Ativos</span>
                 </div>
-                <h3>Meu Perfil</h3>
-                <span>Dados Cadastrais</span>
             </mat-card-content>
         </mat-card>
+
+        <mat-card class="kpi-chip finance" [class.negative]="kpis.balance < 0" (click)="navigate('finance')">
+            <mat-card-content>
+                <mat-icon>account_balance_wallet</mat-icon>
+                <div>
+                    <span class="kpi-value">{{ kpis.balance | currency:'BRL' }}</span>
+                    <span class="kpi-label">Saldo em Caixa</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-chip stock" [class.alert]="kpis.outOfStock > 0" (click)="navigate('stock')">
+            <mat-card-content>
+                <mat-icon>inventory_2</mat-icon>
+                <div>
+                    <span class="kpi-value">{{ kpis.outOfStock }}</span>
+                    <span class="kpi-label">Itens em Falta</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- GRID DE MÓDULOS -->
+    <div class="cards-grid">
 
         <!-- Membros -->
         <mat-card class="module-card" (click)="navigate('members')">

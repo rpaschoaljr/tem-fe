@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule, MAT_DATE_LOCALE } from '@angular/material/core';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -41,9 +41,7 @@ import { InputMaskDirective } from '../../../shared/directives/input-mask';
     MatDividerModule,
     InputMaskDirective
   ],
-  providers: [
-    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' }
-  ],
+  providers: [],
   templateUrl: './member-form.html',
   styleUrl: './member-form.scss'
 })

@@ -3,21 +3,25 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { StockService } from '../../core/services/stock.service';
-import { NotificationService } from '../../core/services/notification.service'; // Injeção de Notificação
+import { NotificationService } from '../../core/services/notification.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
+import { StockFormComponent } from './stock-form/stock-form';
+import { StockAdjustComponent, AdjustResult } from './stock-adjust/stock-adjust';
 
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, GenericListComponent],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, MatDialogModule, GenericListComponent],
   templateUrl: './stock.html',
   styleUrl: './stock.scss'
 })
 export class StockComponent implements OnInit {
   private stockService = inject(StockService);
   private notify = inject(NotificationService);
+  private dialog = inject(MatDialog);
 
   items: StockItem[] = [];
 
@@ -57,19 +61,29 @@ export class StockComponent implements OnInit {
     this.lowStockCount = active.filter(i => i.quantity > 0 && i.minStock && i.quantity < i.minStock).length;
   }
 
+  openForm(item: StockItem | null = null) {
+    const ref = this.dialog.open(StockFormComponent, {
+      data: item,
+      width: '480px',
+    });
+    ref.afterClosed().subscribe((result: Partial<StockItem> | undefined) => {
+      if (!result) return;
+      this.stockService.save(result as StockItem).subscribe({
+        next: () => {
+          this.notify.showSuccess(item ? 'Item atualizado!' : 'Item cadastrado!');
+          this.loadData();
+        },
+        error: (e: any) => this.notify.showError('Erro ao salvar: ' + e.message),
+      });
+    });
+  }
+
   onNewItem() {
-    this.notify.showSuccess('Cadastro de item será aberto em breve.');
+    this.openForm();
   }
 
   onEdit(item: StockItem) {
-    // Try/Catch simulado via subscribe error
-    this.stockService.update(item).subscribe({
-      next: () => this.notify.showSuccess('Item atualizado com sucesso!'),
-      error: (err) => {
-        // Exibe o erro visual
-        this.notify.showError('Não foi possível salvar: ' + err.message);
-      }
-    });
+    this.openForm(item);
   }
 
   onDelete(item: StockItem) {
@@ -93,6 +107,21 @@ export class StockComponent implements OnInit {
       error: (err) => {
         this.notify.showError('Falha ao restaurar: ' + err.message);
       }
+    });
+  }
+
+  onAdjust(item: StockItem) {
+    const ref = this.dialog.open(StockAdjustComponent, { data: item, width: '400px' });
+    ref.afterClosed().subscribe((result: AdjustResult | undefined) => {
+      if (!result) return;
+      const updated: StockItem = { ...result.item, quantity: result.item.quantity + result.delta, updatedAt: new Date() };
+      this.stockService.save(updated).subscribe({
+        next: () => {
+          this.notify.showSuccess(`Estoque ajustado! Novo saldo: ${updated.quantity} ${updated.unit}`);
+          this.loadData();
+        },
+        error: (e: any) => this.notify.showError('Erro ao ajustar: ' + e.message),
+      });
     });
   }
 }

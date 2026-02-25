@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/login/login';
 import { MainLayoutComponent } from './core/layout/main-layout/main-layout';
+import { authGuard } from './core/guards/auth.guard';
 import { DashboardComponent } from './features/dashboard/dashboard';
 import { MembersComponent } from './features/members/members';
 import { FinanceComponent } from './features/finance/finance';
@@ -14,7 +15,8 @@ export const routes: Routes = [
     // Rotas Protegidas (Dentro do Layout com Menu)
     {
         path: '',
-        component: MainLayoutComponent, // O Layout é o pai
+        component: MainLayoutComponent,
+        canActivate: [authGuard],
         children: [
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             { path: 'dashboard', component: DashboardComponent },

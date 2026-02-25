@@ -1,13 +1,21 @@
 import { Injectable } from '@angular/core';
-import { of, Observable, throwError } from 'rxjs';
-import { delay, tap } from 'rxjs/operators';
+import { of, Observable, from, throwError } from 'rxjs';
+import { delay, tap, map, catchError } from 'rxjs/operators';
 import { Transaction } from '../models/transaction.model';
+import { inject } from '@angular/core';
+import {
+    Firestore, collection, getDocs, doc, setDoc, updateDoc
+} from '@angular/fire/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
+    private firestore = inject(Firestore);
+    private COL = 'transactions';
+
+    // localStorage fallback
     private CACHE_KEY = 'finance_data';
     private TIME_KEY = 'finance_last_fetch';
-    private CACHE_DURATION = 15 * 60 * 1000; // 15 Minutos em milissegundos
+    private CACHE_DURATION = 15 * 60 * 1000;
 
     // Mock Inicial (Caso não tenha nada no cache)
     private initialMockData: Transaction[] = [
@@ -20,65 +28,68 @@ export class FinanceService {
 
     constructor() { }
 
-    /**
-     * Busca Inteligente:
-     * 1. Verifica se tem cache válido (< 15 min).
-     * 2. Se tiver, retorna do LocalStorage (Economiza leitura).
-     * 3. Se não, busca do "Banco" (Simulado aqui) e atualiza o cache.
-     */
     getTransactions(forceRefresh = false): Observable<Transaction[]> {
-        const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
-        const now = Date.now();
-        const hasCache = localStorage.getItem(this.CACHE_KEY);
-
-        // LÓGICA DO CACHE (Se não forçar atualização e o tempo for válido)
-        if (!forceRefresh && hasCache && (now - lastFetch < this.CACHE_DURATION)) {
-            // console.log('Lendo do Cache Local (Economia de Recurso)');
-            const cachedData = JSON.parse(hasCache);
-            // Precisamos converter as strings de data de volta para Objetos Date
-            const fixedData = cachedData.map((t: any) => ({ ...t, date: new Date(t.date) }));
-            return of(fixedData);
-        }
-
-        // SIMULAÇÃO DE LEITURA DO BANCO DE DADOS
-        // console.log('Cache expirado ou inexistente. Lendo do Banco de Dados...');
-        return of(this.getMockOrStoredData()).pipe(
-            delay(500), // Simula delay da rede
-            tap(data => this.updateCache(data)) // Atualiza o cache ao receber
+        const colRef = collection(this.firestore, this.COL);
+        return from(getDocs(colRef)).pipe(
+            map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
+            catchError(() => {
+                const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
+                const hasCache = localStorage.getItem(this.CACHE_KEY);
+                if (!forceRefresh && hasCache && (Date.now() - lastFetch < this.CACHE_DURATION)) {
+                    return of(JSON.parse(hasCache).map((t: any) => ({ ...t, date: new Date(t.date) })));
+                }
+                return of(this.getMockOrStoredData()).pipe(delay(500), tap(data => this.updateCache(data)));
+            })
         );
     }
 
-    // --- Lógica de Escrita (Sempre tenta ir pro banco primeiro) ---
-
     softDelete(id: string): Observable<boolean> {
-        const currentData = this.getMockOrStoredData();
-        const item = currentData.find(t => t.id === id);
-
-        if (item) {
-            item.deleted = true;
-            this.updateCache(currentData); // Atualiza cache local imediatamente
-            return of(true).pipe(delay(300)); // Simula sucesso do banco
-        }
-
-        return throwError(() => new Error('Item não encontrado para exclusão.'));
+        const docRef = doc(this.firestore, this.COL, id);
+        return from(updateDoc(docRef, { deleted: true })).pipe(
+            map(() => true),
+            catchError(() => {
+                const data = this.getMockOrStoredData();
+                const item = data.find(t => t.id === id);
+                if (item) { item.deleted = true; this.updateCache(data); return of(true).pipe(delay(300)); }
+                return throwError(() => new Error('Item não encontrado para exclusão.'));
+            })
+        );
     }
 
     restore(id: string): Observable<boolean> {
-        const currentData = this.getMockOrStoredData();
-        const item = currentData.find(t => t.id === id);
-
-        if (item) {
-            item.deleted = false;
-            this.updateCache(currentData);
-            return of(true).pipe(delay(300));
-        }
-        return throwError(() => new Error('Erro ao restaurar item.'));
+        const docRef = doc(this.firestore, this.COL, id);
+        return from(updateDoc(docRef, { deleted: false })).pipe(
+            map(() => true),
+            catchError(() => {
+                const data = this.getMockOrStoredData();
+                const item = data.find(t => t.id === id);
+                if (item) { item.deleted = false; this.updateCache(data); return of(true).pipe(delay(300)); }
+                return throwError(() => new Error('Erro ao restaurar item.'));
+            })
+        );
     }
 
-    // Simula o erro de edição (já que não temos tela ainda)
+    save(transaction: Transaction): Observable<boolean> {
+        const isNew = !transaction.id;
+        const colRef = collection(this.firestore, this.COL);
+        const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, transaction.id);
+        const data = { ...JSON.parse(JSON.stringify(transaction)), id: docRef.id, deleted: transaction.deleted ?? false };
+
+        return from(setDoc(docRef, data, { merge: true })).pipe(
+            map(() => true),
+            catchError(() => {
+                const currentData = this.getMockOrStoredData();
+                const index = currentData.findIndex(t => t.id === transaction.id);
+                if (index >= 0) { currentData[index] = transaction; }
+                else { transaction.id = Date.now().toString(); transaction.deleted = false; currentData.push(transaction); }
+                this.updateCache(currentData);
+                return of(true).pipe(delay(300));
+            })
+        );
+    }
+
     update(transaction: Transaction): Observable<any> {
-        // Aqui forçamos um erro para testar o try/catch do componente
-        return throwError(() => new Error('Funcionalidade de Edição ainda não implementada no Banco de Dados.'));
+        return this.save(transaction);
     }
 
     // --- Helpers Privados ---
@@ -94,5 +105,13 @@ export class FinanceService {
             return JSON.parse(stored).map((t: any) => ({ ...t, date: new Date(t.date) }));
         }
         return this.initialMockData;
+    }
+
+    private fromFirestore(id: string, data: any): Transaction {
+        return {
+            ...data,
+            id,
+            date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
+        } as Transaction;
     }
 }
