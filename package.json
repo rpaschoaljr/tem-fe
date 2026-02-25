@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "emulators": "firebase emulators:start --only auth --project sistematemfe",
+    "emulators:all": "firebase emulators:start --project sistematemfe",
+    "seed": "node scripts/seed-emulator.mjs",
+    "dev:local": "concurrently -k -n \"EMULATORS,APP\" -c \"cyan,green\" \"npm run emulators\" \"wait-on http://localhost:9099 && node scripts/seed-emulator.mjs && ng serve\""
   },
   "prettier": {
     "printWidth": 100,
@@ -22,6 +26,7 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^20.3.15",
     "@angular/cdk": "^20.2.14",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
@@ -41,12 +46,15 @@
     "@angular/cli": "^20.3.13",
     "@angular/compiler-cli": "^20.3.0",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^9.2.1",
+    "firebase-tools": "^15.7.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wait-on": "^9.0.4"
   }
 }
