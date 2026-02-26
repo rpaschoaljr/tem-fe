@@ -73,6 +73,21 @@ export class MemberFormComponent implements OnInit {
   ngOnInit() {
     this.initForm();
     this.checkEditMode();
+    this.setupDateCrossValidation();
+  }
+
+  setupDateCrossValidation() {
+    const ritualKeys = ['initiation', 'baptism', 'baptism1Year', 'coronation', 'crownWashing'];
+
+    this.form.get('entryDate')!.valueChanges.subscribe(() => {
+      this.form.get('exitDate')?.updateValueAndValidity({ emitEvent: false });
+      ritualKeys.forEach(k => this.form.get(`rituals.${k}`)?.updateValueAndValidity({ emitEvent: false }));
+      this.orixas.forEach(o => this.form.get(`consecrations.${o.key}`)?.updateValueAndValidity({ emitEvent: false }));
+    });
+
+    this.form.get('rituals.baptism')!.valueChanges.subscribe(() => {
+      this.form.get('rituals.baptism1Year')?.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   initForm() {
@@ -98,22 +113,25 @@ export class MemberFormComponent implements OnInit {
       // Vida Espiritual
       role: ['MÉDIUM', Validators.required],
       status: ['Ativo', Validators.required],
-      entryDate: [new Date(), Validators.required],
-      exitDate: [null],
+      entryDate: [new Date(), [Validators.required, CustomValidators.dateNotFuture]],
+      exitDate: [null, [CustomValidators.exitAfterEntry]],
       observations: [''],
 
       // Rituais
       rituals: this.fb.group({
-        initiation: [null],
-        baptism: [null],
-        baptism1Year: [null],
-        coronation: [null],
-        crownWashing: [null]
+        initiation: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
+        baptism: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
+        baptism1Year: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry, CustomValidators.baptism1AfterBaptism]],
+        coronation: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
+        crownWashing: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]]
       }),
 
       // Consagrações (Gerado dinamicamente via Reduce)
       consecrations: this.fb.group(
-        this.orixas.reduce((acc, curr) => ({ ...acc, [curr.key]: [null] }), {})
+        this.orixas.reduce((acc, curr) => ({
+          ...acc,
+          [curr.key]: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]]
+        }), {})
       )
     });
   }

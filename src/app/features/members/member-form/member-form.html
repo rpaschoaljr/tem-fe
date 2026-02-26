@@ -132,6 +132,8 @@
                                         placeholder="DD/MM/AAAA">
                                     <mat-datepicker-toggle matIconSuffix [for]="pickerEntry"></mat-datepicker-toggle>
                                     <mat-datepicker #pickerEntry></mat-datepicker>
+                                    <mat-error *ngIf="form.get('entryDate')?.hasError('required')">Obrigatório</mat-error>
+                                    <mat-error *ngIf="form.get('entryDate')?.hasError('futureDate')">Data não pode ser no futuro</mat-error>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline">
@@ -140,7 +142,7 @@
                                         appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
                                     <mat-datepicker-toggle matIconSuffix [for]="pickerExit"></mat-datepicker-toggle>
                                     <mat-datepicker #pickerExit></mat-datepicker>
-                                    <mat-hint>Apenas se saiu da casa</mat-hint>
+                                    <mat-error *ngIf="form.get('exitDate')?.hasError('exitBeforeEntry')">Saída não pode ser anterior à entrada</mat-error>
                                 </mat-form-field>
                             </div>
 
@@ -160,6 +162,8 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="p1"></mat-datepicker-toggle>
                                     <mat-datepicker #p1></mat-datepicker>
+                                    <mat-error *ngIf="form.get('rituals.initiation')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.initiation')?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline">
@@ -168,6 +172,8 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="p2"></mat-datepicker-toggle>
                                     <mat-datepicker #p2></mat-datepicker>
+                                    <mat-error *ngIf="form.get('rituals.baptism')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.baptism')?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline">
@@ -176,6 +182,9 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="p3"></mat-datepicker-toggle>
                                     <mat-datepicker #p3></mat-datepicker>
+                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('baptism1BeforeBaptism')">Anterior ao Batismo</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline">
@@ -184,6 +193,8 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="p4"></mat-datepicker-toggle>
                                     <mat-datepicker #p4></mat-datepicker>
+                                    <mat-error *ngIf="form.get('rituals.coronation')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.coronation')?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline">
@@ -192,6 +203,8 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="p5"></mat-datepicker-toggle>
                                     <mat-datepicker #p5></mat-datepicker>
+                                    <mat-error *ngIf="form.get('rituals.crownWashing')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('rituals.crownWashing')?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
 
                             </div>
@@ -214,6 +227,8 @@
                                         appInputMask="date" maxlength="10">
                                     <mat-datepicker-toggle matIconSuffix [for]="pOrixa"></mat-datepicker-toggle>
                                     <mat-datepicker #pOrixa></mat-datepicker>
+                                    <mat-error *ngIf="form.get('consecrations')?.get(o.key)?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                                    <mat-error *ngIf="form.get('consecrations')?.get(o.key)?.hasError('futureDate')">Data no futuro</mat-error>
                                 </mat-form-field>
                             </div>
 

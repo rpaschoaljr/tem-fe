@@ -41,6 +41,45 @@ export class CustomValidators {
         return null;
     }
 
+    // Valida que a data não é no futuro
+    static dateNotFuture(control: AbstractControl): ValidationErrors | null {
+        const value = control.value;
+        if (!value || !(value instanceof Date) || isNaN(value.getTime())) return null;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const d = new Date(value); d.setHours(0, 0, 0, 0);
+        return d > today ? { futureDate: true } : null;
+    }
+
+    // Valida que a data de saída não é anterior à data de entrada
+    static exitAfterEntry(control: AbstractControl): ValidationErrors | null {
+        if (!control.value || !(control.value instanceof Date)) return null;
+        const entryDate = control.root.get('entryDate')?.value;
+        if (!entryDate || !(entryDate instanceof Date)) return null;
+        const entry = new Date(entryDate); entry.setHours(0, 0, 0, 0);
+        const d = new Date(control.value); d.setHours(0, 0, 0, 0);
+        return d < entry ? { exitBeforeEntry: true } : null;
+    }
+
+    // Valida que data de ritual/consagração não é anterior à data de entrada
+    static dateAfterEntry(control: AbstractControl): ValidationErrors | null {
+        if (!control.value || !(control.value instanceof Date)) return null;
+        const entryDate = control.root.get('entryDate')?.value;
+        if (!entryDate || !(entryDate instanceof Date)) return null;
+        const entry = new Date(entryDate); entry.setHours(0, 0, 0, 0);
+        const d = new Date(control.value); d.setHours(0, 0, 0, 0);
+        return d < entry ? { dateBeforeEntry: true } : null;
+    }
+
+    // Valida que Batismo 1 Ano não é anterior ao Batismo
+    static baptism1AfterBaptism(control: AbstractControl): ValidationErrors | null {
+        if (!control.value || !(control.value instanceof Date)) return null;
+        const baptism = control.root.get('rituals.baptism')?.value;
+        if (!baptism || !(baptism instanceof Date)) return null;
+        const b = new Date(baptism); b.setHours(0, 0, 0, 0);
+        const d = new Date(control.value); d.setHours(0, 0, 0, 0);
+        return d < b ? { baptism1BeforeBaptism: true } : null;
+    }
+
     // Novo: Valida Intervalo (Data Final > Data Inicial)
     static dateRange(startControlName: string, endControlName: string): ValidatorFn {
         return (form: AbstractControl): ValidationErrors | null => {
