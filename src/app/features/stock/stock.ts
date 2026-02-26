@@ -58,7 +58,7 @@ export class StockComponent implements OnInit {
     const active = this.items.filter(i => !i.deleted);
     this.totalItems = active.length;
     this.outOfStockCount = active.filter(i => i.quantity <= 0).length;
-    this.lowStockCount = active.filter(i => i.quantity > 0 && i.minStock && i.quantity < i.minStock).length;
+    this.lowStockCount = active.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock).length;
   }
 
   openForm(item: StockItem | null = null) {
@@ -122,6 +122,22 @@ export class StockComponent implements OnInit {
         },
         error: (e: any) => this.notify.showError('Erro ao ajustar: ' + e.message),
       });
-    });
-  }
-}
+        });
+      }
+    
+      /**
+       * Retorna um objeto de classes CSS para a linha da tabela com base no status do estoque do item.
+       * @param item O item de estoque a ser avaliado.
+       * @returns Um objeto para ser usado com [ngClass].
+       */
+      public getRowClass(item: StockItem): any {
+        if (item.quantity <= 0) {
+          return { 'stock-out': true };
+        }
+        if (item.quantity > 0 && item.minStock && item.quantity <= item.minStock) {
+          return { 'stock-warning': true };
+        }
+        return null;
+      }
+    }
+    

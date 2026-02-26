@@ -30,6 +30,7 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
   @Input() data: any[] = [];
   @Input() columns: ColumnDef[] = [];
   @Input() showAdjust = false;
+  @Input() rowClassFn?: (row: any) => any;
 
   @Output() editAction = new EventEmitter<any>();
   @Output() deleteAction = new EventEmitter<any>();

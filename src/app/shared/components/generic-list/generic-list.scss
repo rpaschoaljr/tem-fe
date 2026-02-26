@@ -1,29 +1,49 @@
-.generic-list-container {
-    padding: 0;
+/*
+  Estilos para as linhas da tabela de estoque, com suporte para tema claro e escuro.
+*/
+
+/* --- Tema Claro (Padrão) --- */
+// Para o tema claro, usamos cores vibrantes mas garantimos que o texto seja legível.
+:host ::ng-deep .stock-warning {
+    // Amarelo mais escuro, como solicitado. Garante contraste com texto preto.
+    background-color: #ffc107 !important; /* Material Amber 500 */
+    color: #000000 !important;
 }
 
-.search-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+:host ::ng-deep .stock-warning:hover {
+    background-color: #ffb300 !important; /* Material Amber 600 */
 }
 
-.search-bar {
-    flex: 1;
-    font-size: 14px;
+:host ::ng-deep .stock-out {
+    // Vermelho forte, com texto branco para bom contraste.
+    background-color: #f44336 !important; /* Material Red 500 */
+    color: #ffffff !important;
 }
 
-.table-container {
-    border-radius: 8px;
-    overflow: hidden;
+:host ::ng-deep .stock-out:hover {
+    background-color: #e53935 !important; /* Material Red 600 */
 }
 
-table {
-    width: 100%;
+
+/* --- Sobrescrita para Tema Escuro --- */
+// No tema escuro, os fundos precisam ser mais sutis, mas ainda se destacarem.
+// O texto padrão do tema escuro é branco/claro, então as cores de fundo devem ser escuras o suficiente.
+
+html.dark-theme :host ::ng-deep .stock-warning {
+    // Um tom de "amarelo escuro" (marrom/âmbar) que funciona bem em fundos escuros.
+    background-color: #a1887f !important;  /* Material Brown 300 */
+    // A cor do texto já é branca/clara no tema escuro, então não precisamos forçar.
 }
 
-.mat-column-actions {
-    width: 100px;
-    text-align: right;
+html.dark-theme :host ::ng-deep .stock-warning:hover {
+    background-color: #8d6e63 !important; /* Material Brown 400 */
+}
+
+html.dark-theme :host ::ng-deep .stock-out {
+    // Um vermelho bem escuro para indicar perigo, contrastando com o fundo do tema.
+    background-color: #b71c1c !important; /* Material Red 900 */
+}
+
+html.dark-theme :host ::ng-deep .stock-out:hover {
+    background-color: #c62828 !important; /* Material Red 800 */
 }
