@@ -21,6 +21,7 @@ export interface Member {
     // --- Sistema ---
     status: 'Ativo' | 'Inativo'; // Derivado do is_deleted ou manual
     deleted: boolean;
+    showSpiritualData?: boolean; // Permissão para o próprio membro ver sua vida espiritual
 
     // --- Vínculo e Histórico ---
     role: 'MÉDIUM' | 'CAMBONO' | 'OGÃ' | 'PAI/MÃE PEQUENO' | 'DIRETORIA'; // Exemplo

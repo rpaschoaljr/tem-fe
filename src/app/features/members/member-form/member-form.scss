@@ -35,6 +35,13 @@
     width: 100%;
 }
 
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    padding-bottom: 20px;
+    min-width: 250px;
+}
+
 .dates-grid,
 .orixas-grid {
     display: grid;

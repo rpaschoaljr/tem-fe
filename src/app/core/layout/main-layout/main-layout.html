@@ -24,10 +24,13 @@
 
         <!-- MENU LATERAL -->
         <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-            [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="(isHandset$ | async) === false">
+            [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="isSidebarOpened">
 
-            <div class="user-profile-header">
-                <mat-icon class="avatar">account_circle</mat-icon>
+            <div class="user-profile-header" [routerLink]="['/profile']" (click)="closeSideNavIfMobile()" style="cursor: pointer;">
+                <img *ngIf="(currentUser$ | async)?.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="avatar-img">
+                <ng-template #noPhoto>
+                    <mat-icon class="avatar">account_circle</mat-icon>
+                </ng-template>
                 <div class="user-info" *ngIf="currentUser$ | async as user">
                     <span class="name">{{ user.displayName || 'Usuário' }}</span>
                     <br>

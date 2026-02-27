@@ -39,6 +39,21 @@
     padding: 30px 15px;
     background-color: rgba(0, 0, 0, 0.03);
     margin-bottom: 10px;
+    text-align: center;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
+
+    .avatar-img {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 12px;
+        border: 2px solid var(--mat-sys-primary-container);
+    }
 
     .avatar {
         font-size: 60px;

@@ -24,4 +24,13 @@ export class NotificationService {
             verticalPosition: 'bottom'
         });
     }
+
+    showWarning(message: string) {
+        this.snackBar.open(message, 'OK', {
+            duration: 5000,
+            panelClass: ['warning-snackbar'],
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+        });
+    }
 }

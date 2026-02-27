@@ -80,30 +80,42 @@
 
     <!-- QUADRO DE AVISOS -->
     <div class="news-section">
-        <h2><mat-icon>campaign</mat-icon> Quadro de Avisos</h2>
+        <div class="section-header">
+            <h2><mat-icon>campaign</mat-icon> Quadro de Avisos</h2>
+            <div class="actions">
+                <button mat-button color="primary" *ngIf="canManageNotices$ | async" (click)="navigate('notices')">
+                    <mat-icon>settings</mat-icon> Gerenciar Avisos
+                </button>
+                <button mat-button (click)="navigate('notices/archive')">
+                    <mat-icon>history</mat-icon> Arquivo
+                </button>
+            </div>
+        </div>
 
-        <mat-card class="news-item">
-            <mat-card-header>
-                <mat-icon mat-card-avatar class="news-icon">event</mat-icon>
-                <mat-card-title>Próxima Gira: Caboclos</mat-card-title>
-                <mat-card-subtitle>Sexta-feira, 20:00h</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-                <p>Avisar a todos os médiuns para chegarem 1h antes para a firmeza da porteira. Trazer guia verde e
-                    cocar quem tiver.</p>
-            </mat-card-content>
-        </mat-card>
+        <div *ngIf="(activeNotices$ | async) as notices; else loading">
+            <mat-card class="news-item" *ngFor="let notice of notices">
+                <mat-card-header>
+                    <mat-icon mat-card-avatar class="news-icon" [ngClass]="notice.type">
+                        {{ getIconForType(notice.type) }}
+                    </mat-icon>
+                    <mat-card-title>{{ notice.title }}</mat-card-title>
+                    <mat-card-subtitle>{{ notice.subtitle }}</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <p>{{ notice.content }}</p>
+                </mat-card-content>
+            </mat-card>
 
-        <mat-card class="news-item">
-            <mat-card-header>
-                <mat-icon mat-card-avatar class="news-icon">payments</mat-icon>
-                <mat-card-title>Mensalidade do Terreiro</mat-card-title>
-                <mat-card-subtitle>Vencimento dia 10</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-                <p>Lembrete da tesouraria: Ajudem a manter a casa aberta. O aluguel vence na próxima semana.</p>
-            </mat-card-content>
-        </mat-card>
+            <div *ngIf="notices.length === 0" class="empty-notices">
+                <p>Nenhum aviso ativo no momento.</p>
+            </div>
+        </div>
+
+        <ng-template #loading>
+            <div class="loading-container">
+                Carregando avisos...
+            </div>
+        </ng-template>
     </div>
 
 </div>

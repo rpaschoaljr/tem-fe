@@ -1,0 +1,73 @@
+<div class="notices-container">
+    <header class="header">
+        <div class="title">
+            <button mat-icon-button (click)="back()">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+            <h1>{{ isArchive ? 'Arquivo de Avisos' : 'Gerenciar Avisos' }}</h1>
+        </div>
+        <button mat-raised-button color="primary" *ngIf="!isArchive" (click)="openForm()">
+            <mat-icon>add</mat-icon> Novo Aviso
+        </button>
+    </header>
+
+    <mat-card class="table-card">
+        <mat-card-content>
+            <table mat-table [dataSource]="notices" class="w-full">
+
+                <!-- Type Column -->
+                <ng-container matColumnDef="type">
+                    <th mat-header-cell *matHeaderCellDef> Tipo </th>
+                    <td mat-cell *matCellDef="let n">
+                        <mat-icon [class]="n.type" [title]="n.type">{{ getIconForType(n.type) }}</mat-icon>
+                    </td>
+                </ng-container>
+
+                <!-- Title Column -->
+                <ng-container matColumnDef="title">
+                    <th mat-header-cell *matHeaderCellDef> Título </th>
+                    <td mat-cell *matCellDef="let n">
+                        <strong>{{ n.title }}</strong><br>
+                        <small class="opacity-70">{{ n.subtitle }}</small>
+                    </td>
+                </ng-container>
+
+                <!-- Date Column -->
+                <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef> Data </th>
+                    <td mat-cell *matCellDef="let n"> {{ n.date | date:'dd/MM/yyyy' }} </td>
+                </ng-container>
+
+                <!-- Expiration Column -->
+                <ng-container matColumnDef="expiration">
+                    <th mat-header-cell *matHeaderCellDef> Expira em </th>
+                    <td mat-cell *matCellDef="let n">
+                        {{ n.expirationDate ? (n.expirationDate | date:'dd/MM/yyyy') : 'Não expira' }}
+                    </td>
+                </ng-container>
+
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> Ações </th>
+                    <td mat-cell *matCellDef="let n">
+                        <button mat-icon-button color="primary" *ngIf="!isArchive" (click)="openForm(n)">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteNotice(n.id)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell" colspan="5" style="text-align: center; padding: 20px;">
+                        Nenhum aviso encontrado.
+                    </td>
+                </tr>
+            </table>
+        </mat-card-content>
+    </mat-card>
+</div>

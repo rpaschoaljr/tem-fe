@@ -21,6 +21,8 @@ import { NotificationService } from '../../../core/services/notification.service
 import { Member } from '../../../core/models/member.model';
 import { CustomValidators } from '../../../shared/utils/validators';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
+import { ComponentCanDeactivate } from '../../../core/guards/pending-changes.guard';
+import { Observable } from 'rxjs';
 
 
 @Component({
@@ -45,7 +47,7 @@ import { InputMaskDirective } from '../../../shared/directives/input-mask';
   templateUrl: './member-form.html',
   styleUrl: './member-form.scss'
 })
-export class MemberFormComponent implements OnInit {
+export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   private fb = inject(FormBuilder);
   private membersService = inject(MembersService);
   private notify = inject(NotificationService);
@@ -57,6 +59,13 @@ export class MemberFormComponent implements OnInit {
   memberId: string | null = null;
   selectedIndex = 0;
   totalTabs = 4;
+
+  canDeactivate(): boolean | Observable<boolean> {
+    if (this.form && this.form.dirty && !this.form.submitted) {
+      return confirm('Você tem alterações não salvas no formulário. Deseja realmente sair?');
+    }
+    return true;
+  }
 
   // Listas
   roles = ['MÉDIUM', 'CAMBONO', 'OGÃ', 'PAI/MÃE PEQUENO', 'DIRETORIA', 'CONSULENTE'];
@@ -115,6 +124,7 @@ export class MemberFormComponent implements OnInit {
       // Vida Espiritual
       role: ['MÉDIUM', Validators.required],
       status: ['Ativo', Validators.required],
+      showSpiritualData: [false],
       entryDate: [new Date(), [Validators.required, CustomValidators.dateNotFuture]],
       exitDate: [null, [CustomValidators.exitAfterEntry]],
       observations: [''],
@@ -153,6 +163,7 @@ export class MemberFormComponent implements OnInit {
       next: (member) => {
         if (member) {
           this.form.patchValue(member);
+          this.form.markAsPristine();
         } else {
           this.notify.showError('Membro não encontrado.');
           this.router.navigate(['/members']);
@@ -204,7 +215,7 @@ export class MemberFormComponent implements OnInit {
       case 2: // Vida Espiritual (Apenas campos principais)
         const spiritualControls = ['role', 'status', 'entryDate'];
         spiritualControls.forEach(controlName => this.form.get(controlName)?.markAsTouched());
-        return spiritualControls.every(controlName => this.form.get(controlName)?.valid ?? false);
+        return spiritualControls.every(controlName => spiritualControls.every(controlName => this.form.get(controlName)?.valid ?? false));
 
       default:
         return true; // As outras abas não têm campos obrigatórios para avançar
@@ -234,12 +245,16 @@ export class MemberFormComponent implements OnInit {
       // Se for novo cadastro, remove o ID vazio para o serviço gerar um novo
       if (!this.isEditMode) delete (memberData as any).id;
 
+      (this.form as any).submitted = true;
       this.membersService.save(memberData).subscribe({
         next: () => {
           this.notify.showSuccess(this.isEditMode ? 'Membro atualizado!' : 'Membro cadastrado!');
           this.router.navigate(['/members']);
         },
-        error: (e: any) => this.notify.showError('Erro ao salvar: ' + e.message)
+        error: (e: any) => {
+          (this.form as any).submitted = false;
+          this.notify.showError('Erro ao salvar: ' + e.message);
+        }
       });
     } else {
       this.form.markAllAsTouched();

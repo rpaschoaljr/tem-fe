@@ -1,0 +1,135 @@
+<div class="profile-container">
+  <header class="profile-header">
+    <h1>Meu Perfil</h1>
+    <p class="subtitle">Gerencie suas informações pessoais e visualize seu histórico</p>
+  </header>
+
+  <div *ngIf="loading" class="loading-state">
+    <p>Carregando perfil...</p>
+  </div>
+
+  <div class="profile-grid" *ngIf="!loading && member">
+
+    <!-- FOTO DE PERFIL -->
+    <mat-card class="profile-picture-card">
+      <mat-card-header>
+        <mat-card-title>Foto de Perfil</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="profile-image-container">
+          <img *ngIf="profileImageUrl" class="profile-image" [src]="profileImageUrl" alt="Foto de Perfil">
+          <div *ngIf="!profileImageUrl" class="no-profile-image">
+            <mat-icon>account_circle</mat-icon>
+          </div>
+          <label for="profile-input" class="change-photo-btn">
+            <mat-icon>camera_alt</mat-icon> Alterar Foto
+          </label>
+          <input id="profile-input" type="file" (change)="onFileSelected($event)" accept="image/*" hidden />
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- DADOS PESSOAIS -->
+    <mat-card class="personal-data-card">
+      <mat-card-header>
+        <mat-card-title>Dados de Contato e Endereço</mat-card-title>
+      </mat-card-header>
+      <mat-card-content [formGroup]="personalDataForm">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Email de Contato</mat-label>
+            <input matInput formControlName="email">
+            <mat-icon matSuffix>email</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Telefone</mat-label>
+            <input matInput formControlName="phone">
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-divider></mat-divider>
+        <h3 class="section-title">Endereço</h3>
+
+        <div formGroupName="address" class="address-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>CEP</mat-label>
+            <input matInput formControlName="cep">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Rua</mat-label>
+            <input matInput formControlName="street">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Número</mat-label>
+            <input matInput formControlName="number">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Bairro</mat-label>
+            <input matInput formControlName="neighborhood">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cidade</mat-label>
+            <input matInput formControlName="city">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Estado</mat-label>
+            <input matInput formControlName="state">
+          </mat-form-field>
+        </div>
+
+        <div class="actions">
+          <button mat-raised-button color="primary" (click)="savePersonalData()"
+            [disabled]="personalDataForm.invalid">Salvar Alterações</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- VIDA ESPIRITUAL E CONSAGRAÇÕES -->
+    <mat-card class="spiritual-card full-width" *ngIf="member.showSpiritualData">
+      <mat-card-header>
+        <mat-card-title>Histórico Espiritual</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="spiritual-content">
+          <div class="rituals-section">
+            <h4><mat-icon>water_drop</mat-icon> Rituais Realizados</h4>
+            <div class="tag-list">
+              <div class="tag" *ngFor="let ritual of getRitualsList()">
+                <span class="tag-label">{{ ritual.label }}</span>
+                <span class="tag-date">{{ ritual.date | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <p *ngIf="getRitualsList().length === 0" class="empty-msg">Nenhum ritual registrado.</p>
+            </div>
+          </div>
+
+          <mat-divider [vertical]="true"></mat-divider>
+
+          <div class="consecrations-section">
+            <h4><mat-icon>auto_awesome</mat-icon> Consagrações de Orixá</h4>
+            <div class="tag-list">
+              <div class="tag orixa" *ngFor="let cons of getConsecrationsList()">
+                <span class="tag-label">{{ cons.orixa }}</span>
+                <span class="tag-date">{{ cons.date | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <p *ngIf="getConsecrationsList().length === 0" class="empty-msg">Nenhuma consagração registrada.</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="locked-section full-width" *ngIf="!member.showSpiritualData">
+      <mat-icon>lock</mat-icon>
+      <p>As informações de sua vida espiritual e consagrações são privadas. <br>
+      Solicite permissão à administração para visualizá-las aqui.</p>
+    </div>
+
+  </div>
+</div>

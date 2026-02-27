@@ -8,7 +8,10 @@ import { Auth, signOut } from '@angular/fire/auth';
 import { MembersService } from '../../core/services/members.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { StockService } from '../../core/services/stock.service';
-import { forkJoin } from 'rxjs';
+import { NoticesService } from '../../core/services/notices.service';
+import { AuthService } from '../../core/services/auth.service';
+import { forkJoin, Observable } from 'rxjs';
+import { Notice } from '../../core/models/notice.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,8 +31,12 @@ export class DashboardComponent implements OnInit {
   private membersService = inject(MembersService);
   private financeService = inject(FinanceService);
   private stockService = inject(StockService);
+  private noticesService = inject(NoticesService);
+  private authService = inject(AuthService);
 
   kpis = { activeMembers: 0, balance: 0, outOfStock: 0 };
+  activeNotices$: Observable<Notice[]> = this.noticesService.getActiveNotices();
+  canManageNotices$: Observable<boolean> = this.authService.canManageNotices();
 
   ngOnInit() {
     forkJoin({
@@ -53,5 +60,14 @@ export class DashboardComponent implements OnInit {
   async logout() {
     await signOut(this.auth);
     this.router.navigate(['/login']);
+  }
+
+  getIconForType(type: string): string {
+    switch (type) {
+      case 'event': return 'event';
+      case 'payment': return 'payments';
+      case 'warning': return 'warning';
+      default: return 'info';
+    }
   }
 }

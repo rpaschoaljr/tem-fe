@@ -7,6 +7,9 @@ import { MembersComponent } from './features/members/members';
 import { FinanceComponent } from './features/finance/finance';
 import { StockComponent } from './features/stock/stock';
 import { MemberFormComponent } from './features/members/member-form/member-form';
+import { ProfileComponent } from './features/profile/profile';
+import { NoticesComponent } from './features/notices/notices';
+import { pendingChangesGuard } from './core/guards/pending-changes.guard';
 
 export const routes: Routes = [
     // Rota Pública (Sem Layout)
@@ -23,8 +26,11 @@ export const routes: Routes = [
             { path: 'members', component: MembersComponent },
             { path: 'finance', component: FinanceComponent },
             { path: 'stock', component: StockComponent },
-            { path: 'members/new', component: MemberFormComponent },
-            { path: 'members/edit/:id', component: MemberFormComponent },
+            { path: 'profile', component: ProfileComponent, canDeactivate: [pendingChangesGuard] },
+            { path: 'notices', component: NoticesComponent },
+            { path: 'notices/archive', component: NoticesComponent },
+            { path: 'members/new', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
+            { path: 'members/edit/:id', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
         ]
     },
 

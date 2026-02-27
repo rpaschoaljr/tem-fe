@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
+import { map, shareReplay, tap } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { Auth, signOut, authState } from '@angular/fire/auth';
@@ -39,11 +39,17 @@ export class MainLayoutComponent {
   @ViewChild('drawer') drawer!: MatSidenav;
   themeService = inject(ThemeService);
 
-  currentUser$ = authState(this.auth);
+  currentUser$ = authState(this.auth).pipe(shareReplay(1));
+  isSidebarOpened = true;
+
   // Detecta se é celular (Handset)
   isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
     .pipe(
       map(result => result.matches),
+      tap(isHandset => {
+        // No desktop, o menu começa aberto. No mobile, fechado.
+        this.isSidebarOpened = !isHandset;
+      }),
       shareReplay()
     );
 
@@ -51,8 +57,9 @@ export class MainLayoutComponent {
   menuItems = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Membros', icon: 'groups', route: '/members' },
-    { label: 'Financeiro', icon: 'attach_money', route: '/finance' }, // Futuro
-    { label: 'Estoque', icon: 'inventory_2', route: '/stock' },       // Futuro
+    { label: 'Financeiro', icon: 'attach_money', route: '/finance' },
+    { label: 'Estoque', icon: 'inventory_2', route: '/stock' },
+    { label: 'Avisos', icon: 'campaign', route: '/notices' },
   ];
 
   // Fecha o menu automaticamente no celular ao clicar em um item
