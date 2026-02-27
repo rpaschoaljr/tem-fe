@@ -30,6 +30,7 @@
                 <mat-icon class="avatar">account_circle</mat-icon>
                 <div class="user-info" *ngIf="currentUser$ | async as user">
                     <span class="name">{{ user.displayName || 'Usuário' }}</span>
+                    <br>
                     <span class="role">{{ user.email }}</span>
                 </div>
             </div>
