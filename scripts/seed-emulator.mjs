@@ -1,19 +1,18 @@
 /**
- * Cria automaticamente um usuário de teste no emulador do Firebase Auth.
- * Se o emulador Firestore estiver rodando, também popula as collections.
- * Executar após os emuladores já estarem rodando: node scripts/seed-emulator.mjs
+ * Cria automaticamente usuários de teste no emulador do Firebase Auth.
+ * Popula o Firestore com membros, transações e estoque.
  */
 
 const PROJECT_ID = 'sistematemfe';
 const AUTH_EMULATOR = 'http://localhost:9099';
 const FIRESTORE_EMULATOR = 'http://localhost:8080';
-const API_KEY = 'fake-api-key-emulator'; // Qualquer valor funciona no emulador
+const API_KEY = 'fake-api-key-emulator';
 
-const TEST_USER = {
-  email: 'admin@tem.local',
-  password: 'senha123',
-  displayName: 'Admin Local',
-};
+const TEST_USERS = [
+  { email: 'admin@tem.local', password: 'senha123', displayName: 'Admin Local', role: 'DIRETORIA' },
+  { email: 'mae@tem.local', password: 'senha123', displayName: 'Mãe de Santo', role: 'PAI/MÃE PEQUENO' },
+  { email: 'membro@tem.local', password: 'senha123', displayName: 'Membro Teste', role: 'MÉDIUM' },
+];
 
 async function waitForEmulator(maxRetries = 30) {
   for (let i = 0; i < maxRetries; i++) {
@@ -25,28 +24,19 @@ async function waitForEmulator(maxRetries = 30) {
       await new Promise((r) => setTimeout(r, 2000));
     }
   }
-  throw new Error('Emulador Auth não respondeu a tempo. Verifique se "npm run emulators" está rodando.');
+  throw new Error('Emulador Auth não respondeu a tempo.');
 }
 
-async function isFirestoreRunning() {
-  try {
-    const res = await fetch(`${FIRESTORE_EMULATOR}/`);
-    return res.ok || res.status < 500;
-  } catch {
-    return false;
-  }
-}
-
-async function createUser() {
+async function createUser(user) {
   const res = await fetch(
     `${AUTH_EMULATOR}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: TEST_USER.email,
-        password: TEST_USER.password,
-        displayName: TEST_USER.displayName,
+        email: user.email,
+        password: user.password,
+        displayName: user.displayName,
         returnSecureToken: false,
       }),
     }
@@ -68,24 +58,27 @@ async function listUsers() {
 
 // --- Firestore REST helpers ---
 
-async function firestoreGet(collection) {
-  const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return json.documents || [];
+function formatFirestoreValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return { doubleValue: v };
+  if (v instanceof Date) return { timestampValue: v.toISOString() };
+  if (Array.isArray(v)) {
+    return { arrayValue: { values: v.map(formatFirestoreValue) } };
+  }
+  if (typeof v === 'object') {
+    return { mapValue: { fields: Object.fromEntries(
+      Object.entries(v).map(([k, val]) => [k, formatFirestoreValue(val)])
+    )}};
+  }
+  return { stringValue: String(v) };
 }
 
-async function firestoreCreate(collection, id, fields) {
+async function firestoreCreate(collection, id, data) {
   const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}?documentId=${id}`;
   const body = {
     fields: Object.fromEntries(
-      Object.entries(fields).map(([k, v]) => {
-        if (v === null || v === undefined) return [k, { nullValue: null }];
-        if (typeof v === 'boolean') return [k, { booleanValue: v }];
-        if (typeof v === 'number') return [k, { doubleValue: v }];
-        if (v instanceof Date) return [k, { timestampValue: v.toISOString() }];
-        return [k, { stringValue: String(v) }];
-      })
+      Object.entries(data).map(([k, v]) => [k, formatFirestoreValue(v)])
     ),
   };
   const res = await fetch(url, {
@@ -93,98 +86,179 @@ async function firestoreCreate(collection, id, fields) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`Erro ao criar documento ${id} em ${collection}: ${JSON.stringify(err)}`);
+  }
   return res.json();
 }
 
+async function firestoreList(collection) {
+  const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.documents || [];
+}
+
 async function seedFirestore() {
-  const members = await firestoreGet('members');
-  if (members.length > 0) {
-    console.log(`✅ Firestore: members já populado (${members.length} docs).`);
-  } else {
-    const sampleMembers = [
-      { id: 'membro-1', name: 'Maria das Graças', role: 'Ialorixá', status: 'Ativo', deleted: false, entryDate: new Date('2020-01-15'), email: 'maria@tem.local', phone: '11999990001', createdAt: new Date(), updatedAt: new Date() },
-      { id: 'membro-2', name: 'João da Silva', role: 'Ogã', status: 'Ativo', deleted: false, entryDate: new Date('2021-06-10'), email: 'joao@tem.local', phone: '11999990002', createdAt: new Date(), updatedAt: new Date() },
-      { id: 'membro-3', name: 'Ana Lima', role: 'Ekede', status: 'Inativo', deleted: false, entryDate: new Date('2019-03-22'), email: 'ana@tem.local', phone: '11999990003', createdAt: new Date(), updatedAt: new Date() },
-    ];
-    for (const m of sampleMembers) {
-      await firestoreCreate('members', m.id, m);
+  console.log('🧹 Limpando dados antigos (se houver)...');
+  // Nota: A limpeza via REST API emulada é complexa. 
+  // O ideal é o emulador iniciar limpo ou sobrescrevermos com os mesmos IDs.
+
+  // 1. Membros
+  const sampleMembers = [
+    {
+      id: 'admin-id',
+      name: 'Administrador do Sistema',
+      cpf: '123.456.789-00',
+      email: 'admin@tem.local',
+      phone: '(11) 98888-7777',
+      role: 'DIRETORIA',
+      status: 'Ativo',
+      deleted: false,
+      showSpiritualData: true,
+      entryDate: new Date('2010-01-01'),
+      address: {
+        cep: '01001-000',
+        street: 'Praça da Sé',
+        number: '100',
+        complement: 'Apto 1',
+        neighborhood: 'Sé',
+        city: 'São Paulo',
+        state: 'SP'
+      },
+      rituals: { initiation: new Date('2010-06-15'), baptism: new Date('2010-02-20') },
+      consecrations: { oxala: new Date('2015-12-25'), ogum: new Date('2012-04-23') },
+      createdAt: new Date(), updatedAt: new Date()
+    },
+    {
+      id: 'mae-id',
+      name: 'Mãe de Santo Teste',
+      cpf: '222.333.444-55',
+      email: 'mae@tem.local',
+      phone: '(11) 97777-6666',
+      role: 'PAI/MÃE PEQUENO',
+      status: 'Ativo',
+      deleted: false,
+      showSpiritualData: true,
+      entryDate: new Date('2015-05-10'),
+      address: {
+        cep: '01310-100',
+        street: 'Avenida Paulista',
+        number: '1500',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP'
+      },
+      rituals: { initiation: new Date('2015-10-10'), coronation: new Date('2020-11-20') },
+      consecrations: { iemanja: new Date('2016-02-02'), oxum: new Date('2017-12-08') },
+      createdAt: new Date(), updatedAt: new Date()
+    },
+    {
+      id: 'membro-id',
+      name: 'Membro Teste da Silva',
+      cpf: '999.888.777-66',
+      email: 'membro@tem.local',
+      phone: '(11) 96666-5555',
+      role: 'MÉDIUM',
+      status: 'Ativo',
+      deleted: false,
+      showSpiritualData: false,
+      entryDate: new Date('2023-01-01'),
+      address: {
+        cep: '04571-010',
+        street: 'Rua Berrini',
+        number: '500',
+        neighborhood: 'Brooklin',
+        city: 'São Paulo',
+        state: 'SP'
+      },
+      rituals: { baptism: new Date('2023-03-15') },
+      consecrations: {},
+      createdAt: new Date(), updatedAt: new Date()
     }
-    console.log(`✅ Firestore: ${sampleMembers.length} membros criados.`);
+  ];
+
+  for (const m of sampleMembers) {
+    await firestoreCreate('members', m.id, m);
   }
 
-  const transactions = await firestoreGet('transactions');
-  if (transactions.length > 0) {
-    console.log(`✅ Firestore: transactions já populado (${transactions.length} docs).`);
-  } else {
-    const sampleTx = [
-      { id: 'tx-1', description: 'Doação Gira de Oxum', value: 500, type: 'Entrada', category: 'Doação', date: new Date('2025-12-15'), deleted: false },
-      { id: 'tx-2', description: 'Compra de Velas', value: -120, type: 'Saída', category: 'Material', date: new Date('2025-12-20'), deleted: false },
-    ];
-    for (const t of sampleTx) {
-      await firestoreCreate('transactions', t.id, t);
-    }
-    console.log(`✅ Firestore: ${sampleTx.length} transações criadas.`);
+  // 2. Financeiro
+  const sampleTx = [
+    { id: 'tx-1', description: 'Mensalidade Janeiro - Admin', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
+    { id: 'tx-2', description: 'Doação Reforma Telhado', value: 1500, type: 'Entrada', category: 'Doação', date: new Date(), deleted: false },
+    { id: 'tx-3', description: 'Pagamento Luz', value: -250.50, type: 'Saída', category: 'Contas Fixas', date: new Date(), deleted: false },
+    { id: 'tx-4', description: 'Compra de Velas e Defumador', value: -180, type: 'Saída', category: 'Material', date: new Date(), deleted: false },
+    { id: 'tx-5', description: 'Mensalidade Fevereiro - Membro', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
+  ];
+  for (const t of sampleTx) {
+    await firestoreCreate('transactions', t.id, t);
   }
 
-  const stock = await firestoreGet('stock');
-  if (stock.length > 0) {
-    console.log(`✅ Firestore: stock já populado (${stock.length} docs).`);
-  } else {
-    const sampleStock = [
-      { id: 'stock-1', name: 'Vela Branca Palito', category: 'Velas', quantity: 150, minStock: 50, unit: 'un', deleted: false, updatedAt: new Date() },
-      { id: 'stock-2', name: 'Pemba Branca', category: 'Ritualística', quantity: 0, minStock: 5, unit: 'cx', deleted: false, updatedAt: new Date() },
-    ];
-    for (const s of sampleStock) {
-      await firestoreCreate('stock', s.id, s);
-    }
-    console.log(`✅ Firestore: ${sampleStock.length} itens de estoque criados.`);
+  // 3. Estoque
+  const sampleStock = [
+    { id: 'stock-1', name: 'Vela Branca 7 Dias', category: 'Velas', quantity: 45, minStock: 10, unit: 'un', deleted: false, updatedAt: new Date() },
+    { id: 'stock-2', name: 'Vela Vermelha Palito', category: 'Velas', quantity: 120, minStock: 50, unit: 'un', deleted: false, updatedAt: new Date() },
+    { id: 'stock-3', name: 'Defumador Completo', category: 'Ervas', quantity: 5, minStock: 10, unit: 'cx', deleted: false, updatedAt: new Date() },
+    { id: 'stock-4', name: 'Guia de Cristal Oxalá', category: 'Ritualística', quantity: 2, minStock: 5, unit: 'un', deleted: false, updatedAt: new Date() },
+  ];
+  for (const s of sampleStock) {
+    await firestoreCreate('stock', s.id, s);
+  }
+
+  // 4. Avisos
+  const sampleNotices = [
+    { id: 'n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2026-02-03'), deleted: false, createdAt: new Date() },
+    { id: 'n-2', title: 'Aviso de Tesouraria', content: 'As mensalidades podem agora ser pagas via PIX na secretaria.', type: 'payment', date: new Date(), deleted: false, createdAt: new Date() },
+    { id: 'n-3', title: 'Manutenção do Terreiro', content: 'Mutirão de limpeza no próximo sábado às 09h.', type: 'warning', date: new Date(), deleted: false, createdAt: new Date() },
+  ];
+  for (const n of sampleNotices) {
+    await firestoreCreate('notices', n.id, n);
+  }
+
+  // Verificação final
+  const membersCount = (await firestoreList('members')).length;
+  const txCount = (await firestoreList('transactions')).length;
+  const stockCount = (await firestoreList('stock')).length;
+
+  console.log(`✅ Firestore populado: ${membersCount} membros, ${txCount} transações, ${stockCount} itens.`);
+  
+  if (membersCount === 0) {
+    console.warn('⚠️ AVISO: O Firestore parece estar vazio após o seed. Verifique se o Emulador está rodando corretamente em localhost:8080.');
   }
 }
 
 async function main() {
-  console.log('\n🔥 Seed do emulador Firebase\n');
-
+  console.log('\n🔥 Seed do emulador Firebase (Completo)\n');
   await waitForEmulator();
-  process.stdout.write('\r');
 
-  // Verifica se usuário já existe
   const existing = await listUsers();
   const users = existing.userInfo || [];
-  const alreadyExists = users.some((u) => u.email === TEST_USER.email);
 
-  if (alreadyExists) {
-    console.log(`✅ Usuário já existe no emulador.`);
-  } else {
-    const result = await createUser();
-    if (result.error) {
-      console.error('❌ Erro ao criar usuário:', result.error.message);
-      process.exit(1);
+  for (const user of TEST_USERS) {
+    if (!users.some((u) => u.email === user.email)) {
+      await createUser(user);
+      console.log(`✅ Usuário criado: ${user.email}`);
+    } else {
+      console.log(`ℹ️  Usuário já existe: ${user.email}`);
     }
-    console.log('✅ Usuário criado com sucesso!');
   }
 
-  // Tenta seed Firestore (opcional — só disponível com Java 21+)
-  const firestoreOk = await isFirestoreRunning();
-  if (firestoreOk) {
-    console.log('\n🗄️  Populando Firestore...');
+  console.log('\n🗄️  Populando Firestore...');
+  try {
     await seedFirestore();
-  } else {
-    console.log('\nℹ️  Emulador Firestore não disponível (requer Java 21+). Usando localStorage como fallback.');
+  } catch (err) {
+    console.error('\n❌ Erro durante o seed do Firestore:', err.message);
   }
 
   console.log('\n┌─────────────────────────────────────┐');
-  console.log('│  Credenciais para login local        │');
+  console.log('│  Ambiente de Teste Pronto!           │');
   console.log('├─────────────────────────────────────┤');
-  console.log(`│  E-mail:  ${TEST_USER.email.padEnd(26)}│`);
-  console.log(`│  Senha:   ${TEST_USER.password.padEnd(26)}│`);
-  console.log('├─────────────────────────────────────┤');
-  console.log('│  UI Emuladores: http://localhost:4000│');
-  console.log('│  App:           http://localhost:4200│');
+  console.log('│  Admin: admin@tem.local / senha123   │');
+  console.log('│  Mãe:   mae@tem.local   / senha123   │');
+  console.log('│  Membro: membro@tem.local/ senha123  │');
   console.log('└─────────────────────────────────────┘\n');
 }
 
-main().catch((e) => {
-  console.error('\n❌ Falha no seed:', e.message);
-  process.exit(1);
-});
-
+main().catch(console.error);
