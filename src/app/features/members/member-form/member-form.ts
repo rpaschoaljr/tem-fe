@@ -97,7 +97,7 @@ export class MemberFormComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       cpf: ['', [Validators.required, CustomValidators.cpf]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
+      phone: ['', [Validators.required, CustomValidators.phone]],
 
       // Endereço
       address: this.fb.group({

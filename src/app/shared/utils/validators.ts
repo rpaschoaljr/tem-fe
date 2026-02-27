@@ -22,6 +22,20 @@ export class CustomValidators {
         return null;
     }
 
+    // Validador para Telefone (Celular ou Fixo)
+    static phone(control: AbstractControl): ValidationErrors | null {
+        const phone = control.value;
+        if (!phone) return null; // Se não houver valor, não valide (use Validators.required para isso)
+        const cleanPhone = phone.toString().replace(/\D/g, ''); // Remove tudo que não é dígito
+
+        // Telefones no Brasil têm 10 (fixo) ou 11 (celular) dígitos
+        if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+            return null; // Válido
+        } else {
+            return { invalidPhone: true }; // Inválido
+        }
+    }
+
     // Novo: Validador de Data Real (Impede 30/02, etc)
     static dateReal(control: AbstractControl): ValidationErrors | null {
         const value = control.value;
