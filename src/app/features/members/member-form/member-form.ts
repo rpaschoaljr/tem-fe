@@ -55,6 +55,8 @@ export class MemberFormComponent implements OnInit {
   form!: FormGroup;
   isEditMode = false;
   memberId: string | null = null;
+  selectedIndex = 0;
+  totalTabs = 4;
 
   // Listas
   roles = ['MÉDIUM', 'CAMBONO', 'OGÃ', 'PAI/MÃE PEQUENO', 'DIRETORIA', 'CONSULENTE'];
@@ -186,6 +188,45 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
+  private isTabValid(tabIndex: number): boolean {
+    switch (tabIndex) {
+      case 0: // Dados Pessoais
+        const personalControls = ['name', 'cpf', 'email', 'phone'];
+        personalControls.forEach(controlName => this.form.get(controlName)?.markAsTouched());
+        return personalControls.every(controlName => this.form.get(controlName)?.valid ?? false);
+
+      case 1: // Endereço
+        const addressGroup = this.form.get('address') as FormGroup;
+        const requiredAddressControls = ['cep', 'street', 'number', 'neighborhood', 'city', 'state'];
+        requiredAddressControls.forEach(controlName => addressGroup.get(controlName)?.markAsTouched());
+        return requiredAddressControls.every(controlName => addressGroup.get(controlName)?.valid ?? false);
+
+      case 2: // Vida Espiritual (Apenas campos principais)
+        const spiritualControls = ['role', 'status', 'entryDate'];
+        spiritualControls.forEach(controlName => this.form.get(controlName)?.markAsTouched());
+        return spiritualControls.every(controlName => this.form.get(controlName)?.valid ?? false);
+
+      default:
+        return true; // As outras abas não têm campos obrigatórios para avançar
+    }
+  }
+
+  nextTab() {
+    if (this.isTabValid(this.selectedIndex)) {
+      if (this.selectedIndex < this.totalTabs - 1) {
+        this.selectedIndex++;
+      }
+    } else {
+      this.notify.showError('Por favor, preencha os campos obrigatórios da aba atual antes de prosseguir.');
+    }
+  }
+
+  previousTab() {
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
+    }
+  }
+
   onSubmit() {
     if (this.form.valid) {
       const memberData: Member = this.form.value;
@@ -201,8 +242,8 @@ export class MemberFormComponent implements OnInit {
         error: (e: any) => this.notify.showError('Erro ao salvar: ' + e.message)
       });
     } else {
-      this.notify.showError('Preencha os campos obrigatórios.');
       this.form.markAllAsTouched();
+      this.notify.showError('Preencha os campos obrigatórios.');
     }
   }
 

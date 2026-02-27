@@ -5,7 +5,7 @@
     </div>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" animationDuration="0ms">
+        <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" animationDuration="0ms" [(selectedIndex)]="selectedIndex">
 
             <!-- ABA 1: IDENTIFICAÇÃO -->
             <mat-tab label="Dados Pessoais">
@@ -38,6 +38,7 @@
                                     <mat-label>Whatsapp/Telefone</mat-label>
                                     <input matInput type="text" formControlName="phone" appInputMask="phone"
                                         maxlength="15" placeholder="(00) 00000-0000">
+                                    <mat-error *ngIf="form.get('phone')?.hasError('required')">Obrigatório</mat-error>
                                     <mat-error *ngIf="form.get('phone')?.hasError('invalidPhone')">Telefone inválido</mat-error>
                                 </mat-form-field>
                             </div>
@@ -242,7 +243,18 @@
 
         <div class="actions-bar">
             <button mat-button type="button" (click)="onCancel()">CANCELAR</button>
-            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+
+            <span class="spacer"></span>
+
+            <button mat-button type="button" (click)="previousTab()" *ngIf="selectedIndex > 0">
+                <mat-icon>chevron_left</mat-icon> VOLTAR
+            </button>
+
+            <button mat-raised-button color="primary" type="button" (click)="nextTab()" *ngIf="selectedIndex < totalTabs - 1">
+                PRÓXIMO <mat-icon>chevron_right</mat-icon>
+            </button>
+
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid" *ngIf="selectedIndex === totalTabs - 1">
                 <mat-icon>save</mat-icon> SALVAR MEMBRO
             </button>
         </div>
