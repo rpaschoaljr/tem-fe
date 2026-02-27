@@ -12,6 +12,8 @@ import { NoticesService } from '../../core/services/notices.service';
 import { AuthService } from '../../core/services/auth.service';
 import { forkJoin, Observable } from 'rxjs';
 import { Notice } from '../../core/models/notice.model';
+import { AsyncPipe } from '@angular/common';
+import { tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,7 +22,8 @@ import { Notice } from '../../core/models/notice.model';
     CommonModule,
     MatCardModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    AsyncPipe
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
@@ -35,7 +38,9 @@ export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
 
   kpis = { activeMembers: 0, balance: 0, outOfStock: 0 };
-  activeNotices$: Observable<Notice[]> = this.noticesService.getActiveNotices();
+  activeNotices$: Observable<Notice[]> = this.noticesService.getActiveNotices().pipe(
+    tap(notices => console.log('Avisos Ativos:', notices))
+  );
   canManageNotices$: Observable<boolean> = this.authService.canManageNotices();
 
   ngOnInit() {

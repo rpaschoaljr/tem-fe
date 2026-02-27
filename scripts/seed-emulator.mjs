@@ -209,7 +209,7 @@ async function seedFirestore() {
 
   // 4. Avisos
   const sampleNotices = [
-    { id: 'n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2026-02-03'), deleted: false, createdAt: new Date() },
+    { id: 'n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2027-02-03'), deleted: false, createdAt: new Date() },
     { id: 'n-2', title: 'Aviso de Tesouraria', content: 'As mensalidades podem agora ser pagas via PIX na secretaria.', type: 'payment', date: new Date(), deleted: false, createdAt: new Date() },
     { id: 'n-3', title: 'Manutenção do Terreiro', content: 'Mutirão de limpeza no próximo sábado às 09h.', type: 'warning', date: new Date(), deleted: false, createdAt: new Date() },
   ];

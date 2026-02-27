@@ -46,10 +46,13 @@ export class NoticesService {
     // --- LEITURA ---
     getNotices(forceRefresh = false): Observable<Notice[]> {
         const colRef = collection(this.firestore, this.COL);
-        const q = query(colRef, orderBy('date', 'desc'));
         
-        return from(getDocs(q)).pipe(
-            map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
+        return from(getDocs(colRef)).pipe(
+            map(snap => {
+                const list = snap.docs.map(d => this.fromFirestore(d.id, d.data()));
+                // Ordenação manual no client-side para evitar problemas de índice no emulador
+                return list.sort((a, b) => b.date.getTime() - a.date.getTime());
+            }),
             catchError(() => {
                 const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
                 const hasCache = localStorage.getItem(this.CACHE_KEY);

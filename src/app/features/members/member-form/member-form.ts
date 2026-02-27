@@ -59,9 +59,10 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   memberId: string | null = null;
   selectedIndex = 0;
   totalTabs = 4;
+  formSubmitted = false;
 
   canDeactivate(): boolean | Observable<boolean> {
-    if (this.form && this.form.dirty && !this.form.submitted) {
+    if (this.form && this.form.dirty && !this.formSubmitted) {
       return confirm('Você tem alterações não salvas no formulário. Deseja realmente sair?');
     }
     return true;
@@ -245,14 +246,14 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
       // Se for novo cadastro, remove o ID vazio para o serviço gerar um novo
       if (!this.isEditMode) delete (memberData as any).id;
 
-      (this.form as any).submitted = true;
+      this.formSubmitted = true;
       this.membersService.save(memberData).subscribe({
         next: () => {
           this.notify.showSuccess(this.isEditMode ? 'Membro atualizado!' : 'Membro cadastrado!');
           this.router.navigate(['/members']);
         },
         error: (e: any) => {
-          (this.form as any).submitted = false;
+          this.formSubmitted = false;
           this.notify.showError('Erro ao salvar: ' + e.message);
         }
       });
