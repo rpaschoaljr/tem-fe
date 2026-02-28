@@ -3,14 +3,22 @@
 // Inicializa o CSS base
 @include mat.core();
 
-// 1. Definição das Paletas
-$tem-fe-light: mat.define-theme((color: (theme-type: light,
-        primary: mat.$violet-palette,
-        tertiary: mat.$orange-palette )));
+// 1. Definição das Paletas (M3)
+$tem-fe-light: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$violet-palette,
+    tertiary: mat.$orange-palette
+  )
+));
 
-$tem-fe-dark: mat.define-theme((color: (theme-type: dark,
-        primary: mat.$violet-palette,
-        tertiary: mat.$orange-palette )));
+$tem-fe-dark: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$violet-palette,
+    tertiary: mat.$orange-palette
+  )
+));
 
 // 2. Configuração Global
 html,
@@ -18,31 +26,48 @@ body {
   height: 100%;
   margin: 0;
   font-family: Roboto, sans-serif;
-  // Transição suave para quando trocar o tema não piscar
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-// 3. Aplicação do Tema LIGHT (Padrão)
+// 3. Aplicação do Tema LIGHT (Padrão) e Exportação Manual de Variáveis
 html {
-  // Isso gera as variáveis CSS (ex: --mat-sys-background: #fff)
   @include mat.all-component-themes($tem-fe-light);
 
-  background-color: #fafafa;
-  color: rgba(0, 0, 0, 0.87);
+  // Mapeamento manual das variáveis essenciais para garantir que existam
+  --mat-sys-primary: #{mat.get-theme-color($tem-fe-light, primary)};
+  --mat-sys-on-primary: #{mat.get-theme-color($tem-fe-light, on-primary)};
+  --mat-sys-surface: #{mat.get-theme-color($tem-fe-light, surface)};
+  --mat-sys-on-surface: #{mat.get-theme-color($tem-fe-light, on-surface)};
+  --mat-sys-surface-container-low: #{mat.get-theme-color($tem-fe-light, surface-container-low)};
+  --mat-sys-surface-container-highest: #{mat.get-theme-color($tem-fe-light, surface-container-highest)};
+  --mat-sys-on-surface-variant: #{mat.get-theme-color($tem-fe-light, on-surface-variant)};
+  --mat-sys-outline-variant: #{mat.get-theme-color($tem-fe-light, outline-variant)};
+  --mat-sys-error: #{mat.get-theme-color($tem-fe-light, error)};
+
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
 }
 
-// 4. Aplicação do Tema DARK (Override)
-// Importante: html.dark-theme tem mais peso que apenas html
+// 4. Aplicação do Tema DARK (Override) e Exportação Manual de Variáveis
 html.dark-theme {
-  // Isso sobrescreve as variáveis (ex: --mat-sys-background: #121212)
   @include mat.all-component-themes($tem-fe-dark);
 
-  background-color: #121212 !important;
-  color: #e0e0e0 !important;
+  // Sobrescreve variáveis para o modo escuro
+  --mat-sys-primary: #{mat.get-theme-color($tem-fe-dark, primary)};
+  --mat-sys-on-primary: #{mat.get-theme-color($tem-fe-dark, on-primary)};
+  --mat-sys-surface: #{mat.get-theme-color($tem-fe-dark, surface)};
+  --mat-sys-on-surface: #{mat.get-theme-color($tem-fe-dark, on-surface)};
+  --mat-sys-surface-container-low: #{mat.get-theme-color($tem-fe-dark, surface-container-low)};
+  --mat-sys-surface-container-highest: #{mat.get-theme-color($tem-fe-dark, surface-container-highest)};
+  --mat-sys-on-surface-variant: #{mat.get-theme-color($tem-fe-dark, on-surface-variant)};
+  --mat-sys-outline-variant: #{mat.get-theme-color($tem-fe-dark, outline-variant)};
+  --mat-sys-error: #{mat.get-theme-color($tem-fe-dark, error)};
 
-  // Garante que o body também pegue a cor
+  background-color: var(--mat-sys-surface) !important;
+  color: var(--mat-sys-on-surface) !important;
+
   body {
-    background-color: #121212 !important;
-    color: #e0e0e0 !important;
+    background-color: var(--mat-sys-surface) !important;
+    color: var(--mat-sys-on-surface) !important;
   }
 }
