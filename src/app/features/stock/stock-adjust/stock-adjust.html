@@ -1,40 +1,72 @@
-<h2 mat-dialog-title>Ajuste de Estoque — {{ item.name }}</h2>
+<h2 mat-dialog-title>Ajustar Estoque — {{ item.name }}</h2>
 
 <mat-dialog-content>
-  <p style="opacity:0.7; margin-top:0">Qtd. atual: <strong>{{ item.quantity }} {{ item.unit }}</strong></p>
+  <p style="opacity:0.7; margin-top:0; text-align: center;">
+    Qtd. atual: <strong>{{ item.quantity }} {{ item.unit }}</strong>
+  </p>
 
-  <form [formGroup]="form" class="form-grid">
-    <div class="row">
-      <mat-form-field appearance="outline">
-        <mat-label>Operação</mat-label>
-        <mat-select formControlName="operation">
-          <mat-option value="entrada">
-            <mat-icon style="vertical-align:middle;color:#69f0ae">add_circle</mat-icon> Entrada
-          </mat-option>
-          <mat-option value="saida">
-            <mat-icon style="vertical-align:middle;color:#ff5252">remove_circle</mat-icon> Saída / Consumo
-          </mat-option>
-        </mat-select>
+  <form [formGroup]="form" class="adjust-container">
+    <div class="quantity-selector">
+      <button type="button" mat-fab color="warn" (click)="adjust(-1)" [disabled]="form.get('quantity')?.value! <= 1">
+        <mat-icon>remove</mat-icon>
+      </button>
+
+      <mat-form-field appearance="outline" class="qty-input">
+        <mat-label>Qtd.</mat-label>
+        <input matInput type="number" formControlName="quantity" min="1" readonly>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Quantidade</mat-label>
-        <input matInput type="number" formControlName="quantity" min="1">
-        <mat-hint>{{ item.unit }}</mat-hint>
-        <mat-error>Mínimo 1</mat-error>
-      </mat-form-field>
+      <button type="button" mat-fab color="primary" (click)="adjust(1)">
+        <mat-icon>add</mat-icon>
+      </button>
     </div>
-
-    <p class="new-total" [class.danger]="newTotal < 0">
-      Novo saldo: <strong>{{ newTotal }} {{ item.unit }}</strong>
-      <span *ngIf="newTotal < 0"> ⚠️ ficará negativo</span>
-    </p>
+    <p class="hint">Clique nos botões ou digite a quantidade de {{ item.unit }}</p>
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="onCancel()">CANCELAR</button>
   <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="form.invalid">
-    CONFIRMAR AJUSTE
+    CONFIRMAR
   </button>
 </mat-dialog-actions>
+
+<style>
+  .adjust-container {
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+  }
+  .qty-input {
+    width: 100px;
+    text-align: center;
+  }
+  .qty-input ::ng-deep .mat-mdc-form-field-infix {
+    text-align: center;
+  }
+  /* Remove as setas padrão do input number */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  .hint {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    text-align: center;
+  }
+</style>

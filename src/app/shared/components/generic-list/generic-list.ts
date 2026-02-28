@@ -61,12 +61,14 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
   @Input() data: any[] = [];
   @Input() columns: ColumnDef[] = [];
   @Input() showAdjust = false;
+  @Input() hideTrash = false;
+  @Input() hideActions = false;
   @Input() rowClassFn?: (row: any) => any;
 
   @Output() editAction = new EventEmitter<any>();
   @Output() deleteAction = new EventEmitter<any>();
   @Output() restoreAction = new EventEmitter<any>();
-  @Output() adjustAction = new EventEmitter<any>();
+  @Output() adjustAction = new EventEmitter<{ item: any, type: 'add' | 'remove' }>();
 
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = [];

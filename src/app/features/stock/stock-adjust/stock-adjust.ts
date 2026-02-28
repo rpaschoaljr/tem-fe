@@ -27,22 +27,18 @@ export class StockAdjustComponent {
   item: StockItem = inject(MAT_DIALOG_DATA);
 
   form = this.fb.group({
-    operation: ['entrada', Validators.required],
-    quantity:  [1, [Validators.required, Validators.min(1)]],
+    quantity: [1, [Validators.required, Validators.min(1)]],
   });
 
-  get newTotal(): number {
-    const delta = this.form.value.operation === 'entrada'
-      ? (this.form.value.quantity ?? 0)
-      : -(this.form.value.quantity ?? 0);
-    return this.item.quantity + delta;
+  adjust(amount: number) {
+    const current = this.form.get('quantity')?.value || 0;
+    const next = Math.max(1, current + amount);
+    this.form.patchValue({ quantity: next });
   }
 
   onSubmit() {
     if (this.form.invalid) return;
-    const delta = this.form.value.operation === 'entrada'
-      ? (this.form.value.quantity ?? 0)
-      : -(this.form.value.quantity ?? 0);
+    const delta = this.form.value.quantity ?? 0;
     const result: AdjustResult = { item: this.item, delta };
     this.dialogRef.close(result);
   }

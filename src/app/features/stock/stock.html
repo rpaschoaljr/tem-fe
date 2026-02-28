@@ -45,6 +45,8 @@
                 [data]="items" 
                 [columns]="tableColumns" 
                 [showAdjust]="true"
+                [hideTrash]="true"
+                [hideActions]="true"
                 [rowClassFn]="getRowClass" 
                 (adjustAction)="onAdjust($event)">
             </app-generic-list>

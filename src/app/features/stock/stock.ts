@@ -78,7 +78,8 @@ export class StockComponent implements OnInit {
     this.applyFilter();
   }
 
-  onAdjust(item: StockItem) {
+  onAdjust(event: { item: StockItem, type: 'add' | 'remove' }) {
+    const item = event.item;
     const ref = this.dialog.open(StockAdjustComponent, { 
       data: item, 
       width: '100%',
@@ -87,10 +88,16 @@ export class StockComponent implements OnInit {
     });
     ref.afterClosed().subscribe((result: AdjustResult | undefined) => {
       if (!result) return;
-      const updated: StockItem = { ...result.item, quantity: result.item.quantity + result.delta, updatedAt: new Date() };
+      
+      // Se o botão for 'remove', forçamos o delta a ser negativo
+      let delta = Math.abs(result.delta);
+      if (event.type === 'remove') delta = -delta;
+
+      const updated: StockItem = { ...result.item, quantity: result.item.quantity + delta, updatedAt: new Date() };
       this.stockService.save(updated).subscribe({
         next: () => {
-          this.notify.showSuccess(`Estoque ajustado! Novo saldo: ${updated.quantity} ${updated.unit}`);
+          const action = event.type === 'add' ? 'adicionado ao' : 'removido do';
+          this.notify.showSuccess(`Estoque ajustado! ${Math.abs(delta)} ${updated.unit} ${action} saldo.`);
           this.loadData();
         },
         error: (e: any) => this.notify.showError('Erro ao ajustar: ' + e.message),
