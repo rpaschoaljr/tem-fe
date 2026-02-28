@@ -1,6 +1,6 @@
 <div class="page-container">
 
-    <!-- KPIs -->
+    <!-- KPIs (Filtros clicáveis) -->
     <div class="kpi-grid">
         <mat-card class="kpi-card total pointer" (click)="setFilter('all')" [class.active]="stockFilter === 'all'">
             <mat-card-content>
@@ -33,19 +33,20 @@
         </mat-card>
     </div>
 
-    <div class="actions-row">
-        <button mat-flat-button color="primary" (click)="onNewItem()">
-            <mat-icon>add_box</mat-icon> Novo Item
-        </button>
-    </div>
+    <!-- REMOVIDO: Botão Novo Item (Agora fica em Configurações) -->
 
-    <!-- LISTA -->
+    <!-- LISTA DE MOVIMENTAÇÃO -->
     <mat-card>
         <mat-card-content>
-            <h3>Controle de Estoque</h3>
-            <app-generic-list [data]="items" [columns]="tableColumns" [showAdjust]="true"
-                [rowClassFn]="getRowClass" (adjustAction)="onAdjust($event)" (editAction)="onEdit($event)"
-                (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
+            <h3>Inventário e Movimentação</h3>
+            <p class="subtitle">Clique em um item para ajustar a quantidade ou ver detalhes.</p>
+            
+            <app-generic-list 
+                [data]="items" 
+                [columns]="tableColumns" 
+                [showAdjust]="true"
+                [rowClassFn]="getRowClass" 
+                (adjustAction)="onAdjust($event)">
             </app-generic-list>
         </mat-card-content>
     </mat-card>

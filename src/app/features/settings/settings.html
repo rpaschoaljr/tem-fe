@@ -1,0 +1,120 @@
+<div class="page-container">
+    <header class="header">
+        <h1>Configurações do Sistema</h1>
+        <p>Gerencie o catálogo de itens, campos dinâmicos e regras dos formulários.</p>
+    </header>
+
+    <mat-card class="main-card">
+        <mat-card-content>
+            <mat-tab-group *ngIf="!loading(); else loadingTpl">
+                
+                <!-- ABA ESTOQUE -->
+                <mat-tab label="Estoque">
+                    <div class="tab-content">
+                        
+                        <mat-tab-group>
+                            <!-- Sub-aba: Catálogo de Itens -->
+                            <mat-tab label="Catálogo de Itens">
+                                <div class="tab-header" style="margin-top: 20px;">
+                                    <div>
+                                        <h3 style="margin:0">Itens Registrados</h3>
+                                        <small style="opacity:0.7">Defina aqui o que pode ser movimentado no estoque.</small>
+                                    </div>
+                                    <div class="actions">
+                                        <button mat-stroked-button color="accent" (click)="onMergeStock()" style="margin-right: 8px;">
+                                            <mat-icon>merge</mat-icon> Mesclar Itens
+                                        </button>
+                                        <button mat-flat-button color="primary" (click)="onNewStockItem()">
+                                            <mat-icon>add</mat-icon> Novo Item
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <table mat-table [dataSource]="stockItems()" class="config-table">
+                                    <ng-container matColumnDef="name">
+                                        <th mat-header-cell *matHeaderCellDef> Nome do Item (Catálogo) </th>
+                                        <td mat-cell *matCellDef="let item"> 
+                                            <strong>{{item.name}}</strong> 
+                                        </td>
+                                    </ng-container>
+                                    <ng-container matColumnDef="category">
+                                        <th mat-header-cell *matHeaderCellDef> Categoria </th>
+                                        <td mat-cell *matCellDef="let item"> {{item.category}} </td>
+                                    </ng-container>
+                                    <ng-container matColumnDef="unit">
+                                        <th mat-header-cell *matHeaderCellDef> Und. </th>
+                                        <td mat-cell *matCellDef="let item"> {{item.unit}} </td>
+                                    </ng-container>
+                                    <ng-container matColumnDef="actions">
+                                        <th mat-header-cell *matHeaderCellDef> Ações </th>
+                                        <td mat-cell *matCellDef="let item">
+                                            <button mat-icon-button color="primary" (click)="onEditStockItem(item)">
+                                                <mat-icon>edit</mat-icon>
+                                            </button>
+                                            <button mat-icon-button color="warn" (click)="deleteStockItem(item)">
+                                                <mat-icon>delete</mat-icon>
+                                            </button>
+                                        </td>
+                                    </ng-container>
+
+                                    <tr mat-header-row *matHeaderRowDef="['name', 'category', 'unit', 'actions']"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: ['name', 'category', 'unit', 'actions']"></tr>
+                                </table>
+                            </mat-tab>
+
+                            <!-- Sub-aba: Campos Dinâmicos -->
+                            <mat-tab label="Campos Dinâmicos">
+                                <div class="tab-header" style="margin-top: 20px;">
+                                    <h3>Configuração de Campos</h3>
+                                    <button mat-flat-button color="primary" (click)="addField('stock')">
+                                        <mat-icon>add</mat-icon> Novo Campo
+                                    </button>
+                                </div>
+                                <table mat-table [dataSource]="stockConfig()?.fields || []" class="config-table">
+                                    <!-- (Colunas de campos aqui...) -->
+                                    <ng-container matColumnDef="label">
+                                        <th mat-header-cell *matHeaderCellDef> Rótulo </th>
+                                        <td mat-cell *matCellDef="let f"> {{f.label}} </td>
+                                    </ng-container>
+                                    <ng-container matColumnDef="type">
+                                        <th mat-header-cell *matHeaderCellDef> Tipo </th>
+                                        <td mat-cell *matCellDef="let f"> {{f.type}} </td>
+                                    </ng-container>
+                                    <ng-container matColumnDef="actions">
+                                        <th mat-header-cell *matHeaderCellDef> Ações </th>
+                                        <td mat-cell *matCellDef="let f">
+                                            <button mat-icon-button color="warn" (click)="deleteField(stockConfig()!, f)" [disabled]="f.isSystem">
+                                                <mat-icon>delete</mat-icon>
+                                            </button>
+                                        </td>
+                                    </ng-container>
+                                    <tr mat-header-row *matHeaderRowDef="['label', 'type', 'actions']"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: ['label', 'type', 'actions']"></tr>
+                                </table>
+                            </mat-tab>
+                        </mat-tab-group>
+
+                    </div>
+                </mat-tab>
+
+                <!-- ABA FINANCEIRO -->
+                <mat-tab label="Financeiro">
+                    <div class="tab-content">
+                        <div class="tab-header">
+                            <h3>Campos do Formulário Financeiro</h3>
+                            <button mat-flat-button color="primary" (click)="addField('finance')">
+                                <mat-icon>add</mat-icon> Novo Campo
+                            </button>
+                        </div>
+                        <p class="empty-msg">Configuração em desenvolvimento...</p>
+                    </div>
+                </mat-tab>
+
+            </mat-tab-group>
+        </mat-card-content>
+    </mat-card>
+
+    <ng-template #loadingTpl>
+        <div class="loading-box">Carregando configurações...</div>
+    </ng-template>
+</div>

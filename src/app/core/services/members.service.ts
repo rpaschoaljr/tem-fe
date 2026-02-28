@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { of, Observable, from, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
 import { Member } from '../models/member.model';
@@ -9,6 +10,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class MembersService {
     private firestore = inject(Firestore);
+    private http = inject(HttpClient);
     private COL = 'members';
 
     private CACHE_KEY = 'members_data';
@@ -134,5 +136,10 @@ export class MembersService {
 
     private toFirestore(member: Member): any {
         return JSON.parse(JSON.stringify(member));
+    }
+
+    getAddressByCep(cep: string): Observable<any> {
+        const cleanCep = cep.replace(/\D/g, '');
+        return this.http.get(`https://viacep.com.br/ws/${cleanCep}/json/`);
     }
 }

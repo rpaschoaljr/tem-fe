@@ -39,4 +39,10 @@ export class AuthService {
       map(m => m?.role === 'DIRETORIA' || m?.role === 'PAI/MÃE PEQUENO')
     );
   }
+
+  isAdmin$(): Observable<boolean> {
+    return this.member$.pipe(
+      map(m => m?.role === 'DIRETORIA')
+    );
+  }
 }

@@ -14,6 +14,7 @@ import { map, shareReplay, tap } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { Auth, signOut, authState } from '@angular/fire/auth';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -39,11 +40,13 @@ export class MainLayoutComponent {
   private breakpointObserver = inject(BreakpointObserver);
   private router = inject(Router);
   private auth = inject(Auth);
+  private authService = inject(AuthService);
 
   @ViewChild('drawer') drawer!: MatSidenav;
   themeService = inject(ThemeService);
 
   currentUser$ = authState(this.auth).pipe(shareReplay(1));
+  isAdmin$ = this.authService.isAdmin$();
   isSidebarOpened = true;
 
   // Detecta se é celular (Handset)

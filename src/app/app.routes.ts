@@ -9,6 +9,7 @@ import { StockComponent } from './features/stock/stock';
 import { MemberFormComponent } from './features/members/member-form/member-form';
 import { ProfileComponent } from './features/profile/profile';
 import { NoticesComponent } from './features/notices/notices';
+import { SettingsComponent } from './features/settings/settings';
 import { pendingChangesGuard } from './core/guards/pending-changes.guard';
 
 export const routes: Routes = [
@@ -27,6 +28,7 @@ export const routes: Routes = [
             { path: 'finance', component: FinanceComponent },
             { path: 'stock', component: StockComponent },
             { path: 'profile', component: ProfileComponent, canDeactivate: [pendingChangesGuard] },
+            { path: 'settings', component: SettingsComponent },
             { path: 'notices', component: NoticesComponent },
             { path: 'notices/archive', component: NoticesComponent },
             { path: 'notices/trash', component: NoticesComponent },

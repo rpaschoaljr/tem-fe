@@ -44,7 +44,7 @@ export class StockComponent implements OnInit {
   }
 
   loadData() {
-    this.stockService.getStock().subscribe({
+    this.stockService.getStock(true).subscribe({
       next: (data) => {
         this.allItems = data;
         this.calculateKPIs();
@@ -76,48 +76,6 @@ export class StockComponent implements OnInit {
   setFilter(filter: 'all' | 'low' | 'out') {
     this.stockFilter = (this.stockFilter === filter) ? 'all' : filter;
     this.applyFilter();
-  }
-
-  openForm(item: StockItem | null = null) {
-    const ref = this.dialog.open(StockFormComponent, {
-      data: item,
-      width: '100%',
-      maxWidth: '480px',
-      panelClass: 'responsive-dialog'
-    });
-    ref.afterClosed().subscribe((result: Partial<StockItem> | undefined) => {
-      if (!result) return;
-      this.stockService.save(result as StockItem).subscribe({
-        next: () => {
-          this.notify.showSuccess(item ? 'Item atualizado!' : 'Item cadastrado!');
-          this.loadData();
-        },
-        error: (e: any) => this.notify.showError('Erro ao salvar: ' + e.message),
-      });
-    });
-  }
-
-  onNewItem() { this.openForm(); }
-  onEdit(item: StockItem) { this.openForm(item); }
-
-  onDelete(item: StockItem) {
-    this.stockService.softDelete(item.id).subscribe({
-      next: () => {
-        this.notify.showSuccess('Item movido para a lixeira.');
-        this.loadData();
-      },
-      error: (err) => this.notify.showError('Falha ao excluir item: ' + err.message)
-    });
-  }
-
-  onRestore(item: StockItem) {
-    this.stockService.restore(item.id).subscribe({
-      next: () => {
-        this.notify.showSuccess('Item restaurado ao estoque.');
-        this.loadData();
-      },
-      error: (err) => this.notify.showError('Falha ao restaurar: ' + err.message)
-    });
   }
 
   onAdjust(item: StockItem) {

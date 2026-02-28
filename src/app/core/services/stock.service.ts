@@ -3,7 +3,7 @@ import { of, Observable, from, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { StockItem } from '../models/stock-item.model';
 import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc
+    Firestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction
 } from '@angular/fire/firestore';
 
 @Injectable({ providedIn: 'root' })
@@ -43,7 +43,18 @@ export class StockService {
         const isNew = !item.id;
         const colRef = collection(this.firestore, this.COL);
         const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, item.id);
-        const data = { ...JSON.parse(JSON.stringify(item)), id: docRef.id, updatedAt: new Date(), ...(isNew ? { deleted: false } : {}) };
+
+        // PADRONIZAÇÃO: CAIXA ALTA E SEM ESPAÇOS SOBRANDO
+        if (item.name) {
+            item.name = item.name.trim().toUpperCase();
+        }
+
+        const data = { 
+            ...JSON.parse(JSON.stringify(item)), 
+            id: docRef.id, 
+            updatedAt: new Date(), 
+            ...(isNew ? { deleted: false, quantity: item.quantity || 0 } : {}) 
+        };
 
         return from(setDoc(docRef, data, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
@@ -52,12 +63,40 @@ export class StockService {
         );
     }
 
+    // LÓGICA DE MESCLAGEM DE ESTOQUE
+    mergeItems(sourceId: string, targetId: string): Observable<void> {
+        const sourceRef = doc(this.firestore, this.COL, sourceId);
+        const targetRef = doc(this.firestore, this.COL, targetId);
+
+        return from(runTransaction(this.firestore, async (transaction) => {
+            const sourceDoc = await transaction.get(sourceRef);
+            const targetDoc = await transaction.get(targetRef);
+
+            if (!sourceDoc.exists() || !targetDoc.exists()) {
+                throw new Error("Um dos itens não foi encontrado.");
+            }
+
+            const sourceQty = sourceDoc.data()?.['quantity'] || 0;
+            const targetQty = targetDoc.data()?.['quantity'] || 0;
+
+            // 1. Soma a quantidade no destino
+            transaction.update(targetRef, { 
+                quantity: targetQty + sourceQty,
+                updatedAt: new Date()
+            });
+
+            // 2. Remove o item de origem (ou marca como deletado permanentemente)
+            transaction.delete(sourceRef);
+        })).pipe(
+            tap(() => localStorage.removeItem(this.TIME_KEY))
+        );
+    }
+
     softDelete(id: string): Observable<boolean> {
         const docRef = doc(this.firestore, this.COL, id);
         return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
-            map(() => true),
-            catchError(() => throwError(() => new Error('Erro ao excluir item do estoque.')))
+            map(() => true)
         );
     }
 
@@ -65,8 +104,7 @@ export class StockService {
         const docRef = doc(this.firestore, this.COL, id);
         return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
-            map(() => true),
-            catchError(() => throwError(() => new Error('Erro ao restaurar item do estoque.')))
+            map(() => true)
         );
     }
 

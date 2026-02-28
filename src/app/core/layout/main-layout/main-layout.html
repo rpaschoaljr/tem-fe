@@ -42,6 +42,12 @@
                 <span>Meu Perfil</span>
             </button>
 
+            <!-- NOVO: Configurações do Sistema (Admin) -->
+            <button mat-menu-item [routerLink]="['/settings']" *ngIf="isAdmin$ | async">
+                <mat-icon>settings</mat-icon>
+                <span>Configurações</span>
+            </button>
+
             <button mat-menu-item (click)="themeService.toggle()">
                 <mat-icon>{{ themeService.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
                 <span>Tema: {{ themeService.darkMode() ? 'Claro' : 'Escuro' }}</span>
