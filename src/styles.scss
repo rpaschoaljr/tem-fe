@@ -33,7 +33,6 @@ body {
 html {
   @include mat.all-component-themes($tem-fe-light);
 
-  // Mapeamento manual das variáveis essenciais para garantir que existam
   --mat-sys-primary: #{mat.get-theme-color($tem-fe-light, primary)};
   --mat-sys-on-primary: #{mat.get-theme-color($tem-fe-light, on-primary)};
   --mat-sys-surface: #{mat.get-theme-color($tem-fe-light, surface)};
@@ -52,7 +51,6 @@ html {
 html.dark-theme {
   @include mat.all-component-themes($tem-fe-dark);
 
-  // Sobrescreve variáveis para o modo escuro
   --mat-sys-primary: #{mat.get-theme-color($tem-fe-dark, primary)};
   --mat-sys-on-primary: #{mat.get-theme-color($tem-fe-dark, on-primary)};
   --mat-sys-surface: #{mat.get-theme-color($tem-fe-dark, surface)};
@@ -69,5 +67,76 @@ html.dark-theme {
   body {
     background-color: var(--mat-sys-surface) !important;
     color: var(--mat-sys-on-surface) !important;
+  }
+}
+
+// ESTILOS PARA DIÁLOGOS RESPONSIVOS E BEM DISTRIBUÍDOS
+.responsive-dialog {
+  // Faz o diálogo ocupar mais altura se necessário e ser menos largo no desktop
+  max-width: 500px !important;
+  
+  .mat-mdc-dialog-container {
+    padding: 0;
+  }
+
+  .mat-mdc-dialog-surface {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px; // Aumenta a altura mínima padrão
+  }
+  
+  mat-dialog-content {
+    flex: 1; // Faz o conteúdo expandir para preencher o espaço
+    max-height: 85vh !important;
+    padding: 24px !important;
+    display: flex;
+    flex-direction: column;
+    
+    // Distribuição dos itens do formulário
+    .form-grid {
+      min-width: unset !important; // Remove o min-width fixo que quebrava o mobile
+      display: flex;
+      flex-direction: column;
+      gap: 16px !important; // Aumenta o espaço entre os campos
+      height: 100%;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap; // Permite quebrar linha no mobile
+
+      mat-form-field {
+        flex: 1;
+        min-width: 200px; // Se o campo ficar menor que 200px, ele pula pra baixo
+      }
+    }
+
+    .mat-mdc-form-field {
+      width: 100% !important;
+    }
+  }
+
+  mat-dialog-actions {
+    padding: 16px 24px !important;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  @media (max-width: 600px) {
+    max-width: 92vw !important;
+    
+    .mat-mdc-dialog-surface {
+      min-height: 500px; // Ainda mais alto no mobile para espalhar os campos
+      border-radius: 24px !important;
+    }
+
+    mat-dialog-content {
+      padding: 20px 16px !important;
+      
+      .row {
+        flex-direction: column; // Força uma coluna no mobile
+        gap: 0;
+      }
+    }
   }
 }

@@ -120,7 +120,9 @@ export class FinanceComponent implements OnInit {
   openForm(transaction: Transaction | null = null) {
     const ref = this.dialog.open(TransactionFormComponent, {
       data: transaction,
-      width: '480px',
+      width: '100%',
+      maxWidth: '480px',
+      panelClass: 'responsive-dialog'
     });
     ref.afterClosed().subscribe((result: Partial<Transaction> | undefined) => {
       if (!result) return;

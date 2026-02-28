@@ -81,7 +81,9 @@ export class StockComponent implements OnInit {
   openForm(item: StockItem | null = null) {
     const ref = this.dialog.open(StockFormComponent, {
       data: item,
-      width: '480px',
+      width: '100%',
+      maxWidth: '480px',
+      panelClass: 'responsive-dialog'
     });
     ref.afterClosed().subscribe((result: Partial<StockItem> | undefined) => {
       if (!result) return;
@@ -119,7 +121,12 @@ export class StockComponent implements OnInit {
   }
 
   onAdjust(item: StockItem) {
-    const ref = this.dialog.open(StockAdjustComponent, { data: item, width: '400px' });
+    const ref = this.dialog.open(StockAdjustComponent, { 
+      data: item, 
+      width: '100%',
+      maxWidth: '400px',
+      panelClass: 'responsive-dialog'
+    });
     ref.afterClosed().subscribe((result: AdjustResult | undefined) => {
       if (!result) return;
       const updated: StockItem = { ...result.item, quantity: result.item.quantity + result.delta, updatedAt: new Date() };
