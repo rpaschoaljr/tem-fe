@@ -1,6 +1,8 @@
 export interface FieldOption {
     label: string;
     deleted: boolean;
+    meta?: string; // Campo opcional para metadados (ex: 'Entrada', 'Saída', etc)
+    requiresMember?: boolean; // Se verdadeiro, exige selecionar um membro no lançamento
 }
 
 export interface DynamicField {

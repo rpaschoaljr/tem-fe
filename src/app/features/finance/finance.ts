@@ -52,6 +52,7 @@ export class FinanceComponent implements OnInit {
   tableColumns: ColumnDef[] = [
     { def: 'date', label: 'Data', type: 'date', hideOnMobile: true },
     { def: 'description', label: 'Descrição' },
+    { def: 'memberName', label: 'Membro', hideOnMobile: true },
     { def: 'category', label: 'Categoria', hideOnMobile: true },
     { def: 'value', label: 'Valor (R$)', type: 'currency' }
   ];
@@ -136,8 +137,7 @@ export class FinanceComponent implements OnInit {
     });
   }
 
-  onNewEntry() { this.openForm(); }
-  onNewExpense() { this.openForm(); }
+  onNewTransaction() { this.openForm(); }
   onEdit(transaction: Transaction) { this.openForm(transaction); }
 
   onDelete(transaction: Transaction) {

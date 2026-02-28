@@ -14,11 +14,22 @@ import { StockService } from '../../core/services/stock.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { StockFormComponent } from '../stock/stock-form/stock-form';
 import { MergeStockDialogComponent } from '../stock/merge-stock-dialog/merge-stock-dialog';
+import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
+import { OptionFormDialogComponent } from './option-form-dialog/option-form-dialog';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatTabsModule, MatIconModule, MatButtonModule, MatTableModule, MatDialogModule],
+  imports: [
+    CommonModule, 
+    MatCardModule, 
+    MatTabsModule, 
+    MatIconModule, 
+    MatButtonModule, 
+    MatTableModule, 
+    MatDialogModule,
+    GenericListComponent
+  ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
@@ -33,9 +44,23 @@ export class SettingsComponent implements OnInit {
   stockItems = signal<StockItem[]>([]);
   
   loading = signal(true);
+  mainTabIndex = 0;
+  showOptionsTrash = signal<{ [key: string]: boolean }>({});
+
+  stockColumns: ColumnDef[] = [
+    { def: 'name', label: 'Nome do Item' },
+    { def: 'category', label: 'Categoria', hideOnMobile: true },
+    { def: 'unit', label: 'Unidade', hideOnMobile: true },
+    { def: 'quantity', label: 'Qtd.', type: 'stock-level' }
+  ];
+
+  financeColumns: ColumnDef[] = [
+    { def: 'label', label: 'Tipo de Lançamento' },
+    { def: 'meta', label: 'Operação', type: 'text' }
+  ];
 
   ngOnInit() {
-    this.loadConfigs();
+    this.loadConfigs(true);
     this.loadStockItems();
   }
 
@@ -45,8 +70,9 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadConfigs() {
-    this.loading.set(true);
+  loadConfigs(initial = false) {
+    if (initial) this.loading.set(true);
+    
     // Carrega Config de Estoque
     this.configService.getConfig('stock').subscribe({
       next: (conf) => this.stockConfig.set(conf),
@@ -121,36 +147,58 @@ export class SettingsComponent implements OnInit {
   }
 
   deleteStockItem(item: StockItem) {
-    if (confirm(`Excluir permanentemente "${item.name}"? Isso não pode ser desfeito.`)) {
-      this.stockService.softDelete(item.id).subscribe(() => {
-        this.notify.showSuccess('Item removido!');
-        this.loadStockItems();
-      });
-    }
+    this.stockService.softDelete(item.id).subscribe(() => {
+      this.notify.showSuccess('Item removido!');
+      this.loadStockItems();
+    });
+  }
+
+  restoreStockItem(item: StockItem) {
+    this.stockService.restore(item.id).subscribe(() => {
+      this.notify.showSuccess('Item restaurado!');
+      this.loadStockItems();
+    });
   }
 
   // --- GESTÃO DE OPÇÕES (CATEGORIAS/UNIDADES) ---
 
-  addOption(config: ModuleConfig, field: DynamicField) {
-    const newOpt = prompt(`Nova opção para ${field.label}:`);
-    if (newOpt && newOpt.trim()) {
-      if (!field.options) field.options = [];
-      const sanitized = newOpt.trim().toUpperCase();
-      
-      // Verifica se já existia (mesmo que deletado) para restaurar em vez de criar duplicado
-      const existing = field.options.find(o => o.label === sanitized);
-      if (existing) {
-        if (existing.deleted) {
-          existing.deleted = false;
-          this.saveAndReload(config, 'Opção restaurada!');
+  addOption(config: ModuleConfig, field: DynamicField, existingOption?: any) {
+    const dialogRef = this.dialog.open(OptionFormDialogComponent, {
+      data: {
+        label: field.label,
+        showMeta: config.id === 'finance' && field.key === 'category',
+        value: existingOption,
+        edit: !!existingOption
+      },
+      width: '400px'
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res && res.label) {
+        const sanitized = res.label.trim().toUpperCase();
+        if (!field.options) field.options = [];
+
+        const existingIndex = field.options.findIndex(o => o.label === sanitized);
+        
+        if (existingIndex >= 0 && !existingOption) {
+          const found = field.options[existingIndex];
+          if (found.deleted) {
+            found.deleted = false;
+            found.meta = res.meta;
+            this.saveAndReload(config, 'Opção restaurada!');
+          } else {
+            this.notify.showWarning('Esta opção já existe.');
+          }
+        } else if (existingOption) {
+          existingOption.label = sanitized;
+          existingOption.meta = res.meta;
+          this.saveAndReload(config, 'Opção atualizada!');
         } else {
-          this.notify.showWarning('Esta opção já existe.');
+          field.options.push({ label: sanitized, deleted: false, meta: res.meta });
+          this.saveAndReload(config, 'Opção adicionada!');
         }
-      } else {
-        field.options.push({ label: sanitized, deleted: false });
-        this.saveAndReload(config, 'Opção adicionada!');
       }
-    }
+    });
   }
 
   removeOption(config: ModuleConfig, field: DynamicField, index: number) {
@@ -166,6 +214,17 @@ export class SettingsComponent implements OnInit {
     this.saveAndReload(config, 'Opção restaurada!');
   }
 
+  // Wrappers para o GenericList
+  removeOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {
+    option.deleted = true;
+    this.saveAndReload(config, 'Tipo de lançamento movido para a lixeira.');
+  }
+
+  restoreOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {
+    option.deleted = false;
+    this.saveAndReload(config, 'Tipo de lançamento restaurado!');
+  }
+
   private saveAndReload(config: ModuleConfig, message: string) {
     this.configService.saveConfig(config).subscribe(() => {
       this.notify.showSuccess(message);
@@ -174,6 +233,17 @@ export class SettingsComponent implements OnInit {
   }
 
   // Helpers de Template
+  toggleOptionsTrash(fieldKey: string) {
+    this.showOptionsTrash.update(prev => ({
+      ...prev,
+      [fieldKey]: !prev[fieldKey]
+    }));
+  }
+
+  isTrashVisible(fieldKey: string): boolean {
+    return !!this.showOptionsTrash()[fieldKey];
+  }
+
   getActiveOptions(field: DynamicField) {
     return field.options?.filter(o => !o.deleted) || [];
   }

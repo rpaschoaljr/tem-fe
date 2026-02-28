@@ -139,8 +139,8 @@
     }
 }
 
-/* Cores Dark Mode (Automático pelo Media Query) */
-@media (prefers-color-scheme: dark) {
+/* Cores Dark Mode (Pelo seletor .dark-theme) */
+:host-context(.dark-theme) {
     .icon-circle {
         &.profile {
             background-color: rgba(25, 118, 210, 0.2);
@@ -161,6 +161,10 @@
             background-color: rgba(123, 31, 162, 0.2);
             color: #ce93d8;
         }
+    }
+
+    .empty-notices, .loading-container {
+        background: rgba(255,255,255,0.05);
     }
 }
 

@@ -6,4 +6,8 @@ export interface Transaction {
     category: string; // Ex: Mensalidade, Aluguel, Velas
     date: Date;
     deleted: boolean;
+
+    // Vínculo com membro (opcional conforme categoria)
+    memberId?: string;
+    memberName?: string;
 }

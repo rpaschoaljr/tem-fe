@@ -142,8 +142,10 @@ async function seedFirestore() {
         { 
           key: 'category', label: 'Categoria Financeira', type: 'select', required: true, order: 1, isSystem: true,
           options: [
-            { label: 'DOAÇÃO', deleted: false }, { label: 'MENSALIDADE', deleted: false }, 
-            { label: 'CONTAS', deleted: false }, { label: 'MANUTENÇÃO', deleted: false }
+            { label: 'DOAÇÃO', deleted: false, meta: 'Entrada' }, 
+            { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true }, 
+            { label: 'CONTAS', deleted: false, meta: 'Saída' }, 
+            { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída' }
           ]
         }
       ],

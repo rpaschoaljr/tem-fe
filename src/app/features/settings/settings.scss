@@ -1,123 +1,208 @@
 .page-container {
     padding: 24px;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
 .header {
     margin-bottom: 24px;
-    h1 { margin: 0; font-weight: 300; }
-    p { opacity: 0.7; margin: 4px 0 0; }
+    h1 { margin-bottom: 4px; }
+    p { color: var(--text-secondary, rgba(0, 0, 0, 0.6)); }
+}
+
+.main-card {
+    min-height: 400px;
+    background-color: var(--card-bg, #fff);
+    
+    // IMPORTANTE: Remove qualquer trava de altura que force scroll interno
+    display: block;
+    height: auto;
+
+    ::ng-deep .mat-mdc-card-content {
+        padding: 0 !important;
+    }
+}
+
+// REMOVE O DOUBLE SCROLL DAS ABAS
+::ng-deep {
+    .mat-mdc-tab-body-wrapper {
+        overflow: visible !important; // Permite que o conteúdo "vaze" para a página
+    }
+    .mat-mdc-tab-body {
+        overflow: visible !important;
+    }
+    .mat-mdc-tab-body-content {
+        height: auto !important;
+        overflow: visible !important; // Remove o scroll interno vertical das abas
+    }
 }
 
 .tab-content {
-    padding: 24px 0;
+    padding: 16px;
+    height: auto;
 }
 
 .tab-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-
-    h3 { margin: 0; font-weight: 500; }
-}
-
-.config-table {
-    width: 100%;
-    background: transparent;
-}
-
-.loading-box {
-    padding: 100px;
-    text-align: center;
-    opacity: 0.6;
-}
-
-.empty-msg {
-    padding: 40px;
-    text-align: center;
-    opacity: 0.5;
-    font-style: italic;
+    margin-bottom: 16px;
+    padding: 0 8px;
 }
 
 .options-container {
-    padding: 20px 0;
     display: flex;
     flex-direction: column;
     gap: 32px;
 }
 
 .option-section {
-    h4 { margin: 0 0 16px; opacity: 0.8; font-weight: 500; }
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        h4 { margin: 0; font-weight: 500; }
+    }
 }
 
 .chips-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    align-items: center;
 }
 
 .option-chip {
     display: flex;
     align-items: center;
-    background-color: var(--mat-sys-surface-container-highest);
-    padding: 4px 4px 4px 16px;
+    padding: 4px 4px 4px 12px;
+    background: var(--chip-bg, #f0f0f0);
+    color: var(--text-primary, #333);
     border-radius: 20px;
-    font-size: 0.85rem;
-    border: 1px solid var(--mat-sys-outline-variant);
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color, transparent);
 
-    button {
-        width: 32px;
-        height: 32px;
-        line-height: 32px;
-        margin-left: 4px;
-        
-        mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-        }
+    span { margin-right: 4px; }
+    
+    mat-icon { 
+        font-size: 18px; 
+        width: 18px; 
+        height: 18px; 
+        margin-right: 4px;
+    }
+
+    &.entry {
+        background: var(--entry-bg, #e8f5e9);
+        color: var(--entry-text, #2e7d32);
+        border-color: var(--entry-border, #c8e6c9);
+    }
+
+    &.exit {
+        background: var(--exit-bg, #ffebee);
+        color: var(--exit-text, #c62828);
+        border-color: var(--exit-border, #ffcdd2);
     }
 }
 
-.add-opt-btn {
-    border-radius: 20px;
-    height: 42px;
+/* Ajustes Dark Theme para os Chips e Containers */
+:host-context(.dark-theme) {
+    --chip-bg: #333;
+    --text-primary: #fff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --card-bg: var(--mat-sys-surface-container-low);
+    --border-color: #444;
+
+    --entry-bg: rgba(46, 125, 50, 0.2);
+    --entry-text: #81c784;
+    --entry-border: #2e7d32;
+
+    --exit-bg: rgba(198, 40, 40, 0.2);
+    --exit-text: #e57373;
+    --exit-border: #c62828;
 }
 
 .deleted-options {
-    margin-top: 24px;
-    padding: 16px;
-    background-color: rgba(var(--mat-sys-error-rgb), 0.03);
-    border-radius: 12px;
-    border: 1px dashed var(--mat-sys-outline-variant);
+    margin-top: 16px;
+    background: var(--deleted-bg, #fafafa);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color, #ccc);
 
     p { 
-        margin: 0 0 12px; 
         font-size: 0.8rem; 
-        opacity: 0.6; 
         display: flex; 
         align-items: center; 
-        gap: 8px;
-        
-        mat-icon { font-size: 18px; width: 18px; height: 18px; }
+        gap: 4px;
+        margin-bottom: 8px;
+        color: var(--text-secondary, #666);
+    }
+
+    .deleted-chip {
+        font-size: 0.8rem;
+        text-decoration: line-through;
+        opacity: 0.6;
     }
 }
 
-.deleted-chip {
-    border-radius: 20px;
-    opacity: 0.5;
-    text-decoration: line-through;
-    font-size: 0.75rem;
-    height: 32px;
+:host-context(.dark-theme) .deleted-options {
+    --deleted-bg: #1a1a1a;
+}
 
-    mat-icon { font-size: 16px; width: 16px; height: 16px; margin-left: 4px; }
+.loading-box {
+    padding: 40px;
+    text-align: center;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* MELHORIAS PARA MOBILE */
+@media (max-width: 600px) {
+    .page-container { padding: 12px; }
     
-    &:hover {
-        opacity: 1;
-        text-decoration: none;
-        background-color: rgba(var(--mat-sys-primary-rgb), 0.1);
+    .tab-header { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .actions { 
+        width: 100%; 
+        display: flex; 
+        flex-direction: column;
+        gap: 8px; 
+        
+        button { width: 100%; } 
+    }
+
+    .tab-content {
+        padding: 8px;
+    }
+
+    // Estilo para as abas internas não forçarem scroll do card
+    ::ng-deep .mat-mdc-tab-group {
+        --mdc-tab-indicator-active-indicator-height: 3px;
+        
+        .mat-mdc-tab-header {
+            margin-bottom: 12px;
+        }
+
+        .mat-mdc-tab {
+            min-width: 80px;
+            padding: 0 8px;
+            
+            .mdc-tab__text-label {
+                font-size: 0.8rem;
+            }
+        }
+    }
+
+    .option-chip {
+        width: 100%; 
+        justify-content: space-between;
+        border-radius: 8px;
+        padding: 8px 12px;
+        
+        span { flex: 1; }
     }
 }
