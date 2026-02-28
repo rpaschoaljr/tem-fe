@@ -102,14 +102,20 @@ async function firestoreList(collection) {
 }
 
 async function seedFirestore() {
-  console.log('🧹 Limpando dados antigos (se houver)...');
-  // Nota: A limpeza via REST API emulada é complexa. 
-  // O ideal é o emulador iniciar limpo ou sobrescrevermos com os mesmos IDs.
+  console.log('⏳ Aguardando Firestore emulator estar 100% pronto...');
+  // Um pequeno delay extra garante que o Firestore processou as novas regras antes do seed
+  await new Promise(r => setTimeout(r, 5000));
+
+  const existingMembers = await firestoreList('members');
+  if (existingMembers.length > 0) {
+    console.log(`✅ Firestore já contém dados (${existingMembers.length} membros). Pulando seed.`);
+    return;
+  }
 
   // 1. Membros
   const sampleMembers = [
     {
-      id: 'admin-id',
+      id: 'seed-admin-id',
       name: 'Administrador do Sistema',
       cpf: '123.456.789-00',
       email: 'admin@tem.local',
@@ -133,7 +139,7 @@ async function seedFirestore() {
       createdAt: new Date(), updatedAt: new Date()
     },
     {
-      id: 'mae-id',
+      id: 'seed-mae-id',
       name: 'Mãe de Santo Teste',
       cpf: '222.333.444-55',
       email: 'mae@tem.local',
@@ -156,7 +162,7 @@ async function seedFirestore() {
       createdAt: new Date(), updatedAt: new Date()
     },
     {
-      id: 'membro-id',
+      id: 'seed-membro-id',
       name: 'Membro Teste da Silva',
       cpf: '999.888.777-66',
       email: 'membro@tem.local',
@@ -186,11 +192,11 @@ async function seedFirestore() {
 
   // 2. Financeiro
   const sampleTx = [
-    { id: 'tx-1', description: 'Mensalidade Janeiro - Admin', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
-    { id: 'tx-2', description: 'Doação Reforma Telhado', value: 1500, type: 'Entrada', category: 'Doação', date: new Date(), deleted: false },
-    { id: 'tx-3', description: 'Pagamento Luz', value: -250.50, type: 'Saída', category: 'Contas Fixas', date: new Date(), deleted: false },
-    { id: 'tx-4', description: 'Compra de Velas e Defumador', value: -180, type: 'Saída', category: 'Material', date: new Date(), deleted: false },
-    { id: 'tx-5', description: 'Mensalidade Fevereiro - Membro', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
+    { id: 'seed-tx-1', description: 'Mensalidade Janeiro - Admin', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
+    { id: 'seed-tx-2', description: 'Doação Reforma Telhado', value: 1500, type: 'Entrada', category: 'Doação', date: new Date(), deleted: false },
+    { id: 'seed-tx-3', description: 'Pagamento Luz', value: -250.50, type: 'Saída', category: 'Contas Fixas', date: new Date(), deleted: false },
+    { id: 'seed-tx-4', description: 'Compra de Velas e Defumador', value: -180, type: 'Saída', category: 'Material', date: new Date(), deleted: false },
+    { id: 'seed-tx-5', description: 'Mensalidade Fevereiro - Membro', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
   ];
   for (const t of sampleTx) {
     await firestoreCreate('transactions', t.id, t);
@@ -198,10 +204,10 @@ async function seedFirestore() {
 
   // 3. Estoque
   const sampleStock = [
-    { id: 'stock-1', name: 'Vela Branca 7 Dias', category: 'Velas', quantity: 45, minStock: 10, unit: 'un', deleted: false, updatedAt: new Date() },
-    { id: 'stock-2', name: 'Vela Vermelha Palito', category: 'Velas', quantity: 120, minStock: 50, unit: 'un', deleted: false, updatedAt: new Date() },
-    { id: 'stock-3', name: 'Defumador Completo', category: 'Ervas', quantity: 5, minStock: 10, unit: 'cx', deleted: false, updatedAt: new Date() },
-    { id: 'stock-4', name: 'Guia de Cristal Oxalá', category: 'Ritualística', quantity: 2, minStock: 5, unit: 'un', deleted: false, updatedAt: new Date() },
+    { id: 'seed-stock-1', name: 'Vela Branca 7 Dias', category: 'Velas', quantity: 45, minStock: 10, unit: 'un', deleted: false, updatedAt: new Date() },
+    { id: 'seed-stock-2', name: 'Vela Vermelha Palito', category: 'Velas', quantity: 120, minStock: 50, unit: 'un', deleted: false, updatedAt: new Date() },
+    { id: 'seed-stock-3', name: 'Defumador Completo', category: 'Ervas', quantity: 5, minStock: 10, unit: 'cx', deleted: false, updatedAt: new Date() },
+    { id: 'seed-stock-4', name: 'Guia de Cristal Oxalá', category: 'Ritualística', quantity: 2, minStock: 5, unit: 'un', deleted: false, updatedAt: new Date() },
   ];
   for (const s of sampleStock) {
     await firestoreCreate('stock', s.id, s);
@@ -209,9 +215,9 @@ async function seedFirestore() {
 
   // 4. Avisos
   const sampleNotices = [
-    { id: 'n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2027-02-03'), deleted: false, createdAt: new Date() },
-    { id: 'n-2', title: 'Aviso de Tesouraria', content: 'As mensalidades podem agora ser pagas via PIX na secretaria.', type: 'payment', date: new Date(), deleted: false, createdAt: new Date() },
-    { id: 'n-3', title: 'Manutenção do Terreiro', content: 'Mutirão de limpeza no próximo sábado às 09h.', type: 'warning', date: new Date(), deleted: false, createdAt: new Date() },
+    { id: 'seed-n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2027-02-03'), deleted: false, createdAt: new Date() },
+    { id: 'seed-n-2', title: 'Aviso de Tesouraria', content: 'As mensalidades podem agora ser pagas via PIX na secretaria.', type: 'payment', date: new Date(), deleted: false, createdAt: new Date() },
+    { id: 'seed-n-3', title: 'Manutenção do Terreiro', content: 'Mutirão de limpeza no próximo sábado às 09h.', type: 'warning', date: new Date(), deleted: false, createdAt: new Date() },
   ];
   for (const n of sampleNotices) {
     await firestoreCreate('notices', n.id, n);

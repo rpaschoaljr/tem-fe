@@ -4,11 +4,27 @@
             <button mat-icon-button (click)="back()">
                 <mat-icon>arrow_back</mat-icon>
             </button>
-            <h1>{{ isArchive ? 'Arquivo de Avisos' : 'Gerenciar Avisos' }}</h1>
+            <h1>
+                <span *ngIf="viewMode === 'active'">Gerenciar Avisos</span>
+                <span *ngIf="viewMode === 'archive'">Arquivo de Avisos</span>
+                <span *ngIf="viewMode === 'trash'">Lixeira de Avisos</span>
+            </h1>
         </div>
-        <button mat-raised-button color="primary" *ngIf="!isArchive" (click)="openForm()">
-            <mat-icon>add</mat-icon> Novo Aviso
-        </button>
+
+        <div class="header-actions">
+            <button mat-button (click)="navigate('')" [color]="viewMode === 'active' ? 'primary' : ''">
+                <mat-icon>list</mat-icon> Ativos
+            </button>
+            <button mat-button (click)="navigate('archive')" [color]="viewMode === 'archive' ? 'primary' : ''">
+                <mat-icon>history</mat-icon> Arquivo
+            </button>
+            <button mat-button (click)="navigate('trash')" [color]="viewMode === 'trash' ? 'primary' : ''">
+                <mat-icon>delete_outline</mat-icon> Lixeira
+            </button>
+            <button mat-raised-button color="primary" *ngIf="viewMode === 'active'" (click)="openForm()">
+                <mat-icon>add</mat-icon> Novo Aviso
+            </button>
+        </div>
     </header>
 
     <mat-card class="table-card">
@@ -50,12 +66,22 @@
                 <ng-container matColumnDef="actions">
                     <th mat-header-cell *matHeaderCellDef> Ações </th>
                     <td mat-cell *matCellDef="let n">
-                        <button mat-icon-button color="primary" *ngIf="!isArchive" (click)="openForm(n)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                        <button mat-icon-button color="warn" (click)="deleteNotice(n.id)">
-                            <mat-icon>delete</mat-icon>
-                        </button>
+                        <ng-container *ngIf="viewMode !== 'trash'">
+                            <button mat-icon-button color="primary" (click)="openForm(n)" title="Editar">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="deleteNotice(n.id)" title="Mover para Lixeira">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </ng-container>
+                        <ng-container *ngIf="viewMode === 'trash'">
+                            <button mat-icon-button color="primary" (click)="restoreNotice(n.id)" title="Restaurar">
+                                <mat-icon>restore_from_trash</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="hardDeleteNotice(n.id)" title="Excluir Permanentemente">
+                                <mat-icon>delete_forever</mat-icon>
+                            </button>
+                        </ng-container>
                     </td>
                 </ng-container>
 
@@ -63,7 +89,7 @@
                 <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
                 <tr class="mat-row" *matNoDataRow>
-                    <td class="mat-cell" colspan="5" style="text-align: center; padding: 20px;">
+                    <td class="mat-cell" colspan="5" style="text-align: center; padding: 40px;">
                         Nenhum aviso encontrado.
                     </td>
                 </tr>

@@ -3,7 +3,7 @@ import { of, Observable, from, throwError } from 'rxjs';
 import { delay, tap, catchError, map } from 'rxjs/operators';
 import { Notice } from '../models/notice.model';
 import {
-    Firestore, collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, orderBy
+    Firestore, collection, doc, getDoc, setDoc, updateDoc, getDocs, deleteDoc
 } from '@angular/fire/firestore';
 
 @Injectable({
@@ -18,30 +18,7 @@ export class NoticesService {
     private TIME_KEY = 'notices_last_fetch';
     private CACHE_DURATION = 15 * 60 * 1000;
 
-    private initialMockData: Notice[] = [
-        {
-            id: '1',
-            title: 'Próxima Gira: Caboclos',
-            subtitle: 'Sexta-feira, 20:00h',
-            content: 'Avisar a todos os médiuns para chegarem 1h antes para a firmeza da porteira. Trazer guia verde e cocar quem tiver.',
-            type: 'event',
-            date: new Date(),
-            deleted: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        },
-        {
-            id: '2',
-            title: 'Mensalidade do Terreiro',
-            subtitle: 'Vencimento dia 10',
-            content: 'Lembrete da tesouraria: Ajudem a manter a casa aberta. O aluguel vence na próxima semana.',
-            type: 'payment',
-            date: new Date(),
-            deleted: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-    ];
+    private initialMockData: Notice[] = [];
 
     // --- LEITURA ---
     getNotices(forceRefresh = false): Observable<Notice[]> {
@@ -50,7 +27,6 @@ export class NoticesService {
         return from(getDocs(colRef)).pipe(
             map(snap => {
                 const list = snap.docs.map(d => this.fromFirestore(d.id, d.data()));
-                // Ordenação manual no client-side para evitar problemas de índice no emulador
                 return list.sort((a, b) => b.date.getTime() - a.date.getTime());
             }),
             catchError(() => {
@@ -84,6 +60,12 @@ export class NoticesService {
                 if (!n.expirationDate) return false;
                 return new Date(n.expirationDate) < new Date();
             }))
+        );
+    }
+
+    getDeletedNotices(): Observable<Notice[]> {
+        return this.getNotices().pipe(
+            map(notices => notices.filter(n => n.deleted === true))
         );
     }
 
@@ -138,6 +120,40 @@ export class NoticesService {
         );
     }
 
+    restore(id: string): Observable<boolean> {
+        const docRef = doc(this.firestore, this.COL, id);
+        return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
+            map(() => true),
+            catchError(() => {
+                const currentData = this.getMockOrStoredData();
+                const item = currentData.find(n => n.id === id);
+                if (item) { 
+                  item.deleted = false; 
+                  this.updateCache(currentData); 
+                  return of(true).pipe(delay(300)); 
+                }
+                return throwError(() => new Error('Aviso não encontrado.'));
+            })
+        );
+    }
+
+    hardDelete(id: string): Observable<boolean> {
+        const docRef = doc(this.firestore, this.COL, id);
+        return from(deleteDoc(docRef)).pipe(
+            map(() => true),
+            catchError(() => {
+                const currentData = this.getMockOrStoredData();
+                const index = currentData.findIndex(n => n.id === id);
+                if (index >= 0) {
+                    currentData.splice(index, 1);
+                    this.updateCache(currentData);
+                    return of(true).pipe(delay(300));
+                }
+                return throwError(() => new Error('Aviso não encontrado.'));
+            })
+        );
+    }
+
     // --- HELPERS ---
     private updateCache(data: Notice[]) {
         localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
@@ -157,8 +173,8 @@ export class NoticesService {
             ...n,
             date: n.date ? new Date(n.date) : new Date(),
             expirationDate: n.expirationDate ? new Date(n.expirationDate) : null,
-            createdAt: new Date(n.createdAt),
-            updatedAt: new Date(n.updatedAt)
+            createdAt: n.createdAt ? new Date(n.createdAt) : new Date(),
+            updatedAt: n.updatedAt ? new Date(n.updatedAt) : new Date()
         };
     }
 

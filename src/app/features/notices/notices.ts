@@ -10,7 +10,6 @@ import { NoticesService } from '../../core/services/notices.service';
 import { Notice } from '../../core/models/notice.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NoticeFormComponent } from './notice-form/notice-form';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-notices',
@@ -34,21 +33,30 @@ export class NoticesComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  isArchive = false;
+  viewMode: 'active' | 'archive' | 'trash' = 'active';
   notices: Notice[] = [];
   displayedColumns = ['type', 'title', 'date', 'expiration', 'actions'];
 
   ngOnInit() {
     this.route.url.subscribe(url => {
-      this.isArchive = url.some(segment => segment.path === 'archive');
+      if (url.some(segment => segment.path === 'archive')) {
+        this.viewMode = 'archive';
+      } else if (url.some(segment => segment.path === 'trash')) {
+        this.viewMode = 'trash';
+      } else {
+        this.viewMode = 'active';
+      }
       this.loadNotices();
     });
   }
 
   loadNotices() {
-    const obs = this.isArchive 
-      ? this.noticesService.getArchivedNotices() 
-      : this.noticesService.getNotices();
+    let obs;
+    switch(this.viewMode) {
+      case 'archive': obs = this.noticesService.getArchivedNotices(); break;
+      case 'trash': obs = this.noticesService.getDeletedNotices(); break;
+      default: obs = this.noticesService.getNotices(); break;
+    }
     
     obs.subscribe(data => this.notices = data);
   }
@@ -68,10 +76,26 @@ export class NoticesComponent implements OnInit {
   }
 
   deleteNotice(id: string) {
-    if (confirm('Tem certeza que deseja excluir este aviso?')) {
+    if (confirm('Tem certeza que deseja mover este aviso para a lixeira?')) {
       this.noticesService.softDelete(id).subscribe(() => {
         this.loadNotices();
-        this.snack.open('Aviso excluído.', 'OK', { duration: 3000 });
+        this.snack.open('Aviso movido para a lixeira.', 'OK', { duration: 3000 });
+      });
+    }
+  }
+
+  restoreNotice(id: string) {
+    this.noticesService.restore(id).subscribe(() => {
+      this.loadNotices();
+      this.snack.open('Aviso restaurado.', 'OK', { duration: 3000 });
+    });
+  }
+
+  hardDeleteNotice(id: string) {
+    if (confirm('ATENÇÃO: Esta ação é permanente e não pode ser desfeita. Excluir definitivamente?')) {
+      this.noticesService.hardDelete(id).subscribe(() => {
+        this.loadNotices();
+        this.snack.open('Aviso excluído permanentemente.', 'OK', { duration: 3000 });
       });
     }
   }
@@ -87,5 +111,9 @@ export class NoticesComponent implements OnInit {
 
   back() {
     this.router.navigate(['/dashboard']);
+  }
+
+  navigate(path: string) {
+    this.router.navigate(['/notices' + (path ? '/' + path : '')]);
   }
 }

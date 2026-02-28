@@ -29,6 +29,7 @@ export const routes: Routes = [
             { path: 'profile', component: ProfileComponent, canDeactivate: [pendingChangesGuard] },
             { path: 'notices', component: NoticesComponent },
             { path: 'notices/archive', component: NoticesComponent },
+            { path: 'notices/trash', component: NoticesComponent },
             { path: 'members/new', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
             { path: 'members/edit/:id', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
         ]

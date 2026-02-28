@@ -38,12 +38,14 @@ export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
 
   kpis = { activeMembers: 0, balance: 0, outOfStock: 0 };
-  activeNotices$: Observable<Notice[]> = this.noticesService.getActiveNotices().pipe(
-    tap(notices => console.log('Avisos Ativos:', notices))
-  );
+  activeNotices$: Observable<Notice[]> | undefined;
   canManageNotices$: Observable<boolean> = this.authService.canManageNotices();
 
   ngOnInit() {
+    this.activeNotices$ = this.noticesService.getActiveNotices().pipe(
+      tap(notices => console.log('Avisos Ativos (Dashboard):', notices))
+    );
+
     forkJoin({
       members: this.membersService.getMembers(),
       transactions: this.financeService.getTransactions(),
