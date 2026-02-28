@@ -51,7 +51,6 @@ export class StockComponent implements OnInit {
         this.applyFilter();
       },
       error: (err) => {
-        // Tratamento de erro na leitura
         this.notify.showError('Erro ao carregar estoque: ' + err.message);
       }
     });
@@ -96,13 +95,8 @@ export class StockComponent implements OnInit {
     });
   }
 
-  onNewItem() {
-    this.openForm();
-  }
-
-  onEdit(item: StockItem) {
-    this.openForm(item);
-  }
+  onNewItem() { this.openForm(); }
+  onEdit(item: StockItem) { this.openForm(item); }
 
   onDelete(item: StockItem) {
     this.stockService.softDelete(item.id).subscribe({
@@ -110,9 +104,7 @@ export class StockComponent implements OnInit {
         this.notify.showSuccess('Item movido para a lixeira.');
         this.loadData();
       },
-      error: (err) => {
-        this.notify.showError('Falha ao excluir item: ' + err.message);
-      }
+      error: (err) => this.notify.showError('Falha ao excluir item: ' + err.message)
     });
   }
 
@@ -122,9 +114,7 @@ export class StockComponent implements OnInit {
         this.notify.showSuccess('Item restaurado ao estoque.');
         this.loadData();
       },
-      error: (err) => {
-        this.notify.showError('Falha ao restaurar: ' + err.message);
-      }
+      error: (err) => this.notify.showError('Falha ao restaurar: ' + err.message)
     });
   }
 
@@ -140,22 +130,12 @@ export class StockComponent implements OnInit {
         },
         error: (e: any) => this.notify.showError('Erro ao ajustar: ' + e.message),
       });
-        });
-      }
-    
-      /**
-       * Retorna um objeto de classes CSS para a linha da tabela com base no status do estoque do item.
-       * @param item O item de estoque a ser avaliado.
-       * @returns Um objeto para ser usado com [ngClass].
-       */
-      public getRowClass(item: StockItem): any {
-        if (item.quantity <= 0) {
-          return { 'stock-out': true };
-        }
-        if (item.quantity > 0 && item.minStock && item.quantity <= item.minStock) {
-          return { 'stock-warning': true };
-        }
-        return null;
-      }
-    }
-    
+    });
+  }
+
+  public getRowClass(item: StockItem): any {
+    if (item.quantity <= 0) return { 'stock-out': true };
+    if (item.quantity > 0 && item.minStock && item.quantity <= item.minStock) return { 'stock-warning': true };
+    return null;
+  }
+}

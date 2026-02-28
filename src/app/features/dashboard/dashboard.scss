@@ -69,11 +69,8 @@
     .kpi-value { display: block; font-size: 1.4rem; font-weight: 600; line-height: 1; }
     .kpi-label { display: block; font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
 
-    &.members  { border-left: 4px solid #388e3c; }
-    &.finance  { border-left: 4px solid #f57c00; }
-    &.finance.negative { border-left-color: #d32f2f; .kpi-value { color: #d32f2f; } }
-    &.stock    { border-left: 4px solid #7b1fa2; }
-    &.stock.alert { border-left-color: #d32f2f; .kpi-value { color: #d32f2f; } }
+    &.finance.negative { .kpi-value { color: #d32f2f; } }
+    &.stock.alert { .kpi-value { color: #d32f2f; } }
 }
 
 .module-card {

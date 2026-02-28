@@ -42,6 +42,7 @@ export class FinanceComponent implements OnInit {
   years: number[] = [];
   selectedMonth: number | null = null;
   selectedYear: number | null = null;
+  typeFilter: 'all' | 'income' | 'expense' = 'all';
 
   // KPIs
   totalBalance = 0;
@@ -64,67 +65,57 @@ export class FinanceComponent implements OnInit {
       next: (data) => {
         this.allTransactions = data;
         this.years = [...new Set(data.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
-        if (!this.selectedYear && this.years.length) {
+        if (this.selectedYear === null && this.years.length) {
           this.selectedYear = this.years[0];
           this.selectedMonth = new Date().getMonth();
         }
         this.applyFilter();
-      selectedMonth: number | null = null;
-      selectedYear: number | null = null;
-      typeFilter: 'all' | 'income' | 'expense' = 'all';
-
-      // KPIs
-      totalBalance = 0;
-      totalIncome = 0;
-      totalExpense = 0;
-      ...
-      applyFilter() {
-        let filtered = this.allTransactions;
-
-        // 1. Filtro de Data
-        if (this.selectedYear !== null) {
-          filtered = filtered.filter(t => new Date(t.date).getFullYear() === this.selectedYear);
-        }
-        if (this.selectedMonth !== null) {
-          filtered = filtered.filter(t => new Date(t.date).getMonth() === this.selectedMonth);
-        }
-
-        // Calculamos os totais com base no filtro de DATA (para os cards sempre mostrarem o total do mês)
-        this.calculateKPIs(filtered);
-
-        // 2. Filtro de Tipo (quando clica nos cards)
-        if (this.typeFilter === 'income') {
-          filtered = filtered.filter(t => t.value > 0);
-        } else if (this.typeFilter === 'expense') {
-          filtered = filtered.filter(t => t.value < 0);
-        }
-
-        this.transactions = filtered;
+      },
+      error: (err) => {
+        this.notify.showError('Erro ao carregar dados financeiros.');
       }
+    });
+  }
 
-      setFilter(type: 'all' | 'income' | 'expense') {
-        if (this.typeFilter === type) {
-          this.typeFilter = 'all'; // Toggle off
-        } else {
-          this.typeFilter = type;
-        }
-        this.applyFilter();
-      }
+  applyFilter() {
+    let filtered = this.allTransactions;
 
-      clearFilter() {
-        this.selectedMonth = null;
-        this.selectedYear = null;
-        this.typeFilter = 'all';
-        this.applyFilter();
-      }
+    if (this.selectedYear !== null) {
+      filtered = filtered.filter(t => new Date(t.date).getFullYear() === this.selectedYear);
+    }
+    if (this.selectedMonth !== null) {
+      filtered = filtered.filter(t => new Date(t.date).getMonth() === this.selectedMonth);
+    }
 
-      calculateKPIs(data: Transaction[]) {
-        const active = data.filter(t => !t.deleted);
-        this.totalIncome = active.filter(t => t.value > 0).reduce((acc, curr) => acc + curr.value, 0);
-        this.totalExpense = active.filter(t => t.value < 0).reduce((acc, curr) => acc + curr.value, 0);
-        this.totalBalance = this.totalIncome + this.totalExpense;
-      }
-  // --- Ações ---
+    this.calculateKPIs(filtered);
+
+    if (this.typeFilter === 'income') {
+      filtered = filtered.filter(t => t.value > 0);
+    } else if (this.typeFilter === 'expense') {
+      filtered = filtered.filter(t => t.value < 0);
+    }
+
+    this.transactions = filtered;
+  }
+
+  setFilter(type: 'all' | 'income' | 'expense') {
+    this.typeFilter = (this.typeFilter === type) ? 'all' : type;
+    this.applyFilter();
+  }
+
+  clearFilter() {
+    this.selectedMonth = null;
+    this.selectedYear = null;
+    this.typeFilter = 'all';
+    this.applyFilter();
+  }
+
+  calculateKPIs(data: Transaction[]) {
+    const active = data.filter(t => !t.deleted);
+    this.totalIncome = active.filter(t => t.value > 0).reduce((acc, curr) => acc + curr.value, 0);
+    this.totalExpense = active.filter(t => t.value < 0).reduce((acc, curr) => acc + curr.value, 0);
+    this.totalBalance = this.totalIncome + this.totalExpense;
+  }
 
   openForm(transaction: Transaction | null = null) {
     const ref = this.dialog.open(TransactionFormComponent, {
@@ -143,28 +134,17 @@ export class FinanceComponent implements OnInit {
     });
   }
 
-  onNewEntry() {
-    this.openForm();
-  }
-
-  onNewExpense() {
-    this.openForm();
-  }
-
-  onEdit(transaction: Transaction) {
-    this.openForm(transaction);
-  }
+  onNewEntry() { this.openForm(); }
+  onNewExpense() { this.openForm(); }
+  onEdit(transaction: Transaction) { this.openForm(transaction); }
 
   onDelete(transaction: Transaction) {
-    // Tenta deletar
     this.financeService.softDelete(transaction.id).subscribe({
       next: () => {
         this.notify.showSuccess('Item movido para a lixeira.');
-        this.loadData(); // Atualiza a lista (vai pegar do cache local atualizado)
+        this.loadData();
       },
-      error: (err) => {
-        this.notify.showError('Erro ao deletar: ' + err.message);
-      }
+      error: (err) => this.notify.showError('Erro ao deletar: ' + err.message)
     });
   }
 
@@ -174,9 +154,7 @@ export class FinanceComponent implements OnInit {
         this.notify.showSuccess('Item restaurado com sucesso!');
         this.loadData();
       },
-      error: (err) => {
-        this.notify.showError('Erro ao restaurar: ' + err.message);
-      }
+      error: (err) => this.notify.showError('Erro ao restaurar: ' + err.message)
     });
   }
 }
