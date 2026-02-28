@@ -48,10 +48,9 @@ await waitForEmulator();
 // ── 3. Seed ───────────────────────────────────────────────────────────────────
 console.log('\n🌱  Rodando seed...\n');
 try {
-  const { default: seed } = await import('./seed-emulator.mjs');
-} catch {
-  // seed-emulator.mjs usa top-level await — executar como processo filho
   execSync('node scripts/seed-emulator.mjs', { stdio: 'inherit' });
+} catch (e) {
+  console.error('\n❌  Erro ao rodar seed:', e.message);
 }
 
 // ── 4. ng serve ───────────────────────────────────────────────────────────────

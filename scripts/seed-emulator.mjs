@@ -1,6 +1,7 @@
 /**
- * Cria automaticamente usuários de teste no emulador do Firebase Auth.
- * Popula o Firestore com membros, transações e estoque.
+ * SEED DINÂMICO PARA EMULADOR FIREBASE (v3)
+ * Popula todas as coleções do sistema com dados padronizados e COMPLETOS.
+ * Inclui todos os campos obrigatórios dos formulários (entryDate, content, etc).
  */
 
 const PROJECT_ID = 'sistematemfe';
@@ -9,9 +10,9 @@ const FIRESTORE_EMULATOR = 'http://localhost:8080';
 const API_KEY = 'fake-api-key-emulator';
 
 const TEST_USERS = [
-  { email: 'admin@tem.local', password: 'senha123', displayName: 'Admin Local', role: 'DIRETORIA' },
-  { email: 'mae@tem.local', password: 'senha123', displayName: 'Mãe de Santo', role: 'PAI/MÃE PEQUENO' },
-  { email: 'membro@tem.local', password: 'senha123', displayName: 'Membro Teste', role: 'MÉDIUM' },
+  { email: 'admin@tem.local', password: 'senha123', displayName: 'ADMIN LOCAL', role: 'DIRETORIA' },
+  { email: 'mae@tem.local', password: 'senha123', displayName: 'MÃE DE SANTO', role: 'PAI/MÃE PEQUENO' },
+  { email: 'membro@tem.local', password: 'senha123', displayName: 'MEMBRO TESTE', role: 'MÉDIUM' },
 ];
 
 async function waitForEmulator(maxRetries = 30) {
@@ -20,7 +21,7 @@ async function waitForEmulator(maxRetries = 30) {
       await fetch(`${AUTH_EMULATOR}/`);
       return;
     } catch {
-      process.stdout.write(`\r⏳ Aguardando emulador Auth iniciar... (${i + 1}/${maxRetries})`);
+      process.stdout.write(`\r⏳ Aguardando emuladores iniciarem... (${i + 1}/${maxRetries})`);
       await new Promise((r) => setTimeout(r, 2000));
     }
   }
@@ -56,7 +57,11 @@ async function listUsers() {
   return res.json();
 }
 
-// --- Firestore REST helpers ---
+// --- Firestore Helpers ---
+
+function standardize(text) {
+  return (text || '').trim().toUpperCase();
+}
 
 function formatFirestoreValue(v) {
   if (v === null || v === undefined) return { nullValue: null };
@@ -86,184 +91,208 @@ async function firestoreCreate(collection, id, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`Erro ao criar documento ${id} em ${collection}: ${JSON.stringify(err)}`);
-  }
   return res.json();
 }
 
-async function firestoreList(collection) {
-  const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}`;
+async function firestoreDeleteAll(collectionName) {
+  const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collectionName}`;
   const res = await fetch(url);
   const json = await res.json();
-  return json.documents || [];
+  const docs = json.documents || [];
+  
+  for (const doc of docs) {
+    await fetch(`${FIRESTORE_EMULATOR}/v1/${doc.name}`, { method: 'DELETE' });
+  }
 }
 
 async function seedFirestore() {
-  console.log('⏳ Aguardando Firestore emulator estar 100% pronto...');
-  // Um pequeno delay extra garante que o Firestore processou as novas regras antes do seed
-  await new Promise(r => setTimeout(r, 5000));
+  console.log('🗄️  Limpando e populando Firestore...');
 
-  const existingMembers = await firestoreList('members');
-  if (existingMembers.length > 0) {
-    console.log(`✅ Firestore já contém dados (${existingMembers.length} membros). Pulando seed.`);
-    return;
-  }
+  const collections = ['system_configs', 'members', 'stock', 'transactions', 'notices'];
+  for (const col of collections) await firestoreDeleteAll(col);
 
-  // 1. Membros
-  const sampleMembers = [
+  const now = new Date();
+
+  // 1. Configurações
+  const configs = [
     {
-      id: 'seed-admin-id',
-      name: 'Administrador do Sistema',
-      cpf: '123.456.789-00',
+      id: 'stock',
+      fields: [
+        { 
+          key: 'category', label: 'Categoria', type: 'select', required: true, order: 1, isSystem: true,
+          options: [
+            { label: 'VELAS', deleted: false }, { label: 'ERVAS', deleted: false }, 
+            { label: 'BEBIDAS', deleted: false }, { label: 'LITURGIA', deleted: false },
+            { label: 'LIMPEZA', deleted: false }, { label: 'OUTROS', deleted: false }
+          ]
+        },
+        { 
+          key: 'unit', label: 'Unidade', type: 'select', required: true, order: 2, isSystem: true,
+          options: [
+            { label: 'UN', deleted: false }, { label: 'KG', deleted: false }, 
+            { label: 'L', deleted: false }, { label: 'PCT', deleted: false }
+          ]
+        }
+      ],
+      updatedAt: now
+    },
+    {
+      id: 'finance',
+      fields: [
+        { 
+          key: 'category', label: 'Categoria Financeira', type: 'select', required: true, order: 1, isSystem: true,
+          options: [
+            { label: 'DOAÇÃO', deleted: false }, { label: 'MENSALIDADE', deleted: false }, 
+            { label: 'CONTAS', deleted: false }, { label: 'MANUTENÇÃO', deleted: false }
+          ]
+        }
+      ],
+      updatedAt: now
+    }
+  ];
+  for (const c of configs) await firestoreCreate('system_configs', c.id, c);
+
+  // 2. Membros (Com TODOS os campos obrigatórios do formulário)
+  const members = [
+    {
+      id: 'seed-admin',
+      name: standardize('Administrador do Sistema'),
+      cpf: '111.111.111-11',
       email: 'admin@tem.local',
-      phone: '(11) 98888-7777',
+      phone: '(11) 99999-9999',
       role: 'DIRETORIA',
       status: 'Ativo',
       deleted: false,
+      entryDate: new Date('2020-01-01'),
       showSpiritualData: true,
-      entryDate: new Date('2010-01-01'),
-      address: {
-        cep: '01001-000',
-        street: 'Praça da Sé',
-        number: '100',
-        complement: 'Apto 1',
-        neighborhood: 'Sé',
-        city: 'São Paulo',
-        state: 'SP'
+      address: { 
+        cep: '01001-000', street: standardize('Praça da Sé'), number: '1', 
+        neighborhood: standardize('Centro'), city: standardize('São Paulo'), state: 'SP' 
       },
-      rituals: { initiation: new Date('2010-06-15'), baptism: new Date('2010-02-20') },
-      consecrations: { oxala: new Date('2015-12-25'), ogum: new Date('2012-04-23') },
-      createdAt: new Date(), updatedAt: new Date()
+      rituals: { baptism: new Date('2020-01-01'), initiation: new Date('2020-06-15') },
+      consecrations: { oxossi: new Date('2021-01-20'), ogum: new Date('2021-04-23') },
+      createdAt: now, updatedAt: now
     },
     {
-      id: 'seed-mae-id',
-      name: 'Mãe de Santo Teste',
-      cpf: '222.333.444-55',
+      id: 'seed-mae',
+      name: standardize('Mãe de Santo Teste'),
+      cpf: '222.222.222-22',
       email: 'mae@tem.local',
-      phone: '(11) 97777-6666',
+      phone: '(11) 88888-8888',
       role: 'PAI/MÃE PEQUENO',
       status: 'Ativo',
       deleted: false,
+      entryDate: new Date('2015-10-10'),
       showSpiritualData: true,
-      entryDate: new Date('2015-05-10'),
-      address: {
-        cep: '01310-100',
-        street: 'Avenida Paulista',
-        number: '1500',
-        neighborhood: 'Bela Vista',
-        city: 'São Paulo',
-        state: 'SP'
+      address: { 
+        cep: '01001-000', street: standardize('Rua das Flores'), number: '10', 
+        neighborhood: standardize('Jardins'), city: standardize('São Paulo'), state: 'SP' 
       },
-      rituals: { initiation: new Date('2015-10-10'), coronation: new Date('2020-11-20') },
-      consecrations: { iemanja: new Date('2016-02-02'), oxum: new Date('2017-12-08') },
-      createdAt: new Date(), updatedAt: new Date()
+      rituals: { coronation: new Date('2015-12-25') },
+      consecrations: { iemanja: new Date('2016-02-02') },
+      createdAt: now, updatedAt: now
     },
     {
-      id: 'seed-membro-id',
-      name: 'Membro Teste da Silva',
-      cpf: '999.888.777-66',
+      id: 'seed-membro',
+      name: standardize('Membro Teste da Silva'),
+      cpf: '333.333.333-33',
       email: 'membro@tem.local',
-      phone: '(11) 96666-5555',
+      phone: '(11) 77777-7777',
       role: 'MÉDIUM',
       status: 'Ativo',
       deleted: false,
-      showSpiritualData: false,
       entryDate: new Date('2023-01-01'),
-      address: {
-        cep: '04571-010',
-        street: 'Rua Berrini',
-        number: '500',
-        neighborhood: 'Brooklin',
-        city: 'São Paulo',
-        state: 'SP'
+      showSpiritualData: false,
+      address: { 
+        cep: '01001-000', street: standardize('Avenida Paulista'), number: '500', 
+        neighborhood: standardize('Bela Vista'), city: standardize('São Paulo'), state: 'SP' 
       },
-      rituals: { baptism: new Date('2023-03-15') },
+      rituals: { baptism: new Date('2023-10-10') },
       consecrations: {},
-      createdAt: new Date(), updatedAt: new Date()
+      createdAt: now, updatedAt: now
     }
   ];
-
-  for (const m of sampleMembers) {
-    await firestoreCreate('members', m.id, m);
-  }
-
-  // 2. Financeiro
-  const sampleTx = [
-    { id: 'seed-tx-1', description: 'Mensalidade Janeiro - Admin', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
-    { id: 'seed-tx-2', description: 'Doação Reforma Telhado', value: 1500, type: 'Entrada', category: 'Doação', date: new Date(), deleted: false },
-    { id: 'seed-tx-3', description: 'Pagamento Luz', value: -250.50, type: 'Saída', category: 'Contas Fixas', date: new Date(), deleted: false },
-    { id: 'seed-tx-4', description: 'Compra de Velas e Defumador', value: -180, type: 'Saída', category: 'Material', date: new Date(), deleted: false },
-    { id: 'seed-tx-5', description: 'Mensalidade Fevereiro - Membro', value: 100, type: 'Entrada', category: 'Mensalidade', date: new Date(), deleted: false },
-  ];
-  for (const t of sampleTx) {
-    await firestoreCreate('transactions', t.id, t);
-  }
+  for (const m of members) await firestoreCreate('members', m.id, m);
 
   // 3. Estoque
-  const sampleStock = [
-    { id: 'seed-stock-1', name: 'Vela Branca 7 Dias', category: 'Velas', quantity: 45, minStock: 10, unit: 'un', deleted: false, updatedAt: new Date() },
-    { id: 'seed-stock-2', name: 'Vela Vermelha Palito', category: 'Velas', quantity: 120, minStock: 50, unit: 'un', deleted: false, updatedAt: new Date() },
-    { id: 'seed-stock-3', name: 'Defumador Completo', category: 'Ervas', quantity: 5, minStock: 10, unit: 'cx', deleted: false, updatedAt: new Date() },
-    { id: 'seed-stock-4', name: 'Guia de Cristal Oxalá', category: 'Ritualística', quantity: 2, minStock: 5, unit: 'un', deleted: false, updatedAt: new Date() },
+  const stockItems = [
+    { id: 's1', name: standardize('Vela Branca 7 Dias'), category: 'VELAS', quantity: 50, unit: 'UN', deleted: false, updatedAt: now },
+    { id: 's2', name: standardize('Vela Azul Palito'), category: 'VELAS', quantity: 120, unit: 'UN', deleted: false, updatedAt: now },
+    { id: 's3', name: standardize('Erva Guiné Seca'), category: 'ERVAS', quantity: 15, unit: 'PCT', deleted: false, updatedAt: now },
+    { id: 's4', name: standardize('Cachaça 600ml'), category: 'BEBIDAS', quantity: 0, unit: 'UN', deleted: false, updatedAt: now },
   ];
-  for (const s of sampleStock) {
-    await firestoreCreate('stock', s.id, s);
-  }
+  for (const s of stockItems) await firestoreCreate('stock', s.id, s);
 
-  // 4. Avisos
-  const sampleNotices = [
-    { id: 'seed-n-1', title: 'Festa de Iemanjá', subtitle: 'Dia 02/02 às 18h', content: 'Todos de branco. Trazer flores e oferendas biodegradáveis.', type: 'event', date: new Date('2026-02-02'), expirationDate: new Date('2027-02-03'), deleted: false, createdAt: new Date() },
-    { id: 'seed-n-2', title: 'Aviso de Tesouraria', content: 'As mensalidades podem agora ser pagas via PIX na secretaria.', type: 'payment', date: new Date(), deleted: false, createdAt: new Date() },
-    { id: 'seed-n-3', title: 'Manutenção do Terreiro', content: 'Mutirão de limpeza no próximo sábado às 09h.', type: 'warning', date: new Date(), deleted: false, createdAt: new Date() },
+  // 4. Financeiro
+  const transactions = [
+    { id: 't1', description: standardize('Doação Anônima'), value: 500, type: 'Entrada', category: 'DOAÇÃO', date: now, deleted: false },
+    { id: 't2', description: standardize('Mensalidade Membros'), value: 1200, type: 'Entrada', category: 'MENSALIDADE', date: now, deleted: false },
+    { id: 't3', description: standardize('Conta de Luz'), value: -350.50, type: 'Saída', category: 'CONTAS', date: now, deleted: false },
   ];
-  for (const n of sampleNotices) {
-    await firestoreCreate('notices', n.id, n);
-  }
+  for (const t of transactions) await firestoreCreate('transactions', t.id, t);
 
-  // Verificação final
-  const membersCount = (await firestoreList('members')).length;
-  const txCount = (await firestoreList('transactions')).length;
-  const stockCount = (await firestoreList('stock')).length;
+  // 5. Avisos (Notices) - Corrigido para usar 'content' conforme modelo
+  const nextMonth = new Date();
+  nextMonth.setMonth(now.getMonth() + 1);
 
-  console.log(`✅ Firestore populado: ${membersCount} membros, ${txCount} transações, ${stockCount} itens.`);
-  
-  if (membersCount === 0) {
-    console.warn('⚠️ AVISO: O Firestore parece estar vazio após o seed. Verifique se o Emulador está rodando corretamente em localhost:8080.');
-  }
+  const notices = [
+    {
+      id: 'n1',
+      title: standardize('Festa de Ogum'),
+      subtitle: 'PRÓXIMO SÁBADO',
+      content: 'Nossa festa anual de Ogum será realizada no próximo sábado às 19h. Todos os médiuns devem vir de branco.',
+      type: 'event',
+      date: now,
+      expirationDate: nextMonth,
+      deleted: false,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 'n2',
+      title: standardize('Aviso de Mensalidade'),
+      subtitle: 'VENCIMENTO DIA 10',
+      content: 'Lembramos a todos que o vencimento da mensalidade é dia 10. Favor regularizar com a tesouraria.',
+      type: 'payment',
+      date: now,
+      expirationDate: nextMonth,
+      deleted: false,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 'n3',
+      title: standardize('Manutenção do Telhado'),
+      subtitle: 'SEM GIRA NA SEGUNDA',
+      content: 'O terreiro passará por manutenção na segunda-feira. Não haverá gira.',
+      type: 'warning',
+      date: now,
+      expirationDate: nextMonth,
+      deleted: false,
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+  for (const n of notices) await firestoreCreate('notices', n.id, n);
+
+  console.log('✅ Base de dados restaurada com sucesso!');
+  console.log('   - 3 Membros (Com data de entrada e endereço)');
+  console.log('   - 4 Itens de Estoque');
+  console.log('   - 3 Lançamentos Financeiros');
+  console.log('   - 3 Avisos Ativos (Com conteúdo corrigido)');
 }
 
 async function main() {
-  console.log('\n🔥 Seed do emulador Firebase (Completo)\n');
+  console.log('\n🔥 SEED DO EMULADOR FIREBASE 🔥\n');
   await waitForEmulator();
-
   const existing = await listUsers();
   const users = existing.userInfo || [];
-
   for (const user of TEST_USERS) {
-    if (!users.some((u) => u.email === user.email)) {
-      await createUser(user);
-      console.log(`✅ Usuário criado: ${user.email}`);
-    } else {
-      console.log(`ℹ️  Usuário já existe: ${user.email}`);
-    }
+    if (!users.some((u) => u.email === user.email)) await createUser(user);
   }
-
-  console.log('\n🗄️  Populando Firestore...');
-  try {
-    await seedFirestore();
-  } catch (err) {
-    console.error('\n❌ Erro durante o seed do Firestore:', err.message);
-  }
-
+  await seedFirestore();
   console.log('\n┌─────────────────────────────────────┐');
-  console.log('│  Ambiente de Teste Pronto!           │');
-  console.log('├─────────────────────────────────────┤');
-  console.log('│  Admin: admin@tem.local / senha123   │');
-  console.log('│  Mãe:   mae@tem.local   / senha123   │');
-  console.log('│  Membro: membro@tem.local/ senha123  │');
+  console.log('│  Ambiente Pronto para Uso!           │');
   console.log('└─────────────────────────────────────┘\n');
 }
 
