@@ -201,12 +201,33 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  removeOption(config: ModuleConfig, field: DynamicField, index: number) {
-    if (confirm('Deseja mover esta opção para a lixeira?')) {
-      const option = field.options![index];
-      option.deleted = true;
-      this.saveAndReload(config, 'Opção movida para a lixeira.');
+  removeOption(config: ModuleConfig, field: DynamicField, option: any) {
+    // Se for estoque, verifica dependências
+    if (config.id === 'stock') {
+      const fieldKey = field.key as keyof StockItem;
+      const dependentItems = this.stockItems().filter(item => !item.deleted && item[fieldKey] === option.label);
+
+      if (dependentItems.length > 0) {
+        const list = dependentItems.slice(0, 3).map(i => i.name);
+        const count = dependentItems.length;
+        const names = list.join(', ');
+        const extra = count > 3 ? ` e mais ${count - 3} itens` : '';
+
+        const msg = `ATENÇÃO: Existem ${count} itens no catálogo que utilizam esta ${field.label}:\n` +
+                    `(${names}${extra}).\n\n` +
+                    `Eles continuarão existindo, mas ficarão sem uma ${field.label} válida no cadastro.\n` +
+                    `Deseja realmente mover "${option.label}" para a lixeira?`;
+
+        if (!confirm(msg)) return;
+      } else {
+        if (!confirm(`Deseja mover a opção "${option.label}" para a lixeira?`)) return;
+      }
+    } else {
+      if (!confirm(`Deseja mover a opção "${option.label}" para a lixeira?`)) return;
     }
+
+    option.deleted = true;
+    this.saveAndReload(config, 'Opção movida para a lixeira.');
   }
 
   restoreOption(config: ModuleConfig, option: any) {
@@ -216,8 +237,10 @@ export class SettingsComponent implements OnInit {
 
   // Wrappers para o GenericList
   removeOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {
-    option.deleted = true;
-    this.saveAndReload(config, 'Tipo de lançamento movido para a lixeira.');
+    if (confirm(`Deseja mover o tipo de lançamento "${option.label}" para a lixeira?`)) {
+      option.deleted = true;
+      this.saveAndReload(config, 'Tipo de lançamento movido para a lixeira.');
+    }
   }
 
   restoreOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {

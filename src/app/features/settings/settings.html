@@ -53,9 +53,9 @@
                                         </div>
                                         
                                         <div class="chips-grid">
-                                            <div class="option-chip" *ngFor="let opt of getActiveOptions(field); let i = index">
+                                            <div class="option-chip" *ngFor="let opt of getActiveOptions(field)">
                                                 <span>{{ opt.label }}</span>
-                                                <button mat-icon-button (click)="removeOption(config, field, i)">
+                                                <button mat-icon-button (click)="removeOption(config, field, opt)">
                                                     <mat-icon>close</mat-icon>
                                                 </button>
                                             </div>
