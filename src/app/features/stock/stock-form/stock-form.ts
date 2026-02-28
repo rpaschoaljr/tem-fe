@@ -1,4 +1,4 @@
-import { Component, inject, Inject } from '@angular/core';
+import { Component, inject, Inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -7,9 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { StockItem } from '../../../core/models/stock-item.model';
-
-const CATEGORIES = ['Velas', 'Ervas', 'Bebidas', 'Ritualística', 'Oferenda', 'Limpeza', 'Outros'];
-const UNITS = ['un', 'kg', 'g', 'L', 'ml', 'cx', 'pct', 'maço'];
+import { ConfigService } from '../../../core/services/config.service';
 
 @Component({
   selector: 'app-stock-form',
@@ -28,16 +26,32 @@ const UNITS = ['un', 'kg', 'g', 'L', 'ml', 'cx', 'pct', 'maço'];
 export class StockFormComponent {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<StockFormComponent>);
+  private configService = inject(ConfigService);
 
-  categories = CATEGORIES;
-  units = UNITS;
+  categories = signal<string[]>([]);
+  units = signal<string[]>([]);
 
   item: StockItem | null = inject(MAT_DIALOG_DATA);
+
+  constructor() {
+    this.configService.getConfig('stock').subscribe(config => {
+      const catField = config.fields.find(f => f.key === 'category');
+      const unitField = config.fields.find(f => f.key === 'unit');
+      
+      // Filtra apenas as opções NÃO deletadas para exibir no formulário
+      if (catField?.options) {
+        this.categories.set(catField.options.filter(o => !o.deleted).map(o => o.label));
+      }
+      if (unitField?.options) {
+        this.units.set(unitField.options.filter(o => !o.deleted).map(o => o.label));
+      }
+    });
+  }
 
   form = this.fb.group({
     name:     [this.item?.name ?? '',     [Validators.required, Validators.minLength(2)]],
     category: [this.item?.category ?? '', Validators.required],
-    unit:     [this.item?.unit ?? 'un',   Validators.required],
+    unit:     [this.item?.unit ?? 'UN',   Validators.required],
     quantity: [this.item?.quantity ?? 0,  [Validators.required, Validators.min(0)]],
     minStock: [this.item?.minStock ?? null],
   });
@@ -52,9 +66,9 @@ export class StockFormComponent {
     const v = this.form.value;
     const result: Partial<StockItem> = {
       ...(this.item ?? {}),
-      name:     v.name ?? '',
+      name:     (v.name ?? '').trim().toUpperCase(),
       category: v.category ?? '',
-      unit:     v.unit ?? 'un',
+      unit:     v.unit ?? 'UN',
       quantity: v.quantity ?? 0,
       minStock: v.minStock ?? undefined,
       updatedAt: new Date(),

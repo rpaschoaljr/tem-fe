@@ -13,7 +13,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Categoria</mat-label>
         <mat-select formControlName="category">
-          <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
+          <mat-option *ngFor="let c of categories()" [value]="c">{{ c }}</mat-option>
         </mat-select>
         <mat-error>Obrigatório</mat-error>
       </mat-form-field>
@@ -21,7 +21,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Unidade</mat-label>
         <mat-select formControlName="unit">
-          <mat-option *ngFor="let u of units" [value]="u">{{ u }}</mat-option>
+          <mat-option *ngFor="let u of units()" [value]="u">{{ u }}</mat-option>
         </mat-select>
       </mat-form-field>
     </div>

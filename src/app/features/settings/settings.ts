@@ -129,6 +129,59 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  // --- GESTÃO DE OPÇÕES (CATEGORIAS/UNIDADES) ---
+
+  addOption(config: ModuleConfig, field: DynamicField) {
+    const newOpt = prompt(`Nova opção para ${field.label}:`);
+    if (newOpt && newOpt.trim()) {
+      if (!field.options) field.options = [];
+      const sanitized = newOpt.trim().toUpperCase();
+      
+      // Verifica se já existia (mesmo que deletado) para restaurar em vez de criar duplicado
+      const existing = field.options.find(o => o.label === sanitized);
+      if (existing) {
+        if (existing.deleted) {
+          existing.deleted = false;
+          this.saveAndReload(config, 'Opção restaurada!');
+        } else {
+          this.notify.showWarning('Esta opção já existe.');
+        }
+      } else {
+        field.options.push({ label: sanitized, deleted: false });
+        this.saveAndReload(config, 'Opção adicionada!');
+      }
+    }
+  }
+
+  removeOption(config: ModuleConfig, field: DynamicField, index: number) {
+    if (confirm('Deseja mover esta opção para a lixeira?')) {
+      const option = field.options![index];
+      option.deleted = true;
+      this.saveAndReload(config, 'Opção movida para a lixeira.');
+    }
+  }
+
+  restoreOption(config: ModuleConfig, option: any) {
+    option.deleted = false;
+    this.saveAndReload(config, 'Opção restaurada!');
+  }
+
+  private saveAndReload(config: ModuleConfig, message: string) {
+    this.configService.saveConfig(config).subscribe(() => {
+      this.notify.showSuccess(message);
+      this.loadConfigs();
+    });
+  }
+
+  // Helpers de Template
+  getActiveOptions(field: DynamicField) {
+    return field.options?.filter(o => !o.deleted) || [];
+  }
+
+  getDeletedOptions(field: DynamicField) {
+    return field.options?.filter(o => o.deleted) || [];
+  }
+
   // --- GESTÃO DE CAMPOS ---
 
   addField(moduleId: string) {

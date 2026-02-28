@@ -1,16 +1,21 @@
+export interface FieldOption {
+    label: string;
+    deleted: boolean;
+}
+
 export interface DynamicField {
-    key: string;        // ex: 'blood_type'
-    label: string;      // ex: 'Tipo Sanguíneo'
+    key: string;        // ex: 'category'
+    label: string;      // ex: 'Categoria'
     type: 'text' | 'number' | 'date' | 'select' | 'boolean' | 'mask';
     maskType?: 'cpf' | 'phone' | 'cep';
-    options?: string[]; // Para campos do tipo 'select'
+    options?: FieldOption[]; // Agora é um objeto com flag de exclusão
     required: boolean;
     order: number;
-    isSystem?: boolean; // Se true, não pode ser excluído (campos base)
+    isSystem?: boolean;
 }
 
 export interface ModuleConfig {
-    id: string; // 'members', 'finance', 'stock', 'notices'
+    id: string;
     fields: DynamicField[];
     updatedAt: Date;
 }

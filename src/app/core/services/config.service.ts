@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, doc, getDoc, setDoc, collection } from '@angular/fire/firestore';
 import { Observable, from, map, of, switchMap } from 'rxjs';
-import { ModuleConfig, DynamicField } from '../models/system-config.model';
+import { ModuleConfig, DynamicField, FieldOption } from '../models/system-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
@@ -26,7 +26,6 @@ export class ConfigService {
         return from(setDoc(docRef, { ...config, updatedAt: new Date() }));
     }
 
-    // Inicializa o banco com configurações básicas se estiver vazio
     ensureInitialized(moduleId: string): Observable<void> {
         const docRef = doc(this.firestore, this.COL, moduleId);
         return from(getDoc(docRef)).pipe(
@@ -48,7 +47,14 @@ export class ConfigService {
                     key: 'category', 
                     label: 'Categoria', 
                     type: 'select', 
-                    options: ['VELAS', 'ERVAS', 'BEBIDAS', 'LITURGIA', 'LIMPEZA', 'OUTROS'], 
+                    options: [
+                        { label: 'VELAS', deleted: false },
+                        { label: 'ERVAS', deleted: false },
+                        { label: 'BEBIDAS', deleted: false },
+                        { label: 'LITURGIA', deleted: false },
+                        { label: 'LIMPEZA', deleted: false },
+                        { label: 'OUTROS', deleted: false }
+                    ], 
                     required: true, 
                     order: 1, 
                     isSystem: true 
@@ -57,7 +63,16 @@ export class ConfigService {
                     key: 'unit', 
                     label: 'Unidade de Medida', 
                     type: 'select', 
-                    options: ['UN', 'KG', 'G', 'L', 'ML', 'CX', 'PCT', 'MAÇO'], 
+                    options: [
+                        { label: 'UN', deleted: false },
+                        { label: 'KG', deleted: false },
+                        { label: 'G', deleted: false },
+                        { label: 'L', deleted: false },
+                        { label: 'ML', deleted: false },
+                        { label: 'CX', deleted: false },
+                        { label: 'PCT', deleted: false },
+                        { label: 'MAÇO', deleted: false }
+                    ], 
                     required: true, 
                     order: 2, 
                     isSystem: true 
@@ -69,7 +84,13 @@ export class ConfigService {
                     key: 'category', 
                     label: 'Categoria Financeira', 
                     type: 'select', 
-                    options: ['DOAÇÃO', 'MENSALIDADE', 'CONTAS', 'MANUTENÇÃO', 'EVENTO'], 
+                    options: [
+                        { label: 'DOAÇÃO', deleted: false },
+                        { label: 'MENSALIDADE', deleted: false },
+                        { label: 'CONTAS', deleted: false },
+                        { label: 'MANUTENÇÃO', deleted: false },
+                        { label: 'EVENTO', deleted: false }
+                    ], 
                     required: true, 
                     order: 1, 
                     isSystem: true 
