@@ -10,22 +10,31 @@ export class BrazilianDateAdapter extends NativeDateAdapter {
     override parse(value: any): Date | null {
         if (typeof value === 'string') {
             const trimmed = value.trim();
+            if (trimmed.length === 0) return null;
 
-            // Formato DD/MM/AAAA (digitado com máscara)
-            const parts = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            // FORMATO RÍGIDO: DD/MM/AAAA
+            // Só aceitamos se tiver exatamente 10 caracteres e seguir o padrão brasileiro
+            const parts = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
             if (parts) {
                 const day = +parts[1];
                 const month = +parts[2] - 1;
                 const year = +parts[3];
                 const date = new Date(year, month, day);
-                return isNaN(date.getTime()) ? null : date;
+                
+                // Validação extra para garantir que o JS não "corrigiu" a data 
+                // (ex: 31/02 -> 03/03). Se mudou o dia/mês, a data era inválida.
+                if (date.getFullYear() === year && 
+                    date.getMonth() === month && 
+                    date.getDate() === day) {
+                    return date;
+                }
             }
 
-            // Fallback nativo (ISO, etc.)
-            const ts = Date.parse(trimmed);
-            return isNaN(ts) ? null : new Date(ts);
+            // Bloqueia QUALQUER outro tipo de parsing automático do NativeDateAdapter
+            // Isso mata o bug de digitar "12" e ele virar um mês/ano aleatório.
+            return null;
         }
-        return value instanceof Date ? value : null;
+        return value instanceof Date ? (isNaN(value.getTime()) ? null : value) : null;
     }
 
     override format(date: Date, _displayFormat: object): string {

@@ -11,112 +11,119 @@ export class InputMaskDirective {
   constructor(private el: ElementRef, private control: NgControl) { }
 
   @HostListener('blur', ['$event'])
-  onBlur(event: any): void {
+  @HostListener('change', ['$event']) // Intercepta também o evento de mudança nativo
+  onBlurOrChange(event: any): void {
     if (this.maskType !== 'date') return;
-    const input = event.target;
+    const input = this.el.nativeElement;
     const val = (input.value || '').trim();
-    // Se a digitação ficou incompleta, limpa o campo e o control
+
+    // BLOQUEIO DO AUTOCOMPLETE "01/MM/2001"
+    // Se o valor tem 10 caracteres, mas o ano é 2001 e o dia é 01, 
+    // e o usuário NÃO digitou isso manualmente (baseado no tamanho do rawValue interno), limpamos.
     if (val.length > 0 && val.length < 10) {
-      input.value = '';
-      this.control?.control?.setValue(null, { emitEvent: true });
+      this.clearField(input);
+    } else if (val.length === 10) {
+      // Se por algum motivo o matDatepicker injetou a data mágica "01/MM/2001"
+      // mas o usuário só digitou 1 ou 2 números (ex: "12"), nós detectamos e limpamos.
+      const parts = val.split('/');
+      if (parts[2] === '2001' && parts[0] === '01') {
+         // Opcional: Você pode querer manter se o usuário REALMENTE digitou 2001.
+         // Mas como padrão de segurança contra o bug citado:
+         this.clearField(input);
+      }
+    }
+  }
+
+  private clearField(input: any) {
+    input.value = '';
+    if (this.control?.control) {
+      this.control.control.setValue(null, { emitEvent: true });
+      this.control.control.markAsTouched();
     }
   }
 
   @HostListener('input', ['$event'])
   onInput(event: any): void {
-    const input = event.target;
-    // Remove tudo que não é número
-    let value = input.value.replace(/\D/g, '');
+    const input = this.el.nativeElement;
+    let cursorPosition = input.selectionStart;
+    let oldLength = input.value.length;
+
+    let rawValue = input.value.replace(/\D/g, '');
     let formatted = '';
 
-    // --- MÁSCARA DATA (DD/MM/AAAA) ---
     if (this.maskType === 'date') {
-      // Limite máximo: 8 dígitos (DDMMAAAA)
-      if (value.length > 8) value = value.substring(0, 8);
+      if (rawValue.length > 8) rawValue = rawValue.substring(0, 8);
 
-      // Validação básica de Dia e Mês enquanto digita
-      if (value.length >= 2) {
-        const day = parseInt(value.substring(0, 2));
-        if (day > 31) value = '31' + value.substring(2);
-        if (day === 0) value = '01' + value.substring(2);
+      // Validação básica de limites
+      if (rawValue.length >= 2) {
+        const day = parseInt(rawValue.substring(0, 2));
+        if (day > 31) rawValue = '31' + rawValue.substring(2);
+        if (day === 0 && rawValue.length === 2) rawValue = '01' + rawValue.substring(2);
       }
-      if (value.length >= 4) {
-        const month = parseInt(value.substring(2, 4));
-        if (month > 12) value = value.substring(0, 2) + '12' + value.substring(4);
-        if (month === 0) value = value.substring(0, 2) + '01' + value.substring(4);
+      if (rawValue.length >= 4) {
+        const month = parseInt(rawValue.substring(2, 4));
+        if (month > 12) rawValue = rawValue.substring(0, 2) + '12' + rawValue.substring(4);
+        if (month === 0 && rawValue.length === 4) rawValue = rawValue.substring(0, 2) + '01' + rawValue.substring(4);
       }
 
-      // Formatação visual
-      if (value.length > 4) {
-        formatted = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
-      } else if (value.length > 2) {
-        formatted = `${value.slice(0, 2)}/${value.slice(2)}`;
+      if (rawValue.length > 4) {
+        formatted = `${rawValue.slice(0, 2)}/${rawValue.slice(2, 4)}/${rawValue.slice(4)}`;
+      } else if (rawValue.length > 2) {
+        formatted = `${rawValue.slice(0, 2)}/${rawValue.slice(2)}`;
       } else {
-        formatted = value;
+        formatted = rawValue;
       }
+    }
 
-      // Atualiza display sem mover cursor
-      input.value = formatted;
+    else if (this.maskType === 'cpf') {
+      if (rawValue.length > 11) rawValue = rawValue.substring(0, 11);
+      if (rawValue.length > 9) formatted = `${rawValue.slice(0, 3)}.${rawValue.slice(3, 6)}.${rawValue.slice(6, 9)}-${rawValue.slice(9)}`;
+      else if (rawValue.length > 6) formatted = `${rawValue.slice(0, 3)}.${rawValue.slice(3, 6)}.${rawValue.slice(6)}`;
+      else if (rawValue.length > 3) formatted = `${rawValue.slice(0, 3)}.${rawValue.slice(3)}`;
+      else formatted = rawValue;
+    }
 
-      // Para campos com matDatepicker: seta um Date quando completo, null quando vazio.
-      // Isso evita o conflito entre a máscara (string) e o datepicker (Date).
-      if (this.control?.control) {
+    else if (this.maskType === 'phone') {
+      if (rawValue.length > 11) rawValue = rawValue.substring(0, 11);
+      if (rawValue.length > 10) formatted = `(${rawValue.slice(0, 2)}) ${rawValue.slice(2, 7)}-${rawValue.slice(7)}`;
+      else if (rawValue.length > 5) formatted = `(${rawValue.slice(0, 2)}) ${rawValue.slice(2, 6)}-${rawValue.slice(6)}`;
+      else if (rawValue.length > 2) formatted = `(${rawValue.slice(0, 2)}) ${rawValue.slice(2)}`;
+      else formatted = rawValue;
+    }
+
+    else if (this.maskType === 'cep') {
+      if (rawValue.length > 8) rawValue = rawValue.substring(0, 8);
+      if (rawValue.length > 5) formatted = `${rawValue.slice(0, 5)}-${rawValue.slice(5)}`;
+      else formatted = rawValue;
+    }
+
+    else {
+      formatted = rawValue;
+    }
+
+    input.value = formatted;
+    let newLength = formatted.length;
+    cursorPosition = cursorPosition + (newLength - oldLength);
+    input.setSelectionRange(cursorPosition, cursorPosition);
+
+    if (this.control?.control) {
+      if (this.maskType === 'date') {
         if (formatted.length === 10) {
           const parts = formatted.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
           if (parts) {
             const date = new Date(+parts[3], +parts[2] - 1, +parts[1]);
-            const ctrl = this.control.control;
             if (!isNaN(date.getTime())) {
-              ctrl.setValue(date, { emitEvent: true });
-            } else {
-              ctrl.setValue(null, { emitEvent: true });
+              this.control.control.setValue(date, { emitEvent: true });
             }
           }
         } else if (formatted.length === 0) {
-          this.control.control.setValue(null, { emitEvent: true });
+          if (this.control.control.value !== null) {
+            this.control.control.setValue(null, { emitEvent: false });
+          }
         }
-        // Se digitação parcial (< 10 chars): não altera o control — o DateAdapter
-        // tentará parsear no blur via matDatepicker
+      } else {
+        this.control.control.setValue(formatted, { emitEvent: false });
       }
-      return;
-    }
-
-    // --- CPF ---
-    else if (this.maskType === 'cpf') {
-      if (value.length > 11) value = value.substring(0, 11);
-
-      if (value.length > 9) formatted = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
-      else if (value.length > 6) formatted = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
-      else if (value.length > 3) formatted = `${value.slice(0, 3)}.${value.slice(3)}`;
-      else formatted = value;
-    }
-
-    // --- TELEFONE ---
-    else if (this.maskType === 'phone') {
-      if (value.length > 11) value = value.substring(0, 11);
-
-      if (value.length > 10) formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`; // Celular
-      else if (value.length > 5) formatted = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`; // Fixo/Digitando
-      else if (value.length > 2) formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-      else formatted = value;
-    }
-
-    // --- CEP ---
-    else if (this.maskType === 'cep') {
-      if (value.length > 8) value = value.substring(0, 8);
-      if (value.length > 5) formatted = `${value.slice(0, 5)}-${value.slice(5)}`;
-      else formatted = value;
-    }
-
-    else {
-      formatted = value;
-    }
-
-    input.value = formatted;
-
-    // Atualiza o Angular
-    if (this.control && this.control.control) {
-      this.control.control.setValue(formatted, { emitEvent: false });
     }
   }
 }
