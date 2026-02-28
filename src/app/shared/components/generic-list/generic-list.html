@@ -18,11 +18,11 @@
 
     <div class="table-container mat-elevation-z2">
         <div class="responsive-table-wrapper">
-            <table mat-table [dataSource]="dataSource" matSort>
-                <!-- ... colunas dinâmicas ... -->
+            <table mat-table [dataSource]="dataSource" matSort multiTemplateDataRows>
+                
                 <ng-container *ngFor="let col of columns" [matColumnDef]="col.def">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header> {{col.label}} </th>
-                    <td mat-cell *matCellDef="let element">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header [class.hide-on-mobile]="col.hideOnMobile"> {{col.label}} </th>
+                    <td mat-cell *matCellDef="let element" [class.hide-on-mobile]="col.hideOnMobile">
                         <ng-container [ngSwitch]="col.type">
                             <span *ngSwitchCase="'date'">{{ element[col.def] | date:'dd/MM/yyyy' }}</span>
                             <span *ngSwitchCase="'currency'" [style.color]="element[col.def] < 0 ? '#ff5252' : '#69f0ae'" style="font-weight: 500;">
@@ -37,24 +37,24 @@
                     </td>
                 </ng-container>
 
-                <!-- Coluna de Ações -->
+                <!-- Coluna de Ações (Apenas Desktop) -->
                 <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef class="actions-header"> Ações </th>
-                    <td mat-cell *matCellDef="let element" class="actions-cell">
+                    <th mat-header-cell *matHeaderCellDef class="actions-header hide-on-mobile"> Ações </th>
+                    <td mat-cell *matCellDef="let element" class="actions-cell hide-on-mobile">
                         <div class="action-buttons">
                             <ng-container *ngIf="!element.deleted">
-                                <button mat-icon-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element)" matTooltip="Ajustar quantidade">
+                                <button mat-icon-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element); $event.stopPropagation()" matTooltip="Ajustar quantidade">
                                     <mat-icon>swap_vert</mat-icon>
                                 </button>
-                                <button mat-icon-button color="primary" (click)="editAction.emit(element)" matTooltip="Editar">
+                                <button mat-icon-button color="primary" (click)="editAction.emit(element); $event.stopPropagation()" matTooltip="Editar">
                                     <mat-icon>edit</mat-icon>
                                 </button>
-                                <button mat-icon-button color="warn" (click)="confirmDelete(element)" matTooltip="Mover para lixeira">
+                                <button mat-icon-button color="warn" (click)="confirmDelete(element); $event.stopPropagation()" matTooltip="Mover para lixeira">
                                     <mat-icon>delete</mat-icon>
                                 </button>
                             </ng-container>
                             <ng-container *ngIf="element.deleted">
-                                <button mat-flat-button color="accent" size="small" (click)="restoreAction.emit(element)">
+                                <button mat-flat-button color="accent" size="small" (click)="restoreAction.emit(element); $event.stopPropagation()">
                                     RESTAURAR
                                 </button>
                             </ng-container>
@@ -62,8 +62,58 @@
                     </td>
                 </ng-container>
 
+                <!-- Linha de Detalhe Expandida (Onde as ações ficam no mobile) -->
+                <ng-container matColumnDef="expandedDetail">
+                    <td mat-cell *matCellDef="let element" [attr.colspan]="displayedColumns.length">
+                        <div class="element-detail" [@detailExpand]="element === expandedElement ? 'expanded' : 'collapsed'">
+                            <div class="detail-content">
+                                
+                                <!-- Campos Escondidos -->
+                                <div class="detail-item" *ngFor="let col of getHiddenColumns()">
+                                    <span class="detail-label">{{ col.label }}:</span>
+                                    <span class="detail-value">
+                                        <ng-container [ngSwitch]="col.type">
+                                            <span *ngSwitchCase="'date'">{{ element[col.def] | date:'dd/MM/yyyy' }}</span>
+                                            <span *ngSwitchCase="'currency'">{{ element[col.def] | currency:'BRL' }}</span>
+                                            <span *ngSwitchCase="'status'" class="status-pill" [ngClass]="element[col.def].toLowerCase()">{{ element[col.def] }}</span>
+                                            <span *ngSwitchDefault>{{ element[col.def] }}</span>
+                                        </ng-container>
+                                    </span>
+                                </div>
+
+                                <!-- Ações no Mobile -->
+                                <div class="mobile-actions">
+                                    <ng-container *ngIf="!element.deleted">
+                                        <button mat-stroked-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element); $event.stopPropagation()">
+                                            <mat-icon>swap_vert</mat-icon> AJUSTAR
+                                        </button>
+                                        <button mat-stroked-button color="primary" (click)="editAction.emit(element); $event.stopPropagation()">
+                                            <mat-icon>edit</mat-icon> EDITAR
+                                        </button>
+                                        <button mat-stroked-button color="warn" (click)="confirmDelete(element); $event.stopPropagation()">
+                                            <mat-icon>delete</mat-icon> EXCLUIR
+                                        </button>
+                                    </ng-container>
+                                    <ng-container *ngIf="element.deleted">
+                                        <button mat-flat-button color="accent" (click)="restoreAction.emit(element); $event.stopPropagation()">
+                                            RESTAURAR ITEM
+                                        </button>
+                                    </ng-container>
+                                </div>
+
+                            </div>
+                        </div>
+                    </td>
+                </ng-container>
+
                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns;" [ngClass]="rowClassFn ? rowClassFn(row) : null"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+                    class="element-row"
+                    [class.expanded-row]="expandedElement === row"
+                    [ngClass]="rowClassFn ? rowClassFn(row) : null"
+                    (click)="toggleRow(row)">
+                </tr>
+                <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="detail-row"></tr>
 
                 <tr class="mat-row" *matNoDataRow>
                     <td class="mat-cell" colspan="10">Nenhum registro encontrado.</td>

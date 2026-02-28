@@ -33,10 +33,10 @@ export class StockComponent implements OnInit {
 
   tableColumns: ColumnDef[] = [
     { def: 'name', label: 'Item' },
-    { def: 'category', label: 'Categoria' },
-    { def: 'unit', label: 'Unidade' },
+    { def: 'category', label: 'Categoria', hideOnMobile: true },
+    { def: 'unit', label: 'Unidade', hideOnMobile: true },
     { def: 'quantity', label: 'Qtd. Atual', type: 'stock-level' },
-    { def: 'updatedAt', label: 'Última Mov.', type: 'date' }
+    { def: 'updatedAt', label: 'Última Mov.', type: 'date', hideOnMobile: true }
   ];
 
   ngOnInit() {

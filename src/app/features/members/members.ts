@@ -30,8 +30,8 @@ export class MembersComponent implements OnInit {
 
   tableColumns: ColumnDef[] = [
     { def: 'name', label: 'Nome' },
-    { def: 'role', label: 'Função' },
-    { def: 'phone', label: 'Whatsapp' },
+    { def: 'role', label: 'Função', hideOnMobile: true },
+    { def: 'phone', label: 'Whatsapp', hideOnMobile: true },
     { def: 'status', label: 'Status' }
   ];
 

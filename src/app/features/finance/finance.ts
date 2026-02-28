@@ -50,9 +50,9 @@ export class FinanceComponent implements OnInit {
   totalExpense = 0;
 
   tableColumns: ColumnDef[] = [
-    { def: 'date', label: 'Data', type: 'date' },
+    { def: 'date', label: 'Data', type: 'date', hideOnMobile: true },
     { def: 'description', label: 'Descrição' },
-    { def: 'category', label: 'Categoria' },
+    { def: 'category', label: 'Categoria', hideOnMobile: true },
     { def: 'value', label: 'Valor (R$)', type: 'currency' }
   ];
 

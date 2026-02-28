@@ -12,7 +12,6 @@
     .search-bar {
         flex: 1;
         max-width: 600px;
-        // Remove margin bottom do material field para alinhar melhor
         ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
     }
 }
@@ -31,10 +30,9 @@
 
 table {
     width: 100%;
-    min-width: 800px; // Garante que as colunas não fiquem espremidas em telas pequenas
 }
 
-// Coluna de Ações
+// Coluna de Ações (Desktop)
 .actions-header {
     text-align: right !important;
     padding-right: 16px !important;
@@ -42,7 +40,7 @@ table {
 
 .actions-cell {
     padding-right: 8px !important;
-    white-space: nowrap; // Impede que os ícones quebrem linha ou fiquem com "..."
+    white-space: nowrap;
 }
 
 .action-buttons {
@@ -50,74 +48,159 @@ table {
     justify-content: flex-end;
     align-items: center;
     gap: 4px;
-    min-width: 130px; // Espaço suficiente para 3 botões mat-icon-button
 }
+
+/* EXPANDABLE ROW STYLES */
+.element-row {
+    &:hover { background-color: rgba(0,0,0,0.02); }
+    &.expanded-row { background-color: rgba(var(--mat-sys-primary-rgb), 0.04); }
+    cursor: pointer;
+}
+
+.element-row td {
+    border-bottom-width: 0;
+}
+
+.detail-row {
+    height: 0;
+}
+
+.element-detail {
+    overflow: hidden;
+    display: flex;
+}
+
+.detail-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    background-color: rgba(var(--mat-sys-primary-rgb), 0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.detail-item {
+    display: flex;
+    gap: 8px;
+    font-size: 0.9rem;
+    
+    .detail-label {
+        font-weight: 600;
+        min-width: 100px;
+        opacity: 0.7;
+    }
+}
+
+.mobile-actions {
+    display: none;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+
+    button {
+        flex: 1;
+        min-width: 110px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+
+    table {
+        min-width: 100% !important;
+    }
+
+    .mat-mdc-cell {
+        padding: 12px 8px !important;
+        // Permite ver o conteúdo importante (nome/descrição)
+        white-space: normal; 
+        word-break: break-word;
+    }
+
+    .mobile-actions {
+        display: flex;
+    }
+}
+
+/* ESTADOS DE ESTOQUE E STATUS */
 .stock-badge {
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     display: inline-block;
-    min-width: 30px;
+    min-width: 40px;
     text-align: center;
+    color: #fff !important; // Garante texto branco para contraste
 
-    &.normal {
-        background-color: #e8f5e9;
-        color: #2e7d32;
+    &.normal { 
+        background-color: #2e7d32; // Verde escuro (Material Green 800)
     }
-    &.warning {
-        background-color: #fffde7;
-        color: #f57f17;
+    &.warning { 
+        background-color: #f57c00; // Laranja forte (Material Orange 800)
     }
-    &.critical {
-        background-color: #ffebee;
-        color: #c62828;
+    &.critical { 
+        background-color: #d32f2f; // Vermelho intenso (Material Red 700)
     }
 }
 
 .status-pill {
-    padding: 4px 10px;
-    border-radius: 16px;
+    padding: 6px 12px;
+    border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &.ativo {
-        background-color: rgba(76, 175, 80, 0.15);
-        color: #2e7d32;
-    }
-    &.inativo {
-        background-color: rgba(158, 158, 158, 0.15);
-        color: #616161;
-    }
-    &.pendente {
-        background-color: rgba(255, 152, 0, 0.15);
-        color: #e65100;
-    }
+    
+    &.ativo { background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+    &.inativo { background-color: #f5f5f5; color: #424242; border: 1px solid #e0e0e0; }
+    &.pendente { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
 }
 
 // Dark Mode Overrides
 html.dark-theme {
     .stock-badge {
-        &.normal { background-color: #1b5e20; color: #a5d6a7; }
-        &.warning { background-color: #fbc02d; color: #333; }
-        &.critical { background-color: #b71c1c; color: #ffcdd2; }
+        &.normal { background-color: #1b5e20; }
+        &.warning { background-color: #e65100; }
+        &.critical { background-color: #b71c1c; }
     }
     .status-pill {
-        &.ativo { background-color: rgba(76, 175, 80, 0.25); color: #81c784; }
-        &.inativo { background-color: rgba(158, 158, 158, 0.25); color: #bdbdbd; }
+        &.ativo { background-color: rgba(76, 175, 80, 0.1); color: #81c784; border-color: rgba(129, 199, 132, 0.3); }
+        &.inativo { background-color: rgba(158, 158, 158, 0.1); color: #bdbdbd; border-color: rgba(189, 189, 189, 0.3); }
     }
 }
 
-.mat-column-actions {
-    width: 120px;
-    text-align: right;
+// RESPONSIVIDADE DO PAGINADOR
+::ng-deep .mat-mdc-paginator {
+    .mat-mdc-paginator-container {
+        justify-content: flex-end;
+        padding: 0 8px;
+        flex-wrap: wrap;
+    }
+    .mat-mdc-paginator-range-label { margin: 0 8px; font-size: 0.85rem; }
 }
 
-// Ajuste para quando a linha está deletada (Lixeira)
-tr.deleted {
-    opacity: 0.6;
-    background-color: rgba(0,0,0,0.02);
-    font-style: italic;
+@media (max-width: 600px) {
+    .search-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        .search-bar { max-width: 100%; }
+        button { align-self: flex-end; }
+    }
+
+    ::ng-deep .mat-mdc-paginator {
+        .mat-mdc-paginator-container { justify-content: center; }
+        .mat-mdc-paginator-page-size {
+            margin-right: 0;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .mat-mdc-paginator-range-actions { width: 100%; justify-content: center; }
+    }
 }
