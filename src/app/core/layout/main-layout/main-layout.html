@@ -1,53 +1,88 @@
 <div class="layout-container">
 
-    <!-- BARRA SUPERIOR (Fixa) -->
+    <!-- BARRA SUPERIOR (Horizontal) -->
     <mat-toolbar color="primary" class="topbar">
+        <!-- Hambúrguer apenas no Mobile -->
         <button type="button" mat-icon-button (click)="drawer.toggle()" *ngIf="isHandset$ | async">
             <mat-icon>menu</mat-icon>
         </button>
 
-        <span class="logo-text">Tem-Fé ERP</span>
+        <span class="logo-text" [routerLink]="['/dashboard']" style="cursor: pointer;">Tem-Fé ERP</span>
+
+        <!-- NAVEGAÇÃO DESKTOP (No topo) -->
+        <div class="desktop-nav" *ngIf="!(isHandset$ | async)">
+            <button mat-button *ngFor="let item of menuItems" [routerLink]="item.route" routerLinkActive="active-nav">
+                <mat-icon>{{ item.icon }}</mat-icon>
+                <span>{{ item.label }}</span>
+            </button>
+        </div>
 
         <span class="spacer"></span>
-        <!-- BOTÃO DE TEMA  -->
-        <button mat-icon-button (click)="themeService.toggle()" matTooltip="Alternar Tema">
-            <mat-icon>{{ themeService.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-        </button>
-        <!-- Botão Sair -->
-        <button mat-icon-button (click)="logout()" matTooltip="Sair do sistema">
-            <mat-icon>logout</mat-icon>
-        </button>
+
+        <!-- PERFIL USUÁRIO COM MENU -->
+        <div class="topbar-user" [matMenuTriggerFor]="userMenu" *ngIf="currentUser$ | async as user">
+            <img *ngIf="user.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="mini-avatar">
+            <ng-template #noPhoto>
+                <mat-icon class="mini-avatar">account_circle</mat-icon>
+            </ng-template>
+            <span class="user-name-top" *ngIf="!(isHandset$ | async)">{{ user.displayName || 'Usuário' }}</span>
+            <mat-icon class="arrow-down">keyboard_arrow_down</mat-icon>
+        </div>
+
+        <!-- DEFINIÇÃO DO MENU DROP-DOWN -->
+        <mat-menu #userMenu="matMenu" xPosition="before" class="user-dropdown-menu">
+            <div class="menu-header" *ngIf="currentUser$ | async as user">
+                <span class="menu-name">{{ user.displayName || 'Usuário' }}</span>
+                <span class="menu-email">{{ user.email }}</span>
+            </div>
+            <mat-divider></mat-divider>
+            
+            <button mat-menu-item [routerLink]="['/profile']">
+                <mat-icon>person</mat-icon>
+                <span>Meu Perfil</span>
+            </button>
+
+            <button mat-menu-item (click)="themeService.toggle()">
+                <mat-icon>{{ themeService.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+                <span>Tema: {{ themeService.darkMode() ? 'Claro' : 'Escuro' }}</span>
+            </button>
+
+            <mat-divider></mat-divider>
+
+            <button mat-menu-item (click)="logout()">
+                <mat-icon color="warn">logout</mat-icon>
+                <span style="color: var(--mat-sys-error);">Sair do Sistema</span>
+            </button>
+        </mat-menu>
     </mat-toolbar>
 
-    <!-- CONTAINER LATERAL -->
+    <!-- CONTAINER PRINCIPAL -->
     <mat-sidenav-container class="sidenav-container">
 
-        <!-- MENU LATERAL -->
-        <mat-sidenav #drawer class="sidenav" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-            [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="isSidebarOpened">
+        <!-- MENU LATERAL (Apenas para Mobile/Drawer) -->
+        <mat-sidenav #drawer class="sidenav" 
+            [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+            [mode]="(isHandset$ | async) ? 'over' : 'side'" 
+            [opened]="!(isHandset$ | async) ? false : isSidebarOpened">
 
-            <div class="user-profile-header" [routerLink]="['/profile']" (click)="closeSideNavIfMobile()" style="cursor: pointer;">
-                <img *ngIf="(currentUser$ | async)?.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="avatar-img">
+            <div class="mobile-drawer-header" *ngIf="currentUser$ | async as user">
+                <img *ngIf="user.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="avatar-img">
                 <ng-template #noPhoto>
                     <mat-icon class="avatar">account_circle</mat-icon>
                 </ng-template>
-                <div class="user-info" *ngIf="currentUser$ | async as user">
-                    <span class="name">{{ user.displayName || 'Usuário' }}</span>
-                    <br>
-                    <span class="role">{{ user.email }}</span>
-                </div>
+                <span class="name">{{ user.displayName || 'Usuário' }}</span>
             </div>
 
             <mat-nav-list>
                 <a mat-list-item *ngFor="let item of menuItems" [routerLink]="item.route" routerLinkActive="active-link"
-                    (click)="closeSideNavIfMobile()">
+                    (click)="drawer.close()">
                     <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
                     <span matListItemTitle>{{ item.label }}</span>
                 </a>
             </mat-nav-list>
         </mat-sidenav>
 
-        <!-- CONTEÚDO DA PÁGINA (Onde entra o Dashboard, Membros, etc) -->
+        <!-- CONTEÚDO DA PÁGINA -->
         <mat-sidenav-content>
             <div class="content-wrapper">
                 <router-outlet></router-outlet>

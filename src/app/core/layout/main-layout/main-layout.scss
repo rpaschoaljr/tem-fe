@@ -9,84 +9,159 @@
 }
 
 .topbar {
-    position: relative;
-    z-index: 2;
-    /* Garante sombra sobre o menu */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 64px;
 }
 
-.sidenav-container {
-    flex: 1;
-    /* Ocupa todo o espaço restante abaixo da barra */
-}
-
-.sidenav {
-    width: 250px;
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
-
-    /* Ajuste para Dark Mode */
-    background-color: var(--mat-sys-surface);
+.logo-text {
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-right: 24px;
+    font-size: 1.2rem;
 }
 
 .spacer {
     flex: 1 1 auto;
 }
 
-.user-profile-header {
+/* NAVEGAÇÃO HORIZONTAL (Desktop) */
+.desktop-nav {
     display: flex;
-    flex-direction: column;
+    gap: 8px;
+
+    button {
+        height: 100%;
+        border-radius: 0;
+        opacity: 0.8;
+        font-weight: 400;
+
+        mat-icon {
+            margin-right: 8px;
+        }
+
+        &.active-nav {
+            opacity: 1;
+            font-weight: 500;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-bottom: 3px solid white;
+        }
+    }
+}
+
+/* PERFIL NA TOPBAR */
+.topbar-user {
+    display: flex;
     align-items: center;
-    padding: 30px 15px;
-    background-color: rgba(0, 0, 0, 0.03);
-    margin-bottom: 10px;
-    text-align: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 20px;
     transition: background-color 0.2s;
+    margin-right: 8px;
 
     &:hover {
-        background-color: rgba(0, 0, 0, 0.06);
+        background-color: rgba(255, 255, 255, 0.1);
     }
 
-    .avatar-img {
-        width: 64px;
-        height: 64px;
+    .mini-avatar {
+        width: 32px;
+        height: 32px;
         border-radius: 8px;
         object-fit: cover;
-        margin-bottom: 12px;
-        border: 2px solid var(--mat-sys-primary-container);
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    .avatar {
-        font-size: 60px;
-        height: 60px;
-        width: 60px;
-        opacity: 0.7;
-        margin-bottom: 10px;
-        border-radius: 8px;
+    .user-name-top {
+        font-size: 0.9rem;
+        font-weight: 500;
     }
 
-    .name {
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-
-    .role {
-        font-size: 0.8rem;
+    .arrow-down {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
         opacity: 0.7;
     }
 }
 
-.active-link {
-    background-color: rgba(var(--mat-sys-primary-rgb), 0.1) !important; // Exemplo de destaque
-    border-left: 4px solid var(--mat-sys-primary);
+/* MENU DROP-DOWN */
+::ng-deep .user-dropdown-menu {
+    margin-top: 8px;
+    border-radius: 12px !important;
+    overflow: hidden;
 
-    mat-icon {
-        color: var(--mat-sys-primary);
+    .menu-header {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+
+        .menu-name {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .menu-email {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+    }
+}
+
+.topbar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.sidenav-container {
+    flex: 1;
+}
+
+/* SIDEBAR (Apenas mobile) */
+.sidenav {
+    width: 280px;
+    background-color: var(--mat-sys-surface);
+}
+
+.mobile-drawer-header {
+    padding: 32px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background-color: rgba(0, 0, 0, 0.03);
+    margin-bottom: 8px;
+
+    .avatar-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 3px solid var(--mat-sys-primary-container);
+    }
+
+    .avatar {
+        font-size: 80px;
+        width: 80px;
+        height: 80px;
+        opacity: 0.2;
+    }
+
+    .name {
+        font-weight: 600;
+        font-size: 1.1rem;
     }
 }
 
 .content-wrapper {
-    padding: 20px;
-    /* Isso garante que só o miolo rola, a barra fica parada */
+    padding: 24px;
     overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
@@ -94,4 +169,10 @@
     @media (max-width: 600px) {
         padding: 12px;
     }
+}
+
+.active-link {
+    background-color: rgba(var(--mat-sys-primary-rgb), 0.1) !important;
+    border-left: 4px solid var(--mat-sys-primary);
+    mat-icon { color: var(--mat-sys-primary); }
 }
