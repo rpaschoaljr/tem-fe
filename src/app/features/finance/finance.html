@@ -4,7 +4,7 @@
     <div class="kpi-grid">
 
         <!-- Entrada -->
-        <mat-card class="kpi-card income">
+        <mat-card class="kpi-card income pointer" (click)="setFilter('income')" [class.active]="typeFilter === 'income'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>arrow_upward</mat-icon></div>
                 <div class="info">
@@ -15,7 +15,7 @@
         </mat-card>
 
         <!-- Saída -->
-        <mat-card class="kpi-card expense">
+        <mat-card class="kpi-card expense pointer" (click)="setFilter('expense')" [class.active]="typeFilter === 'expense'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>arrow_downward</mat-icon></div>
                 <div class="info">
@@ -26,7 +26,7 @@
         </mat-card>
 
         <!-- Saldo -->
-        <mat-card class="kpi-card balance">
+        <mat-card class="kpi-card balance pointer" (click)="setFilter('all')" [class.active]="typeFilter === 'all'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>account_balance_wallet</mat-icon></div>
                 <div class="info">

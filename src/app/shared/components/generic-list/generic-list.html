@@ -17,65 +17,59 @@
     </div>
 
     <div class="table-container mat-elevation-z2">
-        <table mat-table [dataSource]="dataSource" matSort>
+        <div class="responsive-table-wrapper">
+            <table mat-table [dataSource]="dataSource" matSort>
+                <!-- ... colunas dinâmicas ... -->
+                <ng-container *ngFor="let col of columns" [matColumnDef]="col.def">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> {{col.label}} </th>
+                    <td mat-cell *matCellDef="let element">
+                        <ng-container [ngSwitch]="col.type">
+                            <span *ngSwitchCase="'date'">{{ element[col.def] | date:'dd/MM/yyyy' }}</span>
+                            <span *ngSwitchCase="'currency'" [style.color]="element[col.def] < 0 ? '#ff5252' : '#69f0ae'" style="font-weight: 500;">
+                                {{ element[col.def] | currency:'BRL' }}
+                            </span>
+                            <div *ngSwitchCase="'stock-level'" class="stock-badge-container">
+                                <span class="stock-badge" [ngClass]="getStockClass(element)">{{ element[col.def] }}</span>
+                            </div>
+                            <span *ngSwitchCase="'status'" class="status-pill" [ngClass]="element[col.def].toLowerCase()">{{ element[col.def] }}</span>
+                            <span *ngSwitchDefault>{{ element[col.def] }}</span>
+                        </ng-container>
+                    </td>
+                </ng-container>
 
-            <ng-container *ngFor="let col of columns" [matColumnDef]="col.def">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> {{col.label}} </th>
+                <!-- Coluna de Ações -->
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="actions-header"> Ações </th>
+                    <td mat-cell *matCellDef="let element" class="actions-cell">
+                        <div class="action-buttons">
+                            <ng-container *ngIf="!element.deleted">
+                                <button mat-icon-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element)" matTooltip="Ajustar quantidade">
+                                    <mat-icon>swap_vert</mat-icon>
+                                </button>
+                                <button mat-icon-button color="primary" (click)="editAction.emit(element)" matTooltip="Editar">
+                                    <mat-icon>edit</mat-icon>
+                                </button>
+                                <button mat-icon-button color="warn" (click)="confirmDelete(element)" matTooltip="Mover para lixeira">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </ng-container>
+                            <ng-container *ngIf="element.deleted">
+                                <button mat-flat-button color="accent" size="small" (click)="restoreAction.emit(element)">
+                                    RESTAURAR
+                                </button>
+                            </ng-container>
+                        </div>
+                    </td>
+                </ng-container>
 
-                <td mat-cell *matCellDef="let element">
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" [ngClass]="rowClassFn ? rowClassFn(row) : null"></tr>
 
-                    <!-- Lógica de Formatação -->
-                    <ng-container [ngSwitch]="col.type">
-
-                        <!-- Se for DATA -->
-                        <span *ngSwitchCase="'date'">
-                            {{ element[col.def] | date:'dd/MM/yyyy' }}
-                        </span>
-
-                        <!-- Se for MOEDA (Currency) -->
-                        <span *ngSwitchCase="'currency'" [style.color]="element[col.def] < 0 ? '#ff5252' : '#69f0ae'"
-                            style="font-weight: 500;">
-                            {{ element[col.def] | currency:'BRL' }}
-                        </span>
-
-                        <!-- Se for Texto Normal -->
-                        <span *ngSwitchDefault>{{ element[col.def] }}</span>
-
-                    </ng-container>
-
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef> Ações </th>
-                <td mat-cell *matCellDef="let element">
-                    <ng-container *ngIf="!element.deleted">
-                        <button mat-icon-button color="accent" *ngIf="showAdjust" (click)="adjustAction.emit(element)" matTooltip="Ajustar quantidade">
-                            <mat-icon>swap_vert</mat-icon>
-                        </button>
-                        <button mat-icon-button color="primary" (click)="editAction.emit(element)" matTooltip="Editar">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                        <button mat-icon-button color="warn" (click)="confirmDelete(element)" matTooltip="Mover para lixeira">
-                            <mat-icon>delete</mat-icon>
-                        </button>
-                    </ng-container>
-                    <ng-container *ngIf="element.deleted">
-                        <button mat-flat-button color="accent" (click)="restoreAction.emit(element)">
-                            RESTAURAR
-                        </button>
-                    </ng-container>
-                </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                [ngClass]="rowClassFn ? rowClassFn(row) : null"></tr>
-
-            <tr class="mat-row" *matNoDataRow>
-                <td class="mat-cell" colspan="4">Nenhum registro encontrado.</td>
-            </tr>
-        </table>
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell" colspan="10">Nenhum registro encontrado.</td>
+                </tr>
+            </table>
+        </div>
         <mat-paginator [pageSizeOptions]="[20, 50, 100]" showFirstLastButtons></mat-paginator>
     </div>
 </div>

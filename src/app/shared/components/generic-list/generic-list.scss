@@ -1,49 +1,123 @@
-/*
-  Estilos para as linhas da tabela de estoque, com suporte para tema claro e escuro.
-*/
-
-/* --- Tema Claro (Padrão) --- */
-// Para o tema claro, usamos cores vibrantes mas garantimos que o texto seja legível.
-:host ::ng-deep .stock-warning {
-    // Amarelo mais escuro, como solicitado. Garante contraste com texto preto.
-    background-color: #ffc107 !important; /* Material Amber 500 */
-    color: #000000 !important;
+.generic-list-container {
+    padding: 1rem;
 }
 
-:host ::ng-deep .stock-warning:hover {
-    background-color: #ffb300 !important; /* Material Amber 600 */
+.search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 16px;
+
+    .search-bar {
+        flex: 1;
+        max-width: 600px;
+        // Remove margin bottom do material field para alinhar melhor
+        ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+    }
 }
 
-:host ::ng-deep .stock-out {
-    // Vermelho forte, com texto branco para bom contraste.
-    background-color: #f44336 !important; /* Material Red 500 */
-    color: #ffffff !important;
+.table-container {
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--mat-sys-surface);
 }
 
-:host ::ng-deep .stock-out:hover {
-    background-color: #e53935 !important; /* Material Red 600 */
+.responsive-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-
-/* --- Sobrescrita para Tema Escuro --- */
-// No tema escuro, os fundos precisam ser mais sutis, mas ainda se destacarem.
-// O texto padrão do tema escuro é branco/claro, então as cores de fundo devem ser escuras o suficiente.
-
-html.dark-theme :host ::ng-deep .stock-warning {
-    // Um tom de "amarelo escuro" (marrom/âmbar) que funciona bem em fundos escuros.
-    background-color: #a1887f !important;  /* Material Brown 300 */
-    // A cor do texto já é branca/clara no tema escuro, então não precisamos forçar.
+table {
+    width: 100%;
+    min-width: 800px; // Garante que as colunas não fiquem espremidas em telas pequenas
 }
 
-html.dark-theme :host ::ng-deep .stock-warning:hover {
-    background-color: #8d6e63 !important; /* Material Brown 400 */
+// Coluna de Ações
+.actions-header {
+    text-align: right !important;
+    padding-right: 16px !important;
 }
 
-html.dark-theme :host ::ng-deep .stock-out {
-    // Um vermelho bem escuro para indicar perigo, contrastando com o fundo do tema.
-    background-color: #b71c1c !important; /* Material Red 900 */
+.actions-cell {
+    padding-right: 8px !important;
+    white-space: nowrap; // Impede que os ícones quebrem linha ou fiquem com "..."
 }
 
-html.dark-theme :host ::ng-deep .stock-out:hover {
-    background-color: #c62828 !important; /* Material Red 800 */
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    min-width: 130px; // Espaço suficiente para 3 botões mat-icon-button
+}
+.stock-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    min-width: 30px;
+    text-align: center;
+
+    &.normal {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+    &.warning {
+        background-color: #fffde7;
+        color: #f57f17;
+    }
+    &.critical {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+}
+
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.ativo {
+        background-color: rgba(76, 175, 80, 0.15);
+        color: #2e7d32;
+    }
+    &.inativo {
+        background-color: rgba(158, 158, 158, 0.15);
+        color: #616161;
+    }
+    &.pendente {
+        background-color: rgba(255, 152, 0, 0.15);
+        color: #e65100;
+    }
+}
+
+// Dark Mode Overrides
+html.dark-theme {
+    .stock-badge {
+        &.normal { background-color: #1b5e20; color: #a5d6a7; }
+        &.warning { background-color: #fbc02d; color: #333; }
+        &.critical { background-color: #b71c1c; color: #ffcdd2; }
+    }
+    .status-pill {
+        &.ativo { background-color: rgba(76, 175, 80, 0.25); color: #81c784; }
+        &.inativo { background-color: rgba(158, 158, 158, 0.25); color: #bdbdbd; }
+    }
+}
+
+.mat-column-actions {
+    width: 120px;
+    text-align: right;
+}
+
+// Ajuste para quando a linha está deletada (Lixeira)
+tr.deleted {
+    opacity: 0.6;
+    background-color: rgba(0,0,0,0.02);
+    font-style: italic;
 }

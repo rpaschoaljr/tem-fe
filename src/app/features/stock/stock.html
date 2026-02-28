@@ -2,7 +2,7 @@
 
     <!-- KPIs -->
     <div class="kpi-grid">
-        <mat-card class="kpi-card total">
+        <mat-card class="kpi-card total pointer" (click)="setFilter('all')" [class.active]="stockFilter === 'all'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>inventory_2</mat-icon></div>
                 <div class="info">
@@ -12,7 +12,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="kpi-card warning">
+        <mat-card class="kpi-card warning pointer" (click)="setFilter('low')" [class.active]="stockFilter === 'low'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>priority_high</mat-icon></div>
                 <div class="info">
@@ -22,7 +22,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="kpi-card danger">
+        <mat-card class="kpi-card danger pointer" (click)="setFilter('out')" [class.active]="stockFilter === 'out'">
             <mat-card-content>
                 <div class="icon-box"><mat-icon>no_sim</mat-icon></div>
                 <div class="info">

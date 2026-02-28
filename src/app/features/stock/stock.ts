@@ -23,7 +23,9 @@ export class StockComponent implements OnInit {
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
 
+  allItems: StockItem[] = [];
   items: StockItem[] = [];
+  stockFilter: 'all' | 'low' | 'out' = 'all';
 
   totalItems = 0;
   lowStockCount = 0;
@@ -44,8 +46,9 @@ export class StockComponent implements OnInit {
   loadData() {
     this.stockService.getStock().subscribe({
       next: (data) => {
-        this.items = data;
+        this.allItems = data;
         this.calculateKPIs();
+        this.applyFilter();
       },
       error: (err) => {
         // Tratamento de erro na leitura
@@ -55,10 +58,25 @@ export class StockComponent implements OnInit {
   }
 
   calculateKPIs() {
-    const active = this.items.filter(i => !i.deleted);
+    const active = this.allItems.filter(i => !i.deleted);
     this.totalItems = active.length;
     this.outOfStockCount = active.filter(i => i.quantity <= 0).length;
     this.lowStockCount = active.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock).length;
+  }
+
+  applyFilter() {
+    if (this.stockFilter === 'low') {
+      this.items = this.allItems.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock);
+    } else if (this.stockFilter === 'out') {
+      this.items = this.allItems.filter(i => i.quantity <= 0);
+    } else {
+      this.items = this.allItems;
+    }
+  }
+
+  setFilter(filter: 'all' | 'low' | 'out') {
+    this.stockFilter = (this.stockFilter === filter) ? 'all' : filter;
+    this.applyFilter();
   }
 
   openForm(item: StockItem | null = null) {

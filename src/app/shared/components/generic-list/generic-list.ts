@@ -93,4 +93,12 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
       this.deleteAction.emit(item);
     }
   }
+
+  getStockClass(item: any): string {
+    const q = item.quantity ?? 0;
+    const min = item.minStock ?? 0;
+    if (q <= 0) return 'critical';
+    if (q <= min) return 'warning';
+    return 'normal';
+  }
 }

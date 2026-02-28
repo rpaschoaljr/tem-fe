@@ -47,7 +47,7 @@
         .profile-image {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
+            border-radius: 12px;
             object-fit: cover;
             border: 4px solid var(--mat-sys-primary-container);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -56,7 +56,7 @@
         .no-profile-image {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
+            border-radius: 12px;
             background-color: rgba(0,0,0,0.05);
             display: flex;
             justify-content: center;

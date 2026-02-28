@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
@@ -14,6 +15,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { Member } from '../../core/models/member.model';
 import { ComponentCanDeactivate } from '../../core/guards/pending-changes.guard';
 import { Observable } from 'rxjs';
+import { ImageCropperDialogComponent } from '../../shared/components/image-cropper-dialog/image-cropper-dialog';
 
 @Component({
   selector: 'app-profile',
@@ -28,6 +30,7 @@ import { Observable } from 'rxjs';
     MatInputModule,
     MatIconModule,
     MatDividerModule,
+    MatDialogModule,
     ReactiveFormsModule
   ],
 })
@@ -37,6 +40,7 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private notification = inject(NotificationService);
+  private dialog = inject(MatDialog);
 
   member: Member | null = null;
   loading = true;
@@ -138,27 +142,43 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
   }
 
   async onFileSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file && this.member) {
-      try {
-        const storageRef = ref(this.storage, `profile-pictures/${this.member.id}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(uploadResult.ref);
-        
-        const memberDocRef = doc(this.firestore, `members/${this.member.id}`);
-        await updateDoc(memberDocRef, { photoUrl: downloadURL, updatedAt: new Date() });
+    if (event.target.files && event.target.files.length > 0 && this.member) {
+      const dialogRef = this.dialog.open(ImageCropperDialogComponent, {
+        data: { event },
+        width: '500px',
+        maxWidth: '90vw'
+      });
 
-        const user = this.auth.currentUser;
-        if (user) {
-          await updateProfile(user, { photoURL: downloadURL });
+      dialogRef.afterClosed().subscribe(async (result: Blob | undefined) => {
+        if (result) {
+          try {
+            this.loading = true;
+            const storageRef = ref(this.storage, `profile-pictures/${this.member!.id}`);
+
+            // Define o tipo do arquivo como image/webp pois o cropper está configurado para esse formato
+            const uploadResult = await uploadBytes(storageRef, result, { contentType: 'image/webp' });
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+
+            const memberDocRef = doc(this.firestore, `members/${this.member!.id}`);
+            await updateDoc(memberDocRef, { photoUrl: downloadURL, updatedAt: new Date() });
+
+            const user = this.auth.currentUser;
+            if (user) {
+              await updateProfile(user, { photoURL: downloadURL });
+            }
+
+            this.profileImageUrl = downloadURL;
+            this.notification.showSuccess('Foto de perfil atualizada!');
+          } catch (error) {
+            console.error('Error uploading image: ', error);
+            this.notification.showError('Erro ao salvar a foto.');
+          } finally {
+            this.loading = false;
+          }
         }
-
-        this.profileImageUrl = downloadURL;
-        this.notification.showSuccess('Foto de perfil atualizada!');
-      } catch (error) {
-        console.error('Error uploading image: ', error);
-        this.notification.showError('Erro ao salvar a foto.');
-      }
+        // Limpa o input para permitir selecionar o mesmo arquivo novamente se necessário
+        event.target.value = '';
+      });
     }
   }
 

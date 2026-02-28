@@ -53,26 +53,40 @@ export class MembersService {
 
     // --- LEITURA ---
     getMembers(forceRefresh = false): Observable<Member[]> {
+        const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
+        const hasCache = localStorage.getItem(this.CACHE_KEY);
+        const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
+
+        // Se o cache estiver fresco e não for um refresh forçado, retorna o cache IMEDIATAMENTE
+        if (!forceRefresh && hasCache && isCacheFresh) {
+            return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
+        }
+
+        // Caso contrário, busca no Firestore
         const colRef = collection(this.firestore, this.COL);
         return from(getDocs(colRef)).pipe(
             map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
+            tap(data => this.updateCache(data)), // Atualiza cache ao buscar com sucesso
             catchError(() => {
-                // Fallback para localStorage se Firestore não disponível
-                const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
-                const hasCache = localStorage.getItem(this.CACHE_KEY);
-                if (!forceRefresh && hasCache && (Date.now() - lastFetch < this.CACHE_DURATION)) {
+                // Fallback apenas se der erro na rede e tiver cache (mesmo velho)
+                if (hasCache) {
                     return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
                 }
-                return of(this.getMockOrStoredData()).pipe(
-                    delay(500),
-                    tap(data => this.updateCache(data))
-                );
+                return of(this.getMockOrStoredData());
             })
         );
     }
 
-    // Buscar UM membro por ID (Para edição)
+    // Buscar UM membro por ID
     getById(id: string): Observable<Member | undefined> {
+        // Tenta achar no cache primeiro para ser instantâneo
+        const stored = localStorage.getItem(this.CACHE_KEY);
+        if (stored) {
+            const list = JSON.parse(stored).map((m: any) => this.fixDates(m));
+            const found = list.find((m: any) => m.id === id);
+            if (found) return of(found);
+        }
+
         const docRef = doc(this.firestore, this.COL, id);
         return from(getDoc(docRef)).pipe(
             map(d => d.exists() ? this.fromFirestore(d.id, d.data()!) : undefined),
@@ -90,6 +104,11 @@ export class MembersService {
         const colRef = collection(this.firestore, this.COL);
         const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, member.id);
 
+        // Padronização: Nome em CAIXA ALTA (Banco Limpo)
+        if (member.name) {
+            member.name = member.name.trim().toUpperCase();
+        }
+
         const data = {
             ...this.toFirestore(member),
             id: docRef.id,
@@ -98,6 +117,10 @@ export class MembersService {
         };
 
         return from(setDoc(docRef, data, { merge: true })).pipe(
+            tap(() => {
+                // Ao salvar com sucesso, invalidamos o cache de tempo para forçar reload na próxima
+                localStorage.removeItem(this.TIME_KEY);
+            }),
             map(() => true),
             catchError(() => {
                 // Fallback localStorage

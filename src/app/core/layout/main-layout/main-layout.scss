@@ -49,7 +49,7 @@
     .avatar-img {
         width: 64px;
         height: 64px;
-        border-radius: 50%;
+        border-radius: 8px;
         object-fit: cover;
         margin-bottom: 12px;
         border: 2px solid var(--mat-sys-primary-container);
@@ -61,6 +61,7 @@
         width: 60px;
         opacity: 0.7;
         margin-bottom: 10px;
+        border-radius: 8px;
     }
 
     .name {
