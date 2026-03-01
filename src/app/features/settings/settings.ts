@@ -130,7 +130,7 @@ export class SettingsComponent implements OnInit {
         this.membersConfig.set(conf);
         const roleField = conf.fields.find(f => f.key === 'role');
         if (roleField) {
-          const roles = roleField.options?.filter(o => !o.deleted).map(o => o.label) || [];
+          const roles = roleField.options?.filter(o => !o.deleted).map(o => o.label).sort((a, b) => a.localeCompare(b)) || [];
           this.rolesList.set(roles);
           // Se não houver cargo selecionado e a lista tiver itens, seleciona o primeiro
           if (!this.selectedRole() && roles.length > 0) {
@@ -403,11 +403,11 @@ export class SettingsComponent implements OnInit {
   }
 
   getActiveOptions(field: DynamicField) {
-    return field.options?.filter(o => !o.deleted) || [];
+    return field.options?.filter(o => !o.deleted).sort((a, b) => a.label.localeCompare(b.label)) || [];
   }
 
   getDeletedOptions(field: DynamicField) {
-    return field.options?.filter(o => o.deleted) || [];
+    return field.options?.filter(o => o.deleted).sort((a, b) => a.label.localeCompare(b.label)) || [];
   }
 
   // Helpers para Agrupamento de Seções de Campos

@@ -87,7 +87,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   }
 
   getActiveOptions(field: DynamicField) {
-    return field.options?.filter(o => !o.deleted) || [];
+    return field.options?.filter(o => !o.deleted).sort((a, b) => a.label.localeCompare(b.label)) || [];
   }
 
   loadConfig() {
@@ -95,7 +95,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
       this.customFieldsConfig = config.fields.filter(f => !f.deleted);
       
       const roleField = config.fields.find(f => f.key === 'role');
-      this.roles = roleField?.options?.filter(o => !o.deleted).map(o => o.label) || [];
+      this.roles = roleField?.options?.filter(o => !o.deleted).map(o => o.label).sort((a, b) => a.localeCompare(b)) || [];
 
       const addressGroup = this.form.get('address') as FormGroup;
       const ritualsGroup = this.form.get('rituals') as FormGroup;
