@@ -1,12 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, doc, getDoc, setDoc, collection } from '@angular/fire/firestore';
-import { Observable, from, map, of, switchMap } from 'rxjs';
-import { ModuleConfig, DynamicField, FieldOption } from '../models/system-config.model';
+import { Observable, from, map, of, switchMap, combineLatest } from 'rxjs';
+import { ModuleConfig, DynamicField, FieldOption, PermissionConfig, ModulePermissions } from '../models/system-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
     private firestore = inject(Firestore);
     private COL = 'system_configs';
+    private PERM_COL = 'permissions';
 
     getConfig(moduleId: string): Observable<ModuleConfig> {
         const docRef = doc(this.firestore, this.COL, moduleId);
@@ -25,6 +26,50 @@ export class ConfigService {
         const docRef = doc(this.firestore, this.COL, config.id);
         return from(setDoc(docRef, { ...config, updatedAt: new Date() }));
     }
+
+    // --- PERMISSÕES ---
+
+    getRolePermission(roleName: string): Observable<PermissionConfig> {
+        // ID seguro: converte barras em underscore para não quebrar o caminho do documento
+        const safeId = `role_${roleName.replace(/\//g, '_')}`;
+        const docRef = doc(this.firestore, this.PERM_COL, safeId);
+        
+        return from(getDoc(docRef)).pipe(
+            map(snap => {
+                if (snap.exists()) {
+                    return snap.data() as PermissionConfig;
+                } else {
+                    // Retorna permissão zerada (bloqueia tudo) como padrão
+                    return this.getDefaultRolePermission(safeId, roleName);
+                }
+            })
+        );
+    }
+
+    savePermission(perm: PermissionConfig): Observable<void> {
+        const docRef = doc(this.firestore, this.PERM_COL, perm.id);
+        return from(setDoc(docRef, { ...perm, updatedAt: new Date() }));
+    }
+
+    private getDefaultRolePermission(id: string, roleName: string): PermissionConfig {
+        const defaultModulePerm: ModulePermissions = { read: false, write: false };
+        return {
+            id,
+            type: 'role',
+            target: roleName,
+            modules: {
+                dashboard: { ...defaultModulePerm },
+                members: { ...defaultModulePerm },
+                finance: { ...defaultModulePerm },
+                stock: { ...defaultModulePerm },
+                notices: { ...defaultModulePerm },
+                settings: { ...defaultModulePerm }
+            },
+            updatedAt: new Date()
+        };
+    }
+
+    // --- FIM PERMISSÕES ---
 
     ensureInitialized(moduleId: string): Observable<void> {
         const docRef = doc(this.firestore, this.COL, moduleId);

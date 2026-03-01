@@ -214,6 +214,61 @@
                     </div>
                 </mat-tab>
 
+                <!-- ABA PERMISSÕES -->
+                <mat-tab label="Permissões">
+                    <div class="tab-content">
+                        <div class="tab-header">
+                            <div>
+                                <h3 style="margin:0">Permissões de Acesso por Cargo</h3>
+                                <small style="opacity:0.7">Controle quais módulos cada função pode ver e editar.</small>
+                            </div>
+                        </div>
+
+                        <div class="permissions-container" *ngIf="rolesList().length > 0">
+                            <!-- Seletor de Cargo -->
+                            <mat-form-field appearance="outline" class="role-selector" style="width: 100%; max-width: 400px; margin-top: 20px;">
+                                <mat-label>Selecione o Cargo (Função)</mat-label>
+                                <mat-select [value]="selectedRole()" (selectionChange)="selectRole($event.value)">
+                                    <mat-option *ngFor="let r of rolesList()" [value]="r">{{ r }}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <div *ngIf="rolePermission() as perm" class="permissions-grid">
+                                <mat-card *ngFor="let mod of modulesList" class="module-perm-card">
+                                    <mat-card-header>
+                                        <mat-card-title><mat-icon color="primary" style="margin-right: 8px; vertical-align: bottom;">security</mat-icon> {{ mod.label }}</mat-card-title>
+                                    </mat-card-header>
+                                    <mat-card-content>
+                                        <div class="perm-toggles">
+                                            <div class="perm-row">
+                                                <span>Ver Dados (Leitura)</span>
+                                                <button mat-icon-button [color]="perm.modules[mod.id].read ? 'primary' : ''" (click)="togglePermission(mod.id, 'read')">
+                                                    <mat-icon>{{ perm.modules[mod.id].read ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                </button>
+                                            </div>
+                                            <div class="perm-row">
+                                                <span>Editar Dados (Escrita)</span>
+                                                <button mat-icon-button [color]="perm.modules[mod.id].write ? 'primary' : ''" (click)="togglePermission(mod.id, 'write')">
+                                                    <mat-icon>{{ perm.modules[mod.id].write ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </mat-card-content>
+                                </mat-card>
+                            </div>
+
+                            <div class="actions" style="margin-top: 20px; text-align: right;">
+                                <button mat-flat-button color="primary" (click)="saveRolePermission()" [disabled]="!rolePermission()">
+                                    <mat-icon>save</mat-icon> Salvar Permissões
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="rolesList().length === 0" style="padding: 20px; text-align: center; opacity: 0.7;">
+                            <p>Nenhum cargo encontrado. Configure as Funções na aba Membros primeiro.</p>
+                        </div>
+                    </div>
+                </mat-tab>
+
             </mat-tab-group>
         </mat-card-content>
     </mat-card>

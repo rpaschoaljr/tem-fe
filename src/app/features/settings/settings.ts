@@ -9,6 +9,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { ConfigService } from '../../core/services/config.service';
 import { ModuleConfig, DynamicField } from '../../core/models/system-config.model';
 import { NotificationService } from '../../core/services/notification.service';
@@ -22,6 +24,7 @@ import { MergeStockDialogComponent } from '../stock/merge-stock-dialog/merge-sto
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { OptionFormDialogComponent } from './option-form-dialog/option-form-dialog';
 import { FieldFormDialogComponent } from './field-form-dialog/field-form-dialog';
+import { PermissionConfig } from '../../core/models/system-config.model';
 
 @Component({
   selector: 'app-settings',
@@ -37,6 +40,8 @@ import { FieldFormDialogComponent } from './field-form-dialog/field-form-dialog'
     MatExpansionModule,
     MatTooltipModule,
     MatDividerModule,
+    MatFormFieldModule,
+    MatSelectModule,
     GenericListComponent
   ],
   templateUrl: './settings.html',
@@ -58,6 +63,19 @@ export class SettingsComponent implements OnInit {
   loading = signal(true);
   mainTabIndex = 0;
   showOptionsTrash = signal<{ [key: string]: boolean }>({});
+
+  // --- PERMISSÕES ---
+  rolesList = signal<string[]>([]);
+  selectedRole = signal<string>('');
+  rolePermission = signal<PermissionConfig | null>(null);
+  modulesList = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'members', label: 'Membros' },
+    { id: 'finance', label: 'Financeiro' },
+    { id: 'stock', label: 'Estoque' },
+    { id: 'notices', label: 'Avisos' },
+    { id: 'settings', label: 'Configurações' }
+  ];
 
   stockColumns: ColumnDef[] = [
     { def: 'name', label: 'Nome do Item' },
@@ -108,8 +126,76 @@ export class SettingsComponent implements OnInit {
     });
     // Carrega Config de Membros
     this.configService.getConfig('members').subscribe({
-      next: (conf) => this.membersConfig.set(conf),
+      next: (conf) => {
+        this.membersConfig.set(conf);
+        const roleField = conf.fields.find(f => f.key === 'role');
+        if (roleField) {
+          const roles = roleField.options?.filter(o => !o.deleted).map(o => o.label) || [];
+          this.rolesList.set(roles);
+          // Se não houver cargo selecionado e a lista tiver itens, seleciona o primeiro
+          if (!this.selectedRole() && roles.length > 0) {
+            this.selectRole(roles[0]);
+          }
+        }
+      },
       complete: () => this.checkLoading()
+    });
+  }
+
+  // --- MÉTODOS DE PERMISSÃO ---
+
+  selectRole(role: string) {
+    this.selectedRole.set(role);
+    this.loading.set(true);
+    this.configService.getRolePermission(role).subscribe({
+      next: (perm) => {
+        this.rolePermission.set(perm);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.notify.showError('Erro ao carregar permissões do cargo.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  togglePermission(moduleId: string, action: 'read' | 'write') {
+    const perm = this.rolePermission();
+    if (!perm) return;
+
+    const currentVal = perm.modules[moduleId][action];
+    
+    // Regra: Se tirar a leitura, tira a escrita automaticamente
+    if (action === 'read' && currentVal === true) {
+      perm.modules[moduleId].read = false;
+      perm.modules[moduleId].write = false;
+    } 
+    // Regra: Se dar escrita, dá leitura automaticamente
+    else if (action === 'write' && currentVal === false) {
+      perm.modules[moduleId].write = true;
+      perm.modules[moduleId].read = true;
+    } else {
+      perm.modules[moduleId][action] = !currentVal;
+    }
+
+    // Como é uma mutação direta, forçamos o sinal a notificar a UI
+    this.rolePermission.set({ ...perm });
+  }
+
+  saveRolePermission() {
+    const perm = this.rolePermission();
+    if (!perm) return;
+    
+    this.loading.set(true);
+    this.configService.savePermission(perm).subscribe({
+      next: () => {
+        this.notify.showSuccess(`Permissões do cargo ${perm.target} atualizadas!`);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.notify.showError('Erro ao salvar permissões.');
+        this.loading.set(false);
+      }
     });
   }
 
