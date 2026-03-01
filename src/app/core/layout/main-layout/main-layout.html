@@ -11,7 +11,7 @@
 
         <!-- NAVEGAÇÃO DESKTOP (No topo) -->
         <div class="desktop-nav" *ngIf="!(isHandset$ | async)">
-            <button mat-button *ngFor="let item of menuItems" [routerLink]="item.route" routerLinkActive="active-nav">
+            <button mat-button *ngFor="let item of menuItems()" [routerLink]="item.route" routerLinkActive="active-nav">
                 <mat-icon>{{ item.icon }}</mat-icon>
                 <span>{{ item.label }}</span>
             </button>
@@ -80,7 +80,7 @@
             </div>
 
             <mat-nav-list>
-                <a mat-list-item *ngFor="let item of menuItems" [routerLink]="item.route" routerLinkActive="active-link"
+                <a mat-list-item *ngFor="let item of menuItems()" [routerLink]="item.route" routerLinkActive="active-link"
                     (click)="drawer.close()">
                     <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
                     <span matListItemTitle>{{ item.label }}</span>

@@ -102,40 +102,64 @@ export class MembersService {
     }
 
     private fromFirestore(id: string, data: any): Member {
-        return {
+        const member = {
             ...data,
             id,
             createdAt: this.fixDate(data.createdAt),
             updatedAt: this.fixDate(data.updatedAt),
-            birthDate: this.fixDate(data.birthDate),
             entryDate: this.fixDate(data.entryDate),
             exitDate: this.fixDate(data.exitDate),
-            baptismDate: this.fixDate(data.baptismDate),
-            coronationDate: this.fixDate(data.coronationDate),
         } as Member;
+
+        if (member.rituals) {
+            Object.keys(member.rituals).forEach(k => {
+                (member.rituals as any)[k] = this.fixDate((member.rituals as any)[k]);
+            });
+        }
+
+        if (member.consecrations) {
+            Object.keys(member.consecrations).forEach(k => {
+                (member.consecrations as any)[k] = this.fixDate((member.consecrations as any)[k]);
+            });
+        }
+
+        if ((member as any).customFields) {
+            Object.keys((member as any).customFields).forEach(k => {
+                (member as any).customFields[k] = this.fixDate((member as any).customFields[k]);
+            });
+        }
+
+        return member;
     }
 
     private fixDates(m: any): Member {
-        return {
-            ...m,
-            createdAt: this.fixDate(m.createdAt),
-            updatedAt: this.fixDate(m.updatedAt),
-            birthDate: this.fixDate(m.birthDate),
-            entryDate: this.fixDate(m.entryDate),
-            exitDate: this.fixDate(m.exitDate),
-            baptismDate: this.fixDate(m.baptismDate),
-            coronationDate: this.fixDate(m.coronationDate),
-        };
+        return this.fromFirestore(m.id, m);
     }
 
     private fixDate(val: any): Date | null {
         if (!val) return null;
-        if (val.toDate) return val.toDate();
-        return new Date(val);
+        // Se for string de data (ISO), converte
+        if (typeof val === 'string' && val.includes('-') && val.includes('T')) {
+            return new Date(val);
+        }
+        // Se for objeto de data nativo
+        if (val instanceof Date) return val;
+        // Se for timestamp do Firebase
+        if (val && typeof val === 'object' && 'seconds' in val) {
+            return new Date(val.seconds * 1000);
+        }
+        // Fallback
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
     }
 
     private toFirestore(member: Member): any {
-        return JSON.parse(JSON.stringify(member));
+        // Remove circular references if any (not expected here) and prepare for Firestore
+        // We use a simple shallow clone or recursive one if needed.
+        // For now, let's just make sure we don't use JSON.stringify if possible.
+        const data = { ...member };
+        delete (data as any).id;
+        return data;
     }
 
     getAddressByCep(cep: string): Observable<any> {

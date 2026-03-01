@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Observable } from 'rxjs';
+import { Observable, combineLatest, of } from 'rxjs';
 import { map, shareReplay, tap } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
@@ -36,7 +36,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss'
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   private breakpointObserver = inject(BreakpointObserver);
   private router = inject(Router);
   private auth = inject(Auth);
@@ -54,22 +54,39 @@ export class MainLayoutComponent {
     .pipe(
       map(result => result.matches),
       tap(isHandset => {
-        // No desktop, o menu começa aberto. No mobile, fechado.
         this.isSidebarOpened = !isHandset;
       }),
       shareReplay()
     );
 
-  // Menu de Navegação
-  menuItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { label: 'Membros', icon: 'groups', route: '/members' },
-    { label: 'Financeiro', icon: 'attach_money', route: '/finance' },
-    { label: 'Estoque', icon: 'inventory_2', route: '/stock' },
-    { label: 'Avisos', icon: 'campaign', route: '/notices' },
+  // Lista Completa de Menus
+  private allMenuItems = [
+    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard', module: 'dashboard' },
+    { label: 'Membros', icon: 'groups', route: '/members', module: 'members' },
+    { label: 'Financeiro', icon: 'attach_money', route: '/finance', module: 'finance' },
+    { label: 'Estoque', icon: 'inventory_2', route: '/stock', module: 'stock' },
+    { label: 'Avisos', icon: 'campaign', route: '/notices', module: 'notices' },
   ];
 
-  // Fecha o menu automaticamente no celular ao clicar em um item
+  menuItems = signal<any[]>([]);
+
+  ngOnInit() {
+    this.loadMenu();
+  }
+
+  loadMenu() {
+    combineLatest(
+      this.allMenuItems.map(item => 
+        item.module === 'dashboard' 
+          ? of(true) 
+          : this.authService.hasPermission(item.module, 'read')
+      )
+    ).subscribe((results: boolean[]) => {
+      const allowed = this.allMenuItems.filter((_, index) => results[index]);
+      this.menuItems.set(allowed);
+    });
+  }
+
   closeSideNavIfMobile() {
     this.isHandset$.subscribe(isHandset => {
       if (isHandset) {

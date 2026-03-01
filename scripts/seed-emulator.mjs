@@ -108,10 +108,57 @@ async function firestoreDeleteAll(collectionName) {
 async function seedFirestore() {
   console.log('🗄️  Limpando e populando Firestore...');
 
-  const collections = ['system_configs', 'members', 'stock', 'transactions', 'notices'];
+  const collections = ['system_configs', 'members', 'stock', 'transactions', 'notices', 'permissions', 'user_roles'];
   for (const col of collections) await firestoreDeleteAll(col);
 
   const now = new Date();
+
+  // 0. Permissões
+  const permissions = [
+    {
+      id: 'role_DIRETORIA', type: 'role', target: 'DIRETORIA', updatedAt: now,
+      modules: {
+        members: { read: true, write: true }, finance: { read: true, write: true },
+        stock: { read: true, write: true }, settings: { read: true, write: true }, notices: { read: true, write: true },
+        dashboard: { read: true, write: true }
+      }
+    },
+    {
+      id: 'role_PAI_MÃE PEQUENO', type: 'role', target: 'PAI/MÃE PEQUENO', updatedAt: now,
+      modules: {
+        members: { read: true, write: true }, finance: { read: false, write: false },
+        stock: { read: true, write: true }, settings: { read: false, write: false }, notices: { read: true, write: true },
+        dashboard: { read: true, write: true }
+      }
+    },
+    {
+      id: 'role_MÉDIUM', type: 'role', target: 'MÉDIUM', updatedAt: now,
+      modules: {
+        members: { read: true, write: false }, finance: { read: false, write: false },
+        stock: { read: false, write: false }, settings: { read: false, write: false }, notices: { read: true, write: false },
+        dashboard: { read: true, write: true }
+      }
+    },
+    // Exemplo de permissão individual
+    {
+      id: 'membro@tem.local', type: 'user', target: 'membro@tem.local', updatedAt: now,
+      modules: {
+        members: { read: true, write: false }, finance: { read: false, write: false },
+        stock: { read: true, write: true }, 
+        settings: { read: false, write: false }, notices: { read: true, write: false },
+        dashboard: { read: true, write: true }
+      }
+    }
+  ];
+  for (const p of permissions) await firestoreCreate('permissions', p.id, p);
+
+  // 0.1 Mapeamento de Roles por Email (Para uso nas firestore.rules)
+  const userRoles = [
+    { id: 'admin@tem.local', role: 'DIRETORIA', permissionId: 'role_DIRETORIA' },
+    { id: 'mae@tem.local', role: 'PAI/MÃE PEQUENO', permissionId: 'role_PAI_MÃE PEQUENO' },
+    { id: 'membro@tem.local', role: 'MÉDIUM', permissionId: 'role_MÉDIUM' }
+  ];
+  for (const ur of userRoles) await firestoreCreate('user_roles', ur.id, ur);
 
   // 1. Configurações
   const configs = [
@@ -148,6 +195,69 @@ async function seedFirestore() {
             { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída' }
           ]
         }
+      ],
+      updatedAt: now
+    },
+    {
+      id: 'members',
+      fields: [
+        // Dados Pessoais
+        { key: 'name', label: 'Nome Completo', type: 'text', required: true, order: 1, isSystem: true, section: 'Dados Pessoais' },
+        { key: 'cpf', label: 'CPF', type: 'mask', maskType: 'cpf', required: true, order: 2, isSystem: true, section: 'Dados Pessoais' },
+        { key: 'email', label: 'E-mail', type: 'text', required: true, order: 3, isSystem: true, section: 'Dados Pessoais' },
+        { key: 'phone', label: 'Telefone/Whatsapp', type: 'mask', maskType: 'phone', required: true, order: 4, isSystem: true, section: 'Dados Pessoais' },
+
+        // Endereço
+        { key: 'cep', label: 'CEP', type: 'mask', maskType: 'cep', required: true, order: 5, isSystem: true, section: 'Endereço' },
+        { key: 'street', label: 'Rua / Logradouro', type: 'text', required: true, order: 6, isSystem: true, section: 'Endereço' },
+        { key: 'number', label: 'Número', type: 'text', required: true, order: 7, isSystem: true, section: 'Endereço' },
+        { key: 'complement', label: 'Complemento', type: 'text', required: false, order: 8, isSystem: true, section: 'Endereço' },
+        { key: 'neighborhood', label: 'Bairro', type: 'text', required: true, order: 9, isSystem: true, section: 'Endereço' },
+        { key: 'city', label: 'Cidade', type: 'text', required: true, order: 10, isSystem: true, section: 'Endereço' },
+        { key: 'state', label: 'UF', type: 'text', required: true, order: 11, isSystem: true, section: 'Endereço' },
+
+        // Vida Espiritual
+        { 
+          key: 'role', label: 'Função / Cargo', type: 'select', required: true, order: 12, isSystem: true, section: 'Vida Espiritual',
+          options: [
+            { label: 'MÉDIUM', deleted: false }, { label: 'CAMBONO', deleted: false }, 
+            { label: 'OGÃ', deleted: false }, { label: 'PAI/MÃE PEQUENO', deleted: false },
+            { label: 'DIRETORIA', deleted: false }, { label: 'CONSULENTE', deleted: false }
+          ]
+        },
+        { 
+          key: 'status', label: 'Status', type: 'select', required: true, order: 13, isSystem: true, section: 'Vida Espiritual',
+          options: [
+            { label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }
+          ]
+        },
+        { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual' },
+        { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 15, isSystem: true, section: 'Vida Espiritual' },
+        { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual' },
+        { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual' },
+
+        // Rituais
+        { key: 'initiation', label: 'Lavagem / Iniciação', type: 'date', required: false, order: 18, isSystem: true, section: 'Rituais' },
+        { key: 'baptism', label: 'Batismo', type: 'date', required: false, order: 19, isSystem: true, section: 'Rituais' },
+        { key: 'baptism1Year', label: 'Batismo (1 Ano)', type: 'date', required: false, order: 20, isSystem: true, section: 'Rituais' },
+        { key: 'coronation', label: 'Coroação', type: 'date', required: false, order: 21, isSystem: true, section: 'Rituais' },
+        { key: 'crownWashing', label: 'Lavagem de Coroa', type: 'date', required: false, order: 22, isSystem: true, section: 'Rituais' },
+
+        // Orixás
+        { key: 'oxossi', label: 'Oxóssi', type: 'date', required: false, order: 23, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'iemanja', label: 'Iemanjá', type: 'date', required: false, order: 24, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'oxala', label: 'Oxalá', type: 'date', required: false, order: 25, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'ogum', label: 'Ogum', type: 'date', required: false, order: 26, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'obaluae', label: 'Obaluaê', type: 'date', required: false, order: 27, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'oxum', label: 'Oxum', type: 'date', required: false, order: 28, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'xango', label: 'Xangô', type: 'date', required: false, order: 29, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'oba', label: 'Obá', type: 'date', required: false, order: 30, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'omulu', label: 'Omulú', type: 'date', required: false, order: 31, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'logunan', label: 'Logunã', type: 'date', required: false, order: 32, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'iansa', label: 'Iansã', type: 'date', required: false, order: 33, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'nana', label: 'Nanã', type: 'date', required: false, order: 34, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'oxumare', label: 'Oxumaré', type: 'date', required: false, order: 35, isSystem: true, section: 'Consagrações (Orixás)' },
+        { key: 'oroina', label: 'Oroiná (Egunitá)', type: 'date', required: false, order: 36, isSystem: true, section: 'Consagrações (Orixás)' }
       ],
       updatedAt: now
     }
@@ -233,7 +343,7 @@ async function seedFirestore() {
   ];
   for (const t of transactions) await firestoreCreate('transactions', t.id, t);
 
-  // 5. Avisos (Notices) - Corrigido para usar 'content' conforme modelo
+  // 5. Avisos (Notices)
   const nextMonth = new Date();
   nextMonth.setMonth(now.getMonth() + 1);
 

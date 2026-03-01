@@ -6,16 +6,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 import { ConfigService } from '../../core/services/config.service';
 import { ModuleConfig, DynamicField } from '../../core/models/system-config.model';
 import { NotificationService } from '../../core/services/notification.service';
 
 import { StockService } from '../../core/services/stock.service';
+import { MembersService } from '../../core/services/members.service';
 import { StockItem } from '../../core/models/stock-item.model';
+import { Member } from '../../core/models/member.model';
 import { StockFormComponent } from '../stock/stock-form/stock-form';
 import { MergeStockDialogComponent } from '../stock/merge-stock-dialog/merge-stock-dialog';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { OptionFormDialogComponent } from './option-form-dialog/option-form-dialog';
+import { FieldFormDialogComponent } from './field-form-dialog/field-form-dialog';
 
 @Component({
   selector: 'app-settings',
@@ -28,6 +34,9 @@ import { OptionFormDialogComponent } from './option-form-dialog/option-form-dial
     MatButtonModule, 
     MatTableModule, 
     MatDialogModule,
+    MatExpansionModule,
+    MatTooltipModule,
+    MatDividerModule,
     GenericListComponent
   ],
   templateUrl: './settings.html',
@@ -36,12 +45,15 @@ import { OptionFormDialogComponent } from './option-form-dialog/option-form-dial
 export class SettingsComponent implements OnInit {
   private configService = inject(ConfigService);
   private stockService = inject(StockService);
+  private membersService = inject(MembersService);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
 
   stockConfig = signal<ModuleConfig | null>(null);
   financeConfig = signal<ModuleConfig | null>(null);
+  membersConfig = signal<ModuleConfig | null>(null);
   stockItems = signal<StockItem[]>([]);
+  members = signal<Member[]>([]);
   
   loading = signal(true);
   mainTabIndex = 0;
@@ -59,14 +71,25 @@ export class SettingsComponent implements OnInit {
     { def: 'meta', label: 'Operação', type: 'text' }
   ];
 
+  memberRoleColumns: ColumnDef[] = [
+    { def: 'label', label: 'Função / Cargo' }
+  ];
+
   ngOnInit() {
     this.loadConfigs(true);
     this.loadStockItems();
+    this.loadMembers();
   }
 
   loadStockItems() {
     this.stockService.getStock(true).subscribe(items => {
       this.stockItems.set(items.sort((a, b) => a.name.localeCompare(b.name)));
+    });
+  }
+
+  loadMembers() {
+    this.membersService.getMembers(true).subscribe(m => {
+      this.members.set(m);
     });
   }
 
@@ -83,10 +106,15 @@ export class SettingsComponent implements OnInit {
       next: (conf) => this.financeConfig.set(conf),
       complete: () => this.checkLoading()
     });
+    // Carrega Config de Membros
+    this.configService.getConfig('members').subscribe({
+      next: (conf) => this.membersConfig.set(conf),
+      complete: () => this.checkLoading()
+    });
   }
 
   private checkLoading() {
-    if (this.stockConfig() && this.financeConfig()) {
+    if (this.stockConfig() && this.financeConfig() && this.membersConfig()) {
       this.loading.set(false);
     }
   }
@@ -222,6 +250,27 @@ export class SettingsComponent implements OnInit {
       } else {
         if (!confirm(`Deseja mover a opção "${option.label}" para a lixeira?`)) return;
       }
+    } else if (config.id === 'members') {
+      const fieldKey = field.key;
+      const dependentMembers = this.members().filter(m => {
+        // Verifica no root, address, rituals, consecrations ou customFields
+        const val = (m as any)[fieldKey] || 
+                    (m.address as any)?.[fieldKey] || 
+                    (m.rituals as any)?.[fieldKey] || 
+                    (m.consecrations as any)?.[fieldKey] || 
+                    (m.customFields as any)?.[fieldKey];
+        return val === option.label;
+      });
+
+      if (dependentMembers.length > 0) {
+        const count = dependentMembers.length;
+        const msg = `NÃO É POSSÍVEL EXCLUIR: Existem ${count} membros utilizando a opção "${option.label}" no campo "${field.label}".\n\n` +
+                    `Para excluir esta opção, você deve primeiro alterar o cadastro desses membros.`;
+        alert(msg);
+        return;
+      }
+
+      if (!confirm(`Deseja mover a opção "${option.label}" para a lixeira?`)) return;
     } else {
       if (!confirm(`Deseja mover a opção "${option.label}" para a lixeira?`)) return;
     }
@@ -275,24 +324,154 @@ export class SettingsComponent implements OnInit {
     return field.options?.filter(o => o.deleted) || [];
   }
 
+  // Helpers para Agrupamento de Seções de Campos
+  getSections(config: ModuleConfig | null): string[] {
+    if (!config) return [];
+    const sections = config.fields
+      .filter(f => !f.deleted)
+      .map(f => f.section || 'Geral');
+    return [...new Set(sections)].sort((a, b) => {
+      // Prioriza seções conhecidas do formulário
+      const order = ['Dados Pessoais', 'Endereço', 'Vida Espiritual', 'Consagrações (Orixás)', 'Informações Adicionais'];
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }
+
+  getFieldsBySection(config: ModuleConfig | null, section: string): DynamicField[] {
+    if (!config) return [];
+    return config.fields.filter(f => !f.deleted && (f.section || 'Geral') === section)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  getDeletedFields(config: ModuleConfig | null): DynamicField[] {
+    if (!config) return [];
+    return config.fields.filter(f => f.deleted);
+  }
+
   // --- GESTÃO DE CAMPOS ---
 
   addField(moduleId: string) {
-    this.notify.showInfo('Funcionalidade de adicionar campo em breve!');
+    let config: ModuleConfig | null = null;
+    if (moduleId === 'stock') config = this.stockConfig();
+    if (moduleId === 'finance') config = this.financeConfig();
+    if (moduleId === 'members') config = this.membersConfig();
+
+    if (!config) return;
+
+    const dialogRef = this.dialog.open(FieldFormDialogComponent, {
+      width: '450px',
+      data: { edit: false }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res && config) {
+        // Verifica se a key já existe
+        if (config.fields.some(f => f.key === res.key)) {
+          this.notify.showWarning('Já existe um campo com este nome.');
+          return;
+        }
+
+        const newField: DynamicField = {
+          ...res,
+          order: config.fields.length + 1,
+          isSystem: false,
+          deleted: false
+        };
+
+        if (res.type === 'select') {
+          newField.options = [];
+        }
+
+        config.fields.push(newField);
+        this.saveAndReload(config, 'Campo personalizado adicionado!');
+      }
+    });
+  }
+
+  editField(config: ModuleConfig, field: DynamicField) {
+    // Permite editar qualquer campo, incluindo sistema, para mudar visibilidade no perfil ou opções
+    // Só bloqueamos se tentar excluir o fundamental 'role', mas aqui é edição
+
+    let isUsed = false;
+    if (config.id === 'members') {
+      const fieldKey = field.key;
+      isUsed = this.members().some(m => {
+        const val = (m as any)[fieldKey] || 
+                    (m.address as any)?.[fieldKey] || 
+                    (m.rituals as any)?.[fieldKey] || 
+                    (m.consecrations as any)?.[fieldKey] || 
+                    (m.customFields as any)?.[fieldKey];
+        return val !== null && val !== undefined && val !== '' && val !== false;
+      });
+    }
+
+    const dialogRef = this.dialog.open(FieldFormDialogComponent, {
+      width: '500px',
+      data: { 
+        edit: true, 
+        value: field,
+        disableType: isUsed
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res) {
+        field.label = res.label;
+        field.type = res.type;
+        field.required = res.required;
+        field.section = res.section;
+        field.showInProfile = res.showInProfile;
+        
+        if (field.type === 'select') {
+          field.options = res.options;
+        } else {
+          delete field.options;
+        }
+        
+        this.saveAndReload(config, 'Campo atualizado!');
+      }
+    });
   }
 
   deleteField(config: ModuleConfig, field: DynamicField) {
-    if (field.isSystem) {
-      this.notify.showError('Campos do sistema não podem ser removidos.');
+    if (field.isSystem && config.id === 'members' && field.key === 'role') {
+      this.notify.showError('O campo Função/Cargo é obrigatório para o sistema.');
       return;
     }
-    
-    if (confirm(`Remover o campo "${field.label}"?`)) {
-      config.fields = config.fields.filter(f => f.key !== field.key);
-      this.configService.saveConfig(config).subscribe(() => {
-        this.notify.showSuccess('Campo removido!');
-        this.loadConfigs();
+
+    if (config.id === 'members') {
+      const fieldKey = field.key;
+      const dependentMembers = this.members().filter(m => {
+        const val = (m as any)[fieldKey] || 
+                    (m.address as any)?.[fieldKey] || 
+                    (m.rituals as any)?.[fieldKey] || 
+                    (m.consecrations as any)?.[fieldKey] || 
+                    (m.customFields as any)?.[fieldKey];
+        return val !== null && val !== undefined && val !== '' && val !== false;
       });
+
+      if (dependentMembers.length > 0) {
+        const count = dependentMembers.length;
+        const msg = `NÃO É POSSÍVEL EXCLUIR O CAMPO: Existem ${count} membros com o campo "${field.label}" preenchido.\n\n` +
+                    `Para excluir este campo, você deve primeiro limpar essa informação no cadastro desses membros.`;
+        alert(msg);
+        return;
+      }
     }
+    
+    if (confirm(`Deseja mover o campo "${field.label}" para a lixeira?`)) {
+      field.deleted = true;
+      this.saveAndReload(config, 'Campo movido para a lixeira.');
+    }
+  }
+
+  restoreField(config: ModuleConfig, field: DynamicField) {
+    field.deleted = false;
+    this.saveAndReload(config, 'Campo restaurado!');
   }
 }

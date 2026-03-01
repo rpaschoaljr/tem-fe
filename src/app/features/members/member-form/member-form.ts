@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -17,8 +17,10 @@ import { MatDividerModule } from '@angular/material/divider';
 
 // Imports do Projeto
 import { MembersService } from '../../../core/services/members.service';
+import { ConfigService } from '../../../core/services/config.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Member } from '../../../core/models/member.model';
+import { DynamicField } from '../../../core/models/system-config.model';
 import { CustomValidators } from '../../../shared/utils/validators';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ComponentCanDeactivate } from '../../../core/guards/pending-changes.guard';
@@ -50,6 +52,7 @@ import { Observable } from 'rxjs';
 export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   private fb = inject(FormBuilder);
   private membersService = inject(MembersService);
+  private configService = inject(ConfigService);
   private notify = inject(NotificationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -69,23 +72,82 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   }
 
   // Listas
-  roles = ['MÉDIUM', 'CAMBONO', 'OGÃ', 'PAI/MÃE PEQUENO', 'DIRETORIA', 'CONSULENTE'];
-
-  // Lista para gerar campos dinâmicos
-  orixas = [
-    { key: 'oxossi', label: 'Oxóssi' }, { key: 'iemanja', label: 'Iemanjá' },
-    { key: 'oxala', label: 'Oxalá' }, { key: 'ogum', label: 'Ogum' },
-    { key: 'obaluae', label: 'Obaluaê' }, { key: 'oxum', label: 'Oxum' },
-    { key: 'xango', label: 'Xangô' }, { key: 'oba', label: 'Obá' },
-    { key: 'omulu', label: 'Omulú' }, { key: 'logunan', label: 'Logunã' },
-    { key: 'iansa', label: 'Iansã' }, { key: 'nana', label: 'Nanã' },
-    { key: 'oxumare', label: 'Oxumaré' }, { key: 'oroina', label: 'Oroiná (Egunitá)' }
-  ];
+  roles: string[] = [];
+  customFieldsConfig: any[] = [];
 
   ngOnInit() {
     this.initForm();
+    this.loadConfig();
     this.checkEditMode();
     this.setupDateCrossValidation();
+  }
+
+  getFieldsBySection(section: string) {
+    return this.customFieldsConfig.filter(f => f.section === section);
+  }
+
+  getActiveOptions(field: DynamicField) {
+    return field.options?.filter(o => !o.deleted) || [];
+  }
+
+  loadConfig() {
+    this.configService.getConfig('members').subscribe(config => {
+      this.customFieldsConfig = config.fields.filter(f => !f.deleted);
+      
+      const roleField = config.fields.find(f => f.key === 'role');
+      this.roles = roleField?.options?.filter(o => !o.deleted).map(o => o.label) || [];
+
+      const addressGroup = this.form.get('address') as FormGroup;
+      const ritualsGroup = this.form.get('rituals') as FormGroup;
+      const consecrationsGroup = this.form.get('consecrations') as FormGroup;
+      const customGroup = this.form.get('customFields') as FormGroup;
+
+      this.customFieldsConfig.forEach(field => {
+        let group: FormGroup | null = null;
+        let validators = field.required ? [Validators.required] : [];
+
+        // Lógica de agrupamento baseada no modelo Member
+        if (field.section === 'Endereço') {
+          group = addressGroup;
+          if (field.key === 'state') validators.push(Validators.maxLength(2));
+        } else if (field.section === 'Rituais') {
+          group = ritualsGroup;
+          validators = [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry];
+          if (field.key === 'baptism1Year') validators.push(CustomValidators.baptism1AfterBaptism);
+        } else if (field.section === 'Consagrações (Orixás)') {
+          group = consecrationsGroup;
+          validators = [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry];
+        } else {
+          const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'entryDate', 'exitDate', 'observations'];
+          if (rootFields.includes(field.key)) {
+            if (!this.form.contains(field.key)) {
+              if (field.key === 'cpf') validators.push(CustomValidators.cpf);
+              if (field.key === 'phone') validators.push(CustomValidators.phone);
+              if (field.key === 'email') validators.push(Validators.email);
+              if (field.key === 'exitDate') validators = [CustomValidators.exitAfterEntry];
+              if (field.key === 'entryDate') validators.push(CustomValidators.dateNotFuture);
+              if (field.key === 'name') validators.push(Validators.minLength(3));
+              
+              this.form.addControl(field.key, this.fb.control(
+                field.type === 'boolean' ? false : (field.key === 'entryDate' ? new Date() : null), 
+                validators
+              ));
+            }
+            return;
+          }
+          group = customGroup;
+        }
+
+        if (group && !group.contains(field.key)) {
+          group.addControl(field.key, this.fb.control(
+            field.type === 'boolean' ? false : null,
+            validators
+          ));
+        }
+      });
+
+      this.totalTabs = this.getFieldsBySection('Informações Adicionais').length > 0 ? 5 : 4;
+    });
   }
 
   setupDateCrossValidation() {
@@ -94,7 +156,12 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
     this.form.get('entryDate')!.valueChanges.subscribe(() => {
       this.form.get('exitDate')?.updateValueAndValidity({ emitEvent: false });
       ritualKeys.forEach(k => this.form.get(`rituals.${k}`)?.updateValueAndValidity({ emitEvent: false }));
-      this.orixas.forEach(o => this.form.get(`consecrations.${o.key}`)?.updateValueAndValidity({ emitEvent: false }));
+      
+      // Valida todos os campos de data dinâmicos das consagrações
+      const consecrationsGroup = this.form.get('consecrations') as FormGroup;
+      Object.keys(consecrationsGroup.controls).forEach(key => {
+        consecrationsGroup.get(key)?.updateValueAndValidity({ emitEvent: false });
+      });
     });
 
     this.form.get('rituals.baptism')!.valueChanges.subscribe(() => {
@@ -105,47 +172,10 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   initForm() {
     this.form = this.fb.group({
       id: [''],
-      // Identificação
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      cpf: ['', [Validators.required, CustomValidators.cpf]],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required, CustomValidators.phone]],
-
-      // Endereço
-      address: this.fb.group({
-        cep: ['', Validators.required],
-        street: ['', Validators.required],
-        number: ['', Validators.required],
-        complement: [''],
-        neighborhood: ['', Validators.required],
-        city: ['', Validators.required],
-        state: ['', [Validators.required, Validators.maxLength(2)]]
-      }),
-
-      // Vida Espiritual
-      role: ['MÉDIUM', Validators.required],
-      status: ['Ativo', Validators.required],
-      showSpiritualData: [false],
-      entryDate: [new Date(), [Validators.required, CustomValidators.dateNotFuture]],
-      exitDate: [null, [CustomValidators.exitAfterEntry]],
-      observations: [''],
-
-      // Rituais
-      rituals: this.fb.group({
-        initiation: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
-        baptism: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
-        baptism1Year: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry, CustomValidators.baptism1AfterBaptism]],
-        coronation: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]],
-        crownWashing: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]]
-      }),
-
-      // Consagrações (Gerado dinamicamente via Reduce)
-      consecrations: this.fb.group(
-        this.orixas.reduce((acc, curr) => ({
-          ...acc,
-          [curr.key]: [null, [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry]]
-        }), {})
-      )
+      address: this.fb.group({}),
+      rituals: this.fb.group({}),
+      consecrations: this.fb.group({}),
+      customFields: this.fb.group({})
     });
   }
 
@@ -201,26 +231,38 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   }
 
   private isTabValid(tabIndex: number): boolean {
+    const config = this.customFieldsConfig;
+    let sectionsInTab: string[] = [];
+    
     switch (tabIndex) {
-      case 0: // Dados Pessoais
-        const personalControls = ['name', 'cpf', 'email', 'phone'];
-        personalControls.forEach(controlName => this.form.get(controlName)?.markAsTouched());
-        return personalControls.every(controlName => this.form.get(controlName)?.valid ?? false);
-
-      case 1: // Endereço
-        const addressGroup = this.form.get('address') as FormGroup;
-        const requiredAddressControls = ['cep', 'street', 'number', 'neighborhood', 'city', 'state'];
-        requiredAddressControls.forEach(controlName => addressGroup.get(controlName)?.markAsTouched());
-        return requiredAddressControls.every(controlName => addressGroup.get(controlName)?.valid ?? false);
-
-      case 2: // Vida Espiritual (Apenas campos principais)
-        const spiritualControls = ['role', 'status', 'entryDate'];
-        spiritualControls.forEach(controlName => this.form.get(controlName)?.markAsTouched());
-        return spiritualControls.every(controlName => spiritualControls.every(controlName => this.form.get(controlName)?.valid ?? false));
-
-      default:
-        return true; // As outras abas não têm campos obrigatórios para avançar
+      case 0: sectionsInTab = ['Dados Pessoais']; break;
+      case 1: sectionsInTab = ['Endereço']; break;
+      case 2: sectionsInTab = ['Vida Espiritual', 'Rituais']; break;
+      case 3: sectionsInTab = ['Consagrações (Orixás)']; break;
+      case 4: sectionsInTab = ['Informações Adicionais']; break;
     }
+
+    const fieldsInTab = config.filter(f => sectionsInTab.includes(f.section || ''));
+
+    let isValid = true;
+    fieldsInTab.forEach(f => {
+      let control;
+      const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'entryDate', 'exitDate', 'observations'];
+      
+      if (f.section === 'Endereço') control = this.form.get(`address.${f.key}`);
+      else if (f.section === 'Rituais') control = this.form.get(`rituals.${f.key}`);
+      else if (f.section === 'Consagrações (Orixás)') control = this.form.get(`consecrations.${f.key}`);
+      else if (f.section === 'Informações Adicionais') control = this.form.get(`customFields.${f.key}`);
+      else if (rootFields.includes(f.key)) control = this.form.get(f.key);
+      else control = this.form.get(`customFields.${f.key}`);
+
+      if (control) {
+        control.markAsTouched();
+        if (control.invalid) isValid = false;
+      }
+    });
+
+    return isValid;
   }
 
   nextTab() {

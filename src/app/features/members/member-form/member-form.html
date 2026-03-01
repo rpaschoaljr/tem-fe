@@ -12,35 +12,8 @@
                 <div class="tab-content">
                     <mat-card>
                         <mat-card-content>
-                            <div class="row">
-                                <mat-form-field appearance="outline" class="col-2">
-                                    <mat-label>Nome Completo</mat-label>
-                                    <input matInput formControlName="name" placeholder="Ex: João da Silva">
-                                    <mat-error>Obrigatório</mat-error>
-                                </mat-form-field>
-                            </div>
-
-                            <div class="row">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>CPF</mat-label>
-                                    <input matInput type="text" formControlName="cpf" appInputMask="cpf" maxlength="14"
-                                        placeholder="000.000.000-00">
-                                    <mat-error *ngIf="form.get('cpf')?.hasError('invalidCpf')">CPF Inválido</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>E-mail</mat-label>
-                                    <input matInput formControlName="email" type="email">
-                                    <mat-error>E-mail inválido</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Whatsapp/Telefone</mat-label>
-                                    <input matInput type="text" formControlName="phone" appInputMask="phone"
-                                        maxlength="15" placeholder="(00) 00000-0000">
-                                    <mat-error *ngIf="form.get('phone')?.hasError('required')">Obrigatório</mat-error>
-                                    <mat-error *ngIf="form.get('phone')?.hasError('invalidPhone')">Telefone inválido</mat-error>
-                                </mat-form-field>
+                            <div class="dynamic-grid">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Dados Pessoais'), group: form }"></ng-container>
                             </div>
                         </mat-card-content>
                     </mat-card>
@@ -49,172 +22,32 @@
 
             <!-- ABA 2: ENDEREÇO -->
             <mat-tab label="Endereço">
-                <div class="tab-content" formGroupName="address">
+                <div class="tab-content">
                     <mat-card>
                         <mat-card-content>
-                            <div class="row">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>CEP</mat-label>
-                                    <input matInput type="text" formControlName="cep" appInputMask="cep"
-                                        (blur)="onCepBlur()" placeholder="00000-000" maxlength="9">
-                                    <mat-hint>Digite para buscar</mat-hint>
-                                    <mat-icon matSuffix (click)="onCepBlur()" style="cursor: pointer">search</mat-icon>
-                                </mat-form-field>
-                            </div>
-
-                            <div class="row">
-                                <mat-form-field appearance="outline" class="col-2">
-                                    <mat-label>Logradouro (Rua/Av)</mat-label>
-                                    <input matInput formControlName="street">
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Número</mat-label>
-                                    <input matInput formControlName="number">
-                                </mat-form-field>
-                            </div>
-
-                            <div class="row">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Complemento</mat-label>
-                                    <input matInput formControlName="complement">
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Bairro</mat-label>
-                                    <input matInput formControlName="neighborhood">
-                                </mat-form-field>
-                            </div>
-
-                            <div class="row">
-                                <mat-form-field appearance="outline" class="col-2">
-                                    <mat-label>Cidade</mat-label>
-                                    <input matInput formControlName="city">
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>UF</mat-label>
-                                    <input matInput formControlName="state" maxlength="2">
-                                </mat-form-field>
+                            <div class="dynamic-grid" formGroupName="address">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Endereço'), group: form.get('address') }"></ng-container>
                             </div>
                         </mat-card-content>
                     </mat-card>
                 </div>
             </mat-tab>
 
-            <!-- ABA 3: VIDA ESPIRITUAL -->
+            <!-- ABA 3: VIDA ESPIRITUAL E RITUAIS -->
             <mat-tab label="Vida Espiritual">
                 <div class="tab-content">
                     <mat-card>
                         <mat-card-content>
-                            <h3>Vínculo e Datas</h3>
-                            <div class="row">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Tipo de Membro</mat-label>
-                                    <mat-select formControlName="role">
-                                        <mat-option *ngFor="let r of roles" [value]="r">{{ r }}</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Status</mat-label>
-                                    <mat-select formControlName="status">
-                                        <mat-option value="Ativo">Ativo</mat-option>
-                                        <mat-option value="Inativo">Inativo</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-
-                                <div class="checkbox-container">
-                                    <mat-checkbox formControlName="showSpiritualData">
-                                        Liberar visualização de dados espirituais para o membro
-                                    </mat-checkbox>
-                                </div>
+                            <h3>Vínculo e Histórico</h3>
+                            <div class="dynamic-grid">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Vida Espiritual'), group: form }"></ng-container>
                             </div>
 
-                            <div class="row">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Data de Entrada</mat-label>
-                                    <!-- IMPORTANTE: type="text" e maxlength="10" -->
-                                    <input matInput type="text" [matDatepicker]="pickerEntry"
-                                        formControlName="entryDate" appInputMask="date" maxlength="10"
-                                        placeholder="DD/MM/AAAA">
-                                    <mat-datepicker-toggle matIconSuffix [for]="pickerEntry"></mat-datepicker-toggle>
-                                    <mat-datepicker #pickerEntry></mat-datepicker>
-                                    <mat-error *ngIf="form.get('entryDate')?.hasError('required')">Obrigatório</mat-error>
-                                    <mat-error *ngIf="form.get('entryDate')?.hasError('futureDate')">Data não pode ser no futuro</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Data de Saída</mat-label>
-                                    <input matInput type="text" [matDatepicker]="pickerExit" formControlName="exitDate"
-                                        appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
-                                    <mat-datepicker-toggle matIconSuffix [for]="pickerExit"></mat-datepicker-toggle>
-                                    <mat-datepicker #pickerExit></mat-datepicker>
-                                    <mat-error *ngIf="form.get('exitDate')?.hasError('exitBeforeEntry')">Saída não pode ser anterior à entrada</mat-error>
-                                </mat-form-field>
-                            </div>
-
-                            <mat-form-field appearance="outline" class="full-width">
-                                <mat-label>Observações</mat-label>
-                                <textarea matInput formControlName="observations" rows="3"></textarea>
-                            </mat-form-field>
-
-                            <mat-divider style="margin: 20px 0"></mat-divider>
+                            <mat-divider style="margin: 25px 0"></mat-divider>
 
                             <h3>Rituais de Iniciação</h3>
-                            <div formGroupName="rituals" class="dates-grid">
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Lavagem / Iniciação</mat-label>
-                                    <input matInput type="text" [matDatepicker]="p1" formControlName="initiation"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="p1"></mat-datepicker-toggle>
-                                    <mat-datepicker #p1></mat-datepicker>
-                                    <mat-error *ngIf="form.get('rituals.initiation')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.initiation')?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Batismo</mat-label>
-                                    <input matInput type="text" [matDatepicker]="p2" formControlName="baptism"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="p2"></mat-datepicker-toggle>
-                                    <mat-datepicker #p2></mat-datepicker>
-                                    <mat-error *ngIf="form.get('rituals.baptism')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.baptism')?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Batismo (1 Ano)</mat-label>
-                                    <input matInput type="text" [matDatepicker]="p3" formControlName="baptism1Year"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="p3"></mat-datepicker-toggle>
-                                    <mat-datepicker #p3></mat-datepicker>
-                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('baptism1BeforeBaptism')">Anterior ao Batismo</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.baptism1Year')?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Coroação</mat-label>
-                                    <input matInput type="text" [matDatepicker]="p4" formControlName="coronation"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="p4"></mat-datepicker-toggle>
-                                    <mat-datepicker #p4></mat-datepicker>
-                                    <mat-error *ngIf="form.get('rituals.coronation')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.coronation')?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
-
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Lavagem de Coroa</mat-label>
-                                    <input matInput type="text" [matDatepicker]="p5" formControlName="crownWashing"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="p5"></mat-datepicker-toggle>
-                                    <mat-datepicker #p5></mat-datepicker>
-                                    <mat-error *ngIf="form.get('rituals.crownWashing')?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('rituals.crownWashing')?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
-
+                            <div class="dynamic-grid" formGroupName="rituals">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Rituais'), group: form.get('rituals') }"></ng-container>
                             </div>
                         </mat-card-content>
                     </mat-card>
@@ -227,25 +60,77 @@
                     <mat-card>
                         <mat-card-content>
                             <p class="hint-text">Informe a data de consagração para cada força.</p>
-
-                            <div formGroupName="consecrations" class="orixas-grid">
-                                <mat-form-field appearance="outline" *ngFor="let o of orixas">
-                                    <mat-label>Consagração {{ o.label }}</mat-label>
-                                    <input matInput type="text" [matDatepicker]="pOrixa" [formControlName]="o.key"
-                                        appInputMask="date" maxlength="10">
-                                    <mat-datepicker-toggle matIconSuffix [for]="pOrixa"></mat-datepicker-toggle>
-                                    <mat-datepicker #pOrixa></mat-datepicker>
-                                    <mat-error *ngIf="form.get('consecrations')?.get(o.key)?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
-                                    <mat-error *ngIf="form.get('consecrations')?.get(o.key)?.hasError('futureDate')">Data no futuro</mat-error>
-                                </mat-form-field>
+                            <div class="orixas-grid" formGroupName="consecrations">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Consagrações (Orixás)'), group: form.get('consecrations') }"></ng-container>
                             </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
 
+            <!-- ABA 5: CAMPOS PERSONALIZADOS (EXTRAS) -->
+            <mat-tab label="Informações Adicionais" *ngIf="getFieldsBySection('Informações Adicionais').length > 0">
+                <div class="tab-content">
+                    <mat-card>
+                        <mat-card-content>
+                            <div class="dynamic-grid" formGroupName="customFields">
+                                <ng-container *ngTemplateOutlet="dynamicFieldsTpl; context: { fields: getFieldsBySection('Informações Adicionais'), group: form.get('customFields') }"></ng-container>
+                            </div>
                         </mat-card-content>
                     </mat-card>
                 </div>
             </mat-tab>
 
         </mat-tab-group>
+
+        <!-- TEMPLATE PARA CAMPOS DINÂMICOS -->
+        <ng-template #dynamicFieldsTpl let-fields="fields" let-group="group">
+            <ng-container [formGroup]="group">
+                <div *ngFor="let field of fields" [class]="field.type === 'boolean' || field.key === 'observations' || field.key === 'name' ? 'col-full' : 'col-half'">
+                    
+                    <!-- TEXTO / NUMERO / MASK -->
+                    <mat-form-field appearance="outline" class="full-width" *ngIf="field.type === 'text' || field.type === 'number' || field.type === 'mask'">
+                        <mat-label>{{ field.label }}</mat-label>
+                        <input matInput [type]="field.type === 'number' ? 'number' : 'text'" 
+                               [formControlName]="field.key"
+                               [appInputMask]="field.maskType || ''"
+                               [placeholder]="field.key === 'cep' ? '00000-000' : ''"
+                               (blur)="field.key === 'cep' ? onCepBlur() : null">
+                        <mat-error *ngIf="group.get(field.key)?.hasError('required')">Obrigatório</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('invalidCpf')">CPF Inválido</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('invalidPhone')">Telefone inválido</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('email')">E-mail inválido</mat-error>
+                    </mat-form-field>
+
+                    <!-- DATE -->
+                    <mat-form-field appearance="outline" class="full-width" *ngIf="field.type === 'date'">
+                        <mat-label>{{ field.label }}</mat-label>
+                        <input matInput [matDatepicker]="pDynamic" [formControlName]="field.key" appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+                        <mat-datepicker-toggle matIconSuffix [for]="pDynamic"></mat-datepicker-toggle>
+                        <mat-datepicker #pDynamic></mat-datepicker>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('required')">Obrigatório</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('futureDate')">Não pode ser no futuro</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('exitBeforeEntry')">Saída anterior à entrada</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('dateBeforeEntry')">Anterior à entrada</mat-error>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('baptism1BeforeBaptism')">Anterior ao batismo</mat-error>
+                    </mat-form-field>
+
+                    <!-- SELECT -->
+                    <mat-form-field appearance="outline" class="full-width" *ngIf="field.type === 'select'">
+                        <mat-label>{{ field.label }}</mat-label>
+                        <mat-select [formControlName]="field.key">
+                            <mat-option *ngFor="let opt of getActiveOptions(field)" [value]="opt.label">{{ opt.label }}</mat-option>
+                        </mat-select>
+                        <mat-error *ngIf="group.get(field.key)?.hasError('required')">Obrigatório</mat-error>
+                    </mat-form-field>
+
+                    <!-- BOOLEAN -->
+                    <div class="checkbox-container" *ngIf="field.type === 'boolean'">
+                        <mat-checkbox [formControlName]="field.key" color="primary">{{ field.label }}</mat-checkbox>
+                    </div>
+                </div>
+            </ng-container>
+        </ng-template>
 
         <div class="actions-bar">
             <button mat-button type="button" (click)="onCancel()">CANCELAR</button>

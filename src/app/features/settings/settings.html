@@ -111,6 +111,109 @@
                     </div>
                 </mat-tab>
 
+                <!-- ABA MEMBROS -->
+                <mat-tab label="Membros">
+                    <div class="tab-content" *ngIf="membersConfig() as config">
+                        <div class="tab-header">
+                            <div>
+                                <h3 style="margin:0">Configurações de Membros</h3>
+                                <small style="opacity:0.7">Gerencie as funções e campos personalizados do formulário.</small>
+                            </div>
+                            <div class="actions">
+                                <button mat-flat-button color="primary" (click)="addField('members')">
+                                    <mat-icon>add</mat-icon> Novo Campo Personalizado
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="options-container">
+                            <mat-accordion multi>
+                                <mat-expansion-panel *ngFor="let section of getSections(config)" [expanded]="false">
+                                    <mat-expansion-panel-header>
+                                        <mat-panel-title>
+                                            <strong>{{ section }}</strong>
+                                        </mat-panel-title>
+                                        <mat-panel-description>
+                                            {{ getFieldsBySection(config, section).length }} campos
+                                        </mat-panel-description>
+                                    </mat-expansion-panel-header>
+
+                                    <div class="option-section" *ngFor="let field of getFieldsBySection(config, section)">
+                                        <div class="section-header">
+                                            <div class="field-info">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <h4 style="margin:0">{{ field.label }}</h4>
+                                                    <mat-icon *ngIf="field.showInProfile" color="accent" style="font-size: 18px; width: 18px; height: 18px;" matTooltip="Visível no perfil do usuário">account_circle</mat-icon>
+                                                </div>
+                                                <small>{{ field.isSystem ? 'Campo do Sistema' : 'Campo Personalizado (' + field.type + ')' }}</small>
+                                            </div>
+                                            <div class="field-actions">
+                                                <button mat-icon-button color="primary" (click)="editField(config, field)" matTooltip="Editar campo">
+                                                    <mat-icon>edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button color="warn" (click)="deleteField(config, field)" *ngIf="!field.isSystem || field.key !== 'role'" matTooltip="Mover campo para lixeira">
+                                                    <mat-icon>delete</mat-icon>
+                                                </button>
+                                                <button mat-icon-button 
+                                                        [color]="isTrashVisible(field.key) ? 'warn' : ''" 
+                                                        (click)="toggleOptionsTrash(field.key)"
+                                                        *ngIf="field.type === 'select' && getDeletedOptions(field).length > 0"
+                                                        matTooltip="Ver opções removidas">
+                                                    <mat-icon>{{ isTrashVisible(field.key) ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="chips-grid" *ngIf="field.type === 'select'">
+                                            <div class="option-chip" *ngFor="let opt of getActiveOptions(field)">
+                                                <span>{{ opt.label }}</span>
+                                                <button mat-icon-button (click)="removeOption(config, field, opt)">
+                                                    <mat-icon>close</mat-icon>
+                                                </button>
+                                            </div>
+                                            <button mat-stroked-button class="add-opt-btn" (click)="addOption(config, field)">
+                                                <mat-icon>add</mat-icon> Adicionar Opção
+                                            </button>
+                                        </div>
+
+                                        <div class="field-description" *ngIf="field.type !== 'select'">
+                                            <p>Campo de entrada de {{ field.type === 'boolean' ? 'Sim/Não' : field.type }}.</p>
+                                        </div>
+
+                                        <!-- LIXEIRA DE OPÇÕES (CONDICIONAL) -->
+                                        <div class="deleted-options" *ngIf="isTrashVisible(field.key) && getDeletedOptions(field).length > 0">
+                                            <p><mat-icon>delete_outline</mat-icon> Opções removidas (clique para restaurar):</p>
+                                            <div class="chips-grid">
+                                                <button mat-stroked-button class="deleted-chip" 
+                                                        *ngFor="let opt of getDeletedOptions(field)"
+                                                        (click)="restoreOption(config, opt)">
+                                                    {{ opt.label }} <mat-icon>restore</mat-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-expansion-panel>
+                            </mat-accordion>
+
+                            <!-- LIXEIRA DE CAMPOS -->
+                            <div class="field-trash-section" *ngIf="getDeletedFields(config).length > 0">
+                                <mat-divider style="margin: 30px 0"></mat-divider>
+                                <div class="tab-header">
+                                    <h3 style="margin:0"><mat-icon>delete_outline</mat-icon> Lixeira de Campos</h3>
+                                    <small style="opacity:0.7">Campos removidos podem ser restaurados aqui.</small>
+                                </div>
+                                <div class="chips-grid" style="margin-top: 15px;">
+                                    <button mat-stroked-button class="deleted-chip" 
+                                            *ngFor="let field of getDeletedFields(config)"
+                                            (click)="restoreField(config, field)">
+                                        {{ field.label }} ({{ field.section }}) <mat-icon>restore</mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </mat-tab>
+
             </mat-tab-group>
         </mat-card-content>
     </mat-card>

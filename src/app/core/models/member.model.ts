@@ -60,4 +60,7 @@ export interface Member {
     createdAt: Date;
     updatedAt: Date;
     updatedBy?: string;
+
+    // --- Campos Dinâmicos ---
+    customFields?: { [key: string]: any };
 }
