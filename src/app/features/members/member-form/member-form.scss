@@ -87,3 +87,66 @@
         left: 250px; // Largura da Sidebar
     }
 }
+
+/* ---------------------------------------------------
+   MELHORIA DE NAVEGAÇÃO MOBILE PARA AS ABAS
+   --------------------------------------------------- */
+@media (max-width: 768px) {
+    ::ng-deep {
+        /* Esconde as setinhas confusas padrão do Angular Material */
+        .mat-mdc-tab-header-pagination {
+            display: none !important;
+        }
+
+        /* Faz a lista de abas quebrar em múltiplas linhas (grid) */
+        .mat-mdc-tab-label-container {
+            overflow: visible !important;
+        }
+        .mat-mdc-tab-list {
+            transform: none !important; // Evita o cálculo de translação do Material
+            overflow: visible !important;
+        }
+        .mat-mdc-tab-labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 15px;
+        }
+
+        /* Transforma cada aba em um "botão" largo e amigável para o toque */
+        .mdc-tab {
+            flex: 1 1 45%; /* Cada aba ocupa aprox metade da tela, ou linha inteira se for ímpar */
+            min-width: 140px !important;
+            height: 40px !important;
+            padding: 0 10px !important;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.05);
+            justify-content: center;
+        }
+
+        .mdc-tab__text-label {
+            font-size: 0.8rem;
+            white-space: normal; /* Permite quebra de texto se o nome da aba for grande */
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Estiliza a aba ativa como um botão primário */
+        .mdc-tab--active {
+            background: var(--mat-sys-primary, #3f51b5) !important;
+            border-color: transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+            .mdc-tab__text-label {
+                color: #ffffff !important;
+                font-weight: 500;
+            }
+        }
+
+        /* Esconde a barrinha animada de baixo, pois agora as abas parecem botões independentes */
+        .mdc-tab-indicator {
+            display: none !important;
+        }
+    }
+}
