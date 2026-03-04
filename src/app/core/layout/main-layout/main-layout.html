@@ -21,18 +21,24 @@
 
         <!-- PERFIL USUÁRIO COM MENU -->
         <div class="topbar-user" [matMenuTriggerFor]="userMenu" *ngIf="currentUser$ | async as user">
-            <img *ngIf="user.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="mini-avatar">
+            <ng-container *ngIf="member$ | async as member">
+                <img *ngIf="member.photoUrl || user.photoURL; else noPhoto"
+                     [src]="member.photoUrl || user.photoURL"
+                     class="mini-avatar">
+            </ng-container>
             <ng-template #noPhoto>
-                <mat-icon class="mini-avatar">account_circle</mat-icon>
+                <mat-icon class="mini-avatar-icon">account_circle</mat-icon>
             </ng-template>
-            <span class="user-name-top" *ngIf="!(isHandset$ | async)">{{ user.displayName || 'Usuário' }}</span>
+            <span class="user-name-top" *ngIf="!(isHandset$ | async)">
+                {{ (member$ | async)?.name || user.displayName || 'Usuário' }}
+            </span>
             <mat-icon class="arrow-down">keyboard_arrow_down</mat-icon>
         </div>
 
         <!-- DEFINIÇÃO DO MENU DROP-DOWN -->
         <mat-menu #userMenu="matMenu" xPosition="before" class="user-dropdown-menu">
             <div class="menu-header" *ngIf="currentUser$ | async as user">
-                <span class="menu-name">{{ user.displayName || 'Usuário' }}</span>
+                <span class="menu-name">{{ (member$ | async)?.name || user.displayName || 'Usuário' }}</span>
                 <span class="menu-email">{{ user.email }}</span>
             </div>
             <mat-divider></mat-divider>

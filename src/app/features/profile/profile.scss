@@ -118,7 +118,8 @@
 
     .role-tag {
       display: inline-block;
-      background: #e0e0e0;
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
       padding: 4px 12px;
       border-radius: 20px;
       font-size: 0.85rem;

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +12,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfigService } from '../../core/services/config.service';
 import { ModuleConfig, DynamicField } from '../../core/models/system-config.model';
 import { NotificationService } from '../../core/services/notification.service';
@@ -30,7 +34,8 @@ import { PermissionConfig } from '../../core/models/system-config.model';
   selector: 'app-settings',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
+    FormsModule,
     MatCardModule, 
     MatTabsModule, 
     MatIconModule, 
@@ -42,6 +47,9 @@ import { PermissionConfig } from '../../core/models/system-config.model';
     MatDividerModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatInputModule,
+    MatSliderModule,
+    MatAutocompleteModule,
     GenericListComponent
   ],
   templateUrl: './settings.html',
@@ -68,6 +76,14 @@ export class SettingsComponent implements OnInit {
   rolesList = signal<string[]>([]);
   selectedRole = signal<string>('');
   rolePermission = signal<PermissionConfig | null>(null);
+  allRolePermissions = signal<PermissionConfig[]>([]);
+
+  // Por Usuário
+  userSearchQuery = '';
+  filteredUsersForPerm: Member[] = [];
+  selectedUserForPerm = signal<Member | null>(null);
+  userPermission = signal<PermissionConfig | null>(null);
+
   modulesList = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'members', label: 'Membros' },
@@ -136,6 +152,10 @@ export class SettingsComponent implements OnInit {
           if (!this.selectedRole() && roles.length > 0) {
             this.selectRole(roles[0]);
           }
+          // Carrega todas as permissões de cargo para a visão geral
+          this.configService.getAllRolePermissions(roles).subscribe(perms => {
+            this.allRolePermissions.set(perms);
+          });
         }
       },
       complete: () => this.checkLoading()
@@ -190,6 +210,10 @@ export class SettingsComponent implements OnInit {
     this.configService.savePermission(perm).subscribe({
       next: () => {
         this.notify.showSuccess(`Permissões do cargo ${perm.target} atualizadas!`);
+        // Atualiza a lista para a visão geral
+        this.configService.getAllRolePermissions(this.rolesList()).subscribe(perms => {
+          this.allRolePermissions.set(perms);
+        });
         this.loading.set(false);
       },
       error: () => {
@@ -197,6 +221,99 @@ export class SettingsComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  // --- PERMISSÕES POR USUÁRIO ---
+
+  searchUserForPerm(query: string) {
+    this.userSearchQuery = query;
+    if (!query || query.length < 2) {
+      this.filteredUsersForPerm = [];
+      return;
+    }
+    const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    this.filteredUsersForPerm = this.members()
+      .filter(m => !m.deleted)
+      .filter(m => {
+        const name = m.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const email = (m.email || '').toLowerCase();
+        return name.includes(q) || email.includes(q);
+      })
+      .slice(0, 5);
+  }
+
+  selectUserForPerm(member: Member) {
+    this.selectedUserForPerm.set(member);
+    this.filteredUsersForPerm = [];
+    this.userSearchQuery = member.name;
+    this.configService.getUserPermission(member.email).subscribe({
+      next: (perm) => this.userPermission.set(perm),
+      error: () => this.notify.showError('Erro ao carregar permissões do usuário.')
+    });
+  }
+
+  toggleUserPermission(moduleId: string, action: 'read' | 'write') {
+    const perm = this.userPermission();
+    if (!perm) return;
+    const currentVal = perm.modules[moduleId][action];
+    if (action === 'read' && currentVal === true) {
+      perm.modules[moduleId].read = false;
+      perm.modules[moduleId].write = false;
+    } else if (action === 'write' && currentVal === false) {
+      perm.modules[moduleId].write = true;
+      perm.modules[moduleId].read = true;
+    } else {
+      perm.modules[moduleId][action] = !currentVal;
+    }
+    this.userPermission.set({ ...perm });
+  }
+
+  saveUserPermission() {
+    const perm = this.userPermission();
+    if (!perm) return;
+    this.configService.saveUserPermission(perm).subscribe({
+      next: () => this.notify.showSuccess(`Permissões de ${perm.target} atualizadas!`),
+      error: () => this.notify.showError('Erro ao salvar permissões do usuário.')
+    });
+  }
+
+  clearUserPerm() {
+    this.selectedUserForPerm.set(null);
+    this.userPermission.set(null);
+    this.userSearchQuery = '';
+    this.filteredUsersForPerm = [];
+  }
+
+  // --- HIERARQUIA ---
+
+  getHierarchyLabel(level: number): string {
+    if (level >= 10) return 'Admin Total';
+    if (level >= 7) return 'Alta autoridade';
+    if (level >= 4) return 'Autoridade média';
+    return 'Acesso básico';
+  }
+
+  increaseHierarchy() {
+    const perm = this.rolePermission();
+    if (!perm || perm.hierarchyLevel >= 10) return;
+    perm.hierarchyLevel = perm.hierarchyLevel + 1;
+    this.rolePermission.set({ ...perm });
+  }
+
+  decreaseHierarchy() {
+    const perm = this.rolePermission();
+    if (!perm || perm.hierarchyLevel <= 1) return;
+    perm.hierarchyLevel = perm.hierarchyLevel - 1;
+    this.rolePermission.set({ ...perm });
+  }
+
+  getRolesForMatrix(): PermissionConfig[] {
+    return [...this.allRolePermissions()].sort((a, b) => b.hierarchyLevel - a.hierarchyLevel);
+  }
+
+  getMatrixValue(perm: PermissionConfig, moduleId: string, action: 'read' | 'write'): boolean {
+    if (perm.hierarchyLevel >= 10) return true;
+    return perm.modules?.[moduleId]?.[action] ?? false;
   }
 
   private checkLoading() {

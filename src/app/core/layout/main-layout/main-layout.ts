@@ -46,6 +46,7 @@ export class MainLayoutComponent implements OnInit {
   themeService = inject(ThemeService);
 
   currentUser$ = authState(this.auth).pipe(shareReplay(1));
+  member$ = this.authService.member$;
   isAdmin$ = this.authService.isAdmin$();
   isSidebarOpened = true;
 

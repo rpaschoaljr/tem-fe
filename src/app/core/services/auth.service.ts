@@ -100,12 +100,15 @@ export class AuthService {
     return this.permissions$.pipe(
       map(perms => {
         if (!perms) return false;
-        
+
+        // Cargo com nível máximo de hierarquia (10) tem acesso total
+        if ((perms.rolePerm?.hierarchyLevel ?? 0) >= 10) return true;
+
         // Verifica individual primeiro
         if (perms.userPerm?.modules?.[module] && perms.userPerm.modules[module][action] !== undefined) {
           return perms.userPerm.modules[module][action];
         }
-        
+
         // Depois verifica cargo
         if (perms.rolePerm?.modules?.[module] && perms.rolePerm.modules[module][action] !== undefined) {
           return perms.rolePerm.modules[module][action];
