@@ -75,6 +75,17 @@
         border-radius: 8px;
         object-fit: cover;
         border: 1px solid rgba(255, 255, 255, 0.3);
+        display: block;
+        flex-shrink: 0;
+    }
+
+    .mini-avatar-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 32px;
+        line-height: 32px;
+        flex-shrink: 0;
+        opacity: 0.85;
     }
 
     .user-name-top {
