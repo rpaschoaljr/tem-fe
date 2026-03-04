@@ -1,0 +1,104 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Editar Agendamento' : 'Novo Agendamento' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="form-grid">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Descrição</mat-label>
+      <input matInput formControlName="description"
+             [matAutocomplete]="auto"
+             placeholder="Ex: Aluguel mensal">
+      <mat-autocomplete #auto="matAutocomplete"
+                        [displayWith]="displayMember"
+                        (optionSelected)="onMemberSelected($event)">
+        <mat-option *ngFor="let m of filteredMembers()" [value]="m">
+          <div class="member-opt">
+            <strong>{{ m.name }}</strong>
+            <small>{{ m.cpf }} | {{ m.role }}</small>
+          </div>
+        </mat-option>
+        <mat-option *ngIf="filteredMembers().length === 0 && (form.get('description')?.value || '').length >= 2 && showMemberField()" disabled>
+          Nenhum membro encontrado.
+        </mat-option>
+      </mat-autocomplete>
+      <mat-hint *ngIf="showMemberField() && !form.get('memberId')?.value">
+        Digite para buscar o membro
+      </mat-hint>
+      <mat-error>Obrigatório (mín. 3 caracteres)</mat-error>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Categoria</mat-label>
+        <mat-select formControlName="category">
+          <mat-option *ngFor="let opt of categoryOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
+        </mat-select>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Valor (R$)</mat-label>
+        <input matInput
+               type="text"
+               formControlName="valueDisplay"
+               (input)="onValueInput($event)"
+               placeholder="0,00"
+               style="text-align: right; font-weight: bold;">
+        <mat-error>Informe um valor válido</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Recorrência</mat-label>
+        <mat-select formControlName="recurrence">
+          <mat-option *ngFor="let r of recurrenceOptions" [value]="r.value">{{ r.label }}</mat-option>
+        </mat-select>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row" *ngIf="isMonthly">
+      <mat-form-field appearance="outline">
+        <mat-label>Dia do Mês</mat-label>
+        <input matInput type="number" formControlName="dayOfMonth" placeholder="Ex: 5" min="1" max="28">
+        <mat-hint>Use 1–28 para garantir funcionamento em todos os meses</mat-hint>
+        <mat-error>Informe um dia entre 1 e 28</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Próxima Data</mat-label>
+        <input matInput type="text" [matDatepicker]="picker" formControlName="nextDueDate"
+               appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row" *ngIf="!isMonthly">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Próxima Data</mat-label>
+        <input matInput type="text" [matDatepicker]="picker2" formControlName="nextDueDate"
+               appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+        <mat-datepicker #picker2></mat-datepicker>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="toggle-row">
+      <mat-slide-toggle formControlName="active" color="primary">
+        Agendamento ativo
+      </mat-slide-toggle>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">CANCELAR</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()">
+    {{ isEdit ? 'SALVAR' : 'AGENDAR' }}
+  </button>
+</mat-dialog-actions>

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, doc, getDoc, setDoc, collection } from '@angular/fire/firestore';
-import { Observable, from, map, of, switchMap, combineLatest } from 'rxjs';
+import { Firestore, doc, getDoc, setDoc, collection, getDocs } from '@angular/fire/firestore';
+import { Observable, from, map, of, switchMap, combineLatest, forkJoin } from 'rxjs';
 import { ModuleConfig, DynamicField, FieldOption, PermissionConfig, ModulePermissions } from '../models/system-config.model';
 
 @Injectable({ providedIn: 'root' })
@@ -51,12 +51,56 @@ export class ConfigService {
         return from(setDoc(docRef, { ...perm, updatedAt: new Date() }));
     }
 
+    getAllRolePermissions(roleNames: string[]): Observable<PermissionConfig[]> {
+        if (roleNames.length === 0) return of([]);
+        const fetches = roleNames.map(role => this.getRolePermission(role));
+        return forkJoin(fetches);
+    }
+
+    getUserPermission(email: string): Observable<PermissionConfig> {
+        const safeId = email;
+        const docRef = doc(this.firestore, this.PERM_COL, safeId);
+        return from(getDoc(docRef)).pipe(
+            map(snap => {
+                if (snap.exists()) {
+                    return snap.data() as PermissionConfig;
+                }
+                return this.getDefaultUserPermission(email);
+            })
+        );
+    }
+
+    saveUserPermission(perm: PermissionConfig): Observable<void> {
+        const docRef = doc(this.firestore, this.PERM_COL, perm.id);
+        return from(setDoc(docRef, { ...perm, updatedAt: new Date() }));
+    }
+
+    private getDefaultUserPermission(email: string): PermissionConfig {
+        const defaultModulePerm: ModulePermissions = { read: false, write: false };
+        return {
+            id: email,
+            type: 'user',
+            target: email,
+            hierarchyLevel: 1,
+            modules: {
+                dashboard: { ...defaultModulePerm },
+                members: { ...defaultModulePerm },
+                finance: { ...defaultModulePerm },
+                stock: { ...defaultModulePerm },
+                notices: { ...defaultModulePerm },
+                settings: { ...defaultModulePerm }
+            },
+            updatedAt: new Date()
+        };
+    }
+
     private getDefaultRolePermission(id: string, roleName: string): PermissionConfig {
         const defaultModulePerm: ModulePermissions = { read: false, write: false };
         return {
             id,
             type: 'role',
             target: roleName,
+            hierarchyLevel: 1,
             modules: {
                 dashboard: { ...defaultModulePerm },
                 members: { ...defaultModulePerm },

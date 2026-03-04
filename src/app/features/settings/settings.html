@@ -219,50 +219,186 @@
                     <div class="tab-content">
                         <div class="tab-header">
                             <div>
-                                <h3 style="margin:0">Permissões de Acesso por Cargo</h3>
-                                <small style="opacity:0.7">Controle quais módulos cada função pode ver e editar.</small>
+                                <h3 style="margin:0">Permissões de Acesso</h3>
+                                <small style="opacity:0.7">Controle quais módulos cada cargo/usuário pode ver e editar. Cargos com nível 10 têm acesso total automático.</small>
                             </div>
                         </div>
 
-                        <div class="permissions-container" *ngIf="rolesList().length > 0">
-                            <!-- Seletor de Cargo -->
-                            <mat-form-field appearance="outline" class="role-selector" style="width: 100%; max-width: 400px; margin-top: 20px;">
-                                <mat-label>Selecione o Cargo (Função)</mat-label>
-                                <mat-select [value]="selectedRole()" (selectionChange)="selectRole($event.value)">
-                                    <mat-option *ngFor="let r of rolesList()" [value]="r">{{ r }}</mat-option>
-                                </mat-select>
-                            </mat-form-field>
+                        <mat-tab-group *ngIf="rolesList().length > 0" style="margin-top: 16px;">
 
-                            <div *ngIf="rolePermission() as perm" class="permissions-grid">
-                                <mat-card *ngFor="let mod of modulesList" class="module-perm-card">
-                                    <mat-card-header>
-                                        <mat-card-title><mat-icon color="primary" style="margin-right: 8px; vertical-align: bottom;">security</mat-icon> {{ mod.label }}</mat-card-title>
-                                    </mat-card-header>
-                                    <mat-card-content>
-                                        <div class="perm-toggles">
-                                            <div class="perm-row">
-                                                <span>Ver Dados (Leitura)</span>
-                                                <button mat-icon-button [color]="perm.modules[mod.id].read ? 'primary' : ''" (click)="togglePermission(mod.id, 'read')">
-                                                    <mat-icon>{{ perm.modules[mod.id].read ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                                                </button>
+                            <!-- SUB-ABA: POR CARGO -->
+                            <mat-tab label="Por Cargo">
+                                <div class="tab-content" style="padding-top: 16px;">
+                                    <mat-form-field appearance="outline" style="width: 100%; max-width: 400px;">
+                                        <mat-label>Selecione o Cargo</mat-label>
+                                        <mat-select [value]="selectedRole()" (selectionChange)="selectRole($event.value)">
+                                            <mat-option *ngFor="let r of rolesList()" [value]="r">{{ r }}</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+
+                                    <div *ngIf="rolePermission() as perm" style="margin-top: 12px;">
+
+                                        <!-- Nível Hierárquico -->
+                                        <mat-card style="margin-bottom: 20px; padding: 16px;">
+                                            <div style="display:flex; align-items:center; gap:16px; flex-wrap: wrap;">
+                                                <mat-icon color="primary">stairs</mat-icon>
+                                                <div style="flex:1; min-width: 200px;">
+                                                    <strong>Nível Hierárquico: {{ perm.hierarchyLevel }}</strong>
+                                                    <small style="display:block; opacity:0.7">{{ getHierarchyLabel(perm.hierarchyLevel) }}</small>
+                                                    <small style="display:block; opacity:0.6; font-size:11px;">Nível 10 = Admin Total (acesso irrestrito a tudo)</small>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <button mat-icon-button (click)="decreaseHierarchy()" [disabled]="perm.hierarchyLevel <= 1">
+                                                        <mat-icon>remove_circle_outline</mat-icon>
+                                                    </button>
+                                                    <span style="font-size:1.4rem; font-weight:bold; min-width:28px; text-align:center;">{{ perm.hierarchyLevel }}</span>
+                                                    <button mat-icon-button color="primary" (click)="increaseHierarchy()" [disabled]="perm.hierarchyLevel >= 10">
+                                                        <mat-icon>add_circle_outline</mat-icon>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div class="perm-row">
-                                                <span>Editar Dados (Escrita)</span>
-                                                <button mat-icon-button [color]="perm.modules[mod.id].write ? 'primary' : ''" (click)="togglePermission(mod.id, 'write')">
-                                                    <mat-icon>{{ perm.modules[mod.id].write ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                                                </button>
-                                            </div>
+                                        </mat-card>
+
+                                        <!-- Módulos (desabilitados se nível 10) -->
+                                        <div class="permissions-grid" [class.disabled-grid]="perm.hierarchyLevel >= 10">
+                                            <mat-card *ngFor="let mod of modulesList" class="module-perm-card">
+                                                <mat-card-header>
+                                                    <mat-card-title>
+                                                        <mat-icon color="primary" style="margin-right: 8px; vertical-align: bottom;">security</mat-icon>
+                                                        {{ mod.label }}
+                                                    </mat-card-title>
+                                                </mat-card-header>
+                                                <mat-card-content>
+                                                    <div class="perm-toggles">
+                                                        <div class="perm-row">
+                                                            <span>Leitura</span>
+                                                            <button mat-icon-button [color]="getMatrixValue(perm, mod.id, 'read') ? 'primary' : ''" (click)="togglePermission(mod.id, 'read')" [disabled]="perm.hierarchyLevel >= 10">
+                                                                <mat-icon>{{ getMatrixValue(perm, mod.id, 'read') ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            </button>
+                                                        </div>
+                                                        <div class="perm-row">
+                                                            <span>Escrita</span>
+                                                            <button mat-icon-button [color]="getMatrixValue(perm, mod.id, 'write') ? 'primary' : ''" (click)="togglePermission(mod.id, 'write')" [disabled]="perm.hierarchyLevel >= 10">
+                                                                <mat-icon>{{ getMatrixValue(perm, mod.id, 'write') ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </mat-card-content>
+                                            </mat-card>
                                         </div>
-                                    </mat-card-content>
-                                </mat-card>
-                            </div>
 
-                            <div class="actions" style="margin-top: 20px; text-align: right;">
-                                <button mat-flat-button color="primary" (click)="saveRolePermission()" [disabled]="!rolePermission()">
-                                    <mat-icon>save</mat-icon> Salvar Permissões
-                                </button>
-                            </div>
-                        </div>
+                                        <div class="actions" style="margin-top: 20px; text-align: right;">
+                                            <button mat-flat-button color="primary" (click)="saveRolePermission()">
+                                                <mat-icon>save</mat-icon> Salvar Permissões
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
+
+                            <!-- SUB-ABA: POR USUÁRIO -->
+                            <mat-tab label="Por Usuário">
+                                <div class="tab-content" style="padding-top: 16px;">
+                                    <p style="opacity:0.7; margin-bottom: 12px; font-size: 0.9rem;">Permissões individuais sobrepõem as do cargo. Útil para dar/revogar acesso pontual.</p>
+
+                                    <mat-form-field appearance="outline" style="width: 100%; max-width: 400px;">
+                                        <mat-label>Buscar Membro</mat-label>
+                                        <input matInput
+                                               [ngModel]="userSearchQuery"
+                                               (ngModelChange)="searchUserForPerm($event)"
+                                               [matAutocomplete]="autoUser"
+                                               placeholder="Nome ou e-mail">
+                                        <mat-icon matSuffix>search</mat-icon>
+                                        <mat-autocomplete #autoUser="matAutocomplete">
+                                            <mat-option *ngFor="let m of filteredUsersForPerm" [value]="m.name" (click)="selectUserForPerm(m)">
+                                                <strong>{{ m.name }}</strong> <small style="opacity:0.6"> — {{ m.email }}</small>
+                                            </mat-option>
+                                        </mat-autocomplete>
+                                    </mat-form-field>
+                                    <button mat-icon-button *ngIf="selectedUserForPerm()" (click)="clearUserPerm()" matTooltip="Limpar seleção" style="margin-left: 8px;">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+
+                                    <div *ngIf="userPermission() as perm" style="margin-top: 16px;">
+                                        <div style="margin-bottom:12px;">
+                                            <strong>{{ selectedUserForPerm()?.name }}</strong>
+                                            <small style="opacity:0.6; margin-left:8px;">{{ selectedUserForPerm()?.email }} · Cargo: {{ selectedUserForPerm()?.role }}</small>
+                                        </div>
+
+                                        <div class="permissions-grid">
+                                            <mat-card *ngFor="let mod of modulesList" class="module-perm-card">
+                                                <mat-card-header>
+                                                    <mat-card-title>
+                                                        <mat-icon color="accent" style="margin-right: 8px; vertical-align: bottom;">person</mat-icon>
+                                                        {{ mod.label }}
+                                                    </mat-card-title>
+                                                </mat-card-header>
+                                                <mat-card-content>
+                                                    <div class="perm-toggles">
+                                                        <div class="perm-row">
+                                                            <span>Leitura</span>
+                                                            <button mat-icon-button [color]="perm.modules[mod.id].read ? 'primary' : ''" (click)="toggleUserPermission(mod.id, 'read')">
+                                                                <mat-icon>{{ perm.modules[mod.id].read ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            </button>
+                                                        </div>
+                                                        <div class="perm-row">
+                                                            <span>Escrita</span>
+                                                            <button mat-icon-button [color]="perm.modules[mod.id].write ? 'primary' : ''" (click)="toggleUserPermission(mod.id, 'write')">
+                                                                <mat-icon>{{ perm.modules[mod.id].write ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </mat-card-content>
+                                            </mat-card>
+                                        </div>
+
+                                        <div class="actions" style="margin-top: 20px; text-align: right;">
+                                            <button mat-flat-button color="accent" (click)="saveUserPermission()">
+                                                <mat-icon>save</mat-icon> Salvar Override de Usuário
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
+
+                            <!-- SUB-ABA: VISÃO GERAL (MATRIZ) -->
+                            <mat-tab label="Visão Geral">
+                                <div class="tab-content" style="padding-top: 16px; overflow-x: auto;">
+                                    <p style="opacity:0.7; margin-bottom: 12px; font-size: 0.9rem;">Cargos ordenados do maior para o menor nível de hierarquia. 🔵 = Leitura | 🟢 = Escrita | ⭐ = Admin Total</p>
+                                    <table class="perm-matrix" *ngIf="getRolesForMatrix().length > 0">
+                                        <thead>
+                                            <tr>
+                                                <th>Módulo</th>
+                                                <th *ngFor="let rp of getRolesForMatrix()" class="role-col">
+                                                    <div>{{ rp.target }}</div>
+                                                    <small style="opacity:0.6; font-weight:normal">Nível {{ rp.hierarchyLevel }}</small>
+                                                    <mat-icon *ngIf="rp.hierarchyLevel >= 10" color="warn" style="font-size:14px; vertical-align:middle;" matTooltip="Admin Total">star</mat-icon>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let mod of modulesList">
+                                                <td>{{ mod.label }}</td>
+                                                <td *ngFor="let rp of getRolesForMatrix()" class="perm-cell">
+                                                    <mat-icon [color]="getMatrixValue(rp, mod.id, 'read') ? 'primary' : ''"
+                                                              style="font-size: 18px; vertical-align:middle; opacity: 0.9;"
+                                                              matTooltip="Leitura">
+                                                        {{ getMatrixValue(rp, mod.id, 'read') ? 'visibility' : 'visibility_off' }}
+                                                    </mat-icon>
+                                                    <mat-icon [color]="getMatrixValue(rp, mod.id, 'write') ? 'accent' : ''"
+                                                              style="font-size: 18px; vertical-align:middle; opacity: 0.9; margin-left:4px;"
+                                                              matTooltip="Escrita">
+                                                        {{ getMatrixValue(rp, mod.id, 'write') ? 'edit' : 'edit_off' }}
+                                                    </mat-icon>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </mat-tab>
+
+                        </mat-tab-group>
+
                         <div *ngIf="rolesList().length === 0" style="padding: 20px; text-align: center; opacity: 0.7;">
                             <p>Nenhum cargo encontrado. Configure as Funções na aba Membros primeiro.</p>
                         </div>

@@ -34,6 +34,7 @@ export interface PermissionConfig {
     id: string; // ex: 'role_DIRETORIA' ou 'user_membro@tem.local'
     type: 'role' | 'user';
     target: string; // Nome da role ou email do usuário
+    hierarchyLevel: number; // 1 = menor autoridade, 10 = máxima (admin total)
     modules: {
         members: ModulePermissions;
         finance: ModulePermissions;

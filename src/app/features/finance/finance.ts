@@ -14,6 +14,11 @@ import { NotificationService } from '../../core/services/notification.service';
 import { Transaction } from '../../core/models/transaction.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { TransactionFormComponent } from './transaction-form/transaction-form';
+import { ScheduledTransactionsService } from '../../core/services/scheduled-transactions.service';
+import { ScheduledTransactionsDialogComponent } from './scheduled-transactions-dialog/scheduled-transactions-dialog';
+import { DueSchedulesDialogComponent } from './scheduled-transactions-dialog/due-schedules-dialog';
+import { ScheduledTransaction } from '../../core/models/scheduled-transaction.model';
+import { forkJoin } from 'rxjs';
 
 const MONTHS = [
   { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
@@ -34,6 +39,7 @@ export class FinanceComponent implements OnInit {
   private financeService = inject(FinanceService);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
+  private scheduledService = inject(ScheduledTransactionsService);
 
   allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
@@ -59,6 +65,7 @@ export class FinanceComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.checkDueSchedules();
   }
 
   loadData() {
@@ -157,6 +164,39 @@ export class FinanceComponent implements OnInit {
         this.loadData();
       },
       error: (err) => this.notify.showError('Erro ao restaurar: ' + err.message)
+    });
+  }
+
+  openSchedules() {
+    this.dialog.open(ScheduledTransactionsDialogComponent, {
+      width: '100%',
+      maxWidth: '720px',
+      panelClass: 'responsive-dialog'
+    });
+  }
+
+  private checkDueSchedules() {
+    this.scheduledService.getDue().subscribe({
+      next: (due: ScheduledTransaction[]) => {
+        if (due.length === 0) return;
+        const ref = this.dialog.open(DueSchedulesDialogComponent, {
+          data: { schedules: due },
+          width: '100%',
+          maxWidth: '520px'
+        });
+        ref.afterClosed().subscribe((confirmed: boolean) => {
+          if (!confirmed) return;
+          const applies = due.map(s => this.scheduledService.applySchedule(s));
+          forkJoin(applies).subscribe({
+            next: () => {
+              this.notify.showSuccess(`${due.length} lançamento(s) realizados com sucesso!`);
+              this.loadData();
+            },
+            error: (e: any) => this.notify.showError('Erro ao lançar agendamentos: ' + e.message)
+          });
+        });
+      },
+      error: () => { /* silencioso — não bloqueia a tela */ }
     });
   }
 }
