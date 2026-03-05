@@ -184,7 +184,7 @@ export class ScheduledTransactionFormComponent implements OnInit {
     private applyRecurrenceValidation(rec: RecurrenceType) {
         const dayCtrl = this.form.get('dayOfMonth');
         if (rec === 'monthly') {
-            dayCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(28)]);
+            dayCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
         } else {
             dayCtrl?.clearValidators();
             dayCtrl?.setValue(null);

@@ -73,9 +73,9 @@
     <div class="row" *ngIf="isMonthly">
       <mat-form-field appearance="outline">
         <mat-label>Dia do Mês</mat-label>
-        <input matInput type="number" formControlName="dayOfMonth" placeholder="Ex: 5" min="1" max="28">
-        <mat-hint>Use 1–28</mat-hint>
-        <mat-error>Obrigatório (1-28)</mat-error>
+        <input matInput type="number" formControlName="dayOfMonth" placeholder="Ex: 5" min="1" max="31">
+        <mat-hint>O sistema ajustará se o mês for mais curto (ex: dia 31 vira 28 em Fev)</mat-hint>
+        <mat-error>Informe um dia entre 1 e 31</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">

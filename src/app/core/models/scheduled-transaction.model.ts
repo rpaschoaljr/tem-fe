@@ -14,7 +14,7 @@ export interface ScheduledTransaction {
     category: string;
     value: number; // sempre positivo; sinal aplicado pelo type
     recurrence: RecurrenceType;
-    dayOfMonth?: number; // 1–28, usado quando recurrence === 'monthly'
+    dayOfMonth?: number; // 1–31, se o dia não existir no mês o sistema usa o último dia (ex: 31/jan -> 28/fev)
     nextDueDate: Date;
     active: boolean;
     deleted: boolean;
