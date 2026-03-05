@@ -3,9 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { of, Observable, from, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
 import { Member } from '../models/member.model';
-import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc, getDoc
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class MembersService {

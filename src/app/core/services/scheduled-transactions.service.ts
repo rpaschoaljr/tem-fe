@@ -1,9 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of, throwError, forkJoin } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
-import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { ScheduledTransaction, RecurrenceType } from '../models/scheduled-transaction.model';
 import { Transaction } from '../models/transaction.model';
 import { FinanceService } from './finance.service';

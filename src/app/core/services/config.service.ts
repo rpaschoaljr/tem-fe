@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, doc, getDoc, setDoc, collection, getDocs } from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { Observable, from, map, of, switchMap, combineLatest, forkJoin } from 'rxjs';
 import { ModuleConfig, DynamicField, FieldOption, PermissionConfig, ModulePermissions } from '../models/system-config.model';
 
@@ -30,7 +31,6 @@ export class ConfigService {
     // --- PERMISSÕES ---
 
     getRolePermission(roleName: string): Observable<PermissionConfig> {
-        // ID seguro: converte barras em underscore para não quebrar o caminho do documento
         const safeId = `role_${roleName.replace(/\//g, '_')}`;
         const docRef = doc(this.firestore, this.PERM_COL, safeId);
         
@@ -39,7 +39,6 @@ export class ConfigService {
                 if (snap.exists()) {
                     return snap.data() as PermissionConfig;
                 } else {
-                    // Retorna permissão zerada (bloqueia tudo) como padrão
                     return this.getDefaultRolePermission(safeId, roleName);
                 }
             })

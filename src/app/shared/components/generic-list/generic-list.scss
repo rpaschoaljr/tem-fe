@@ -106,7 +106,7 @@ table {
     }
 }
 
-@mixin mobile-styles {
+@media (max-width: 768px) {
     .hide-on-mobile {
         display: none !important;
     }
@@ -126,7 +126,7 @@ table {
     }
 }
 
-@mixin narrow-styles {
+@media (max-width: 600px) {
     .search-header {
         flex-direction: column;
         align-items: stretch;
@@ -145,19 +145,6 @@ table {
         }
         .mat-mdc-paginator-range-actions { width: 100%; justify-content: center; }
     }
-}
-
-.generic-list-container.force-mobile {
-    @include mobile-styles;
-    @include narrow-styles;
-}
-
-@media (max-width: 768px) {
-    @include mobile-styles;
-}
-
-@media (max-width: 600px) {
-    @include narrow-styles;
 }
 
 /* ESTADOS DE ESTOQUE E STATUS */

@@ -21,6 +21,37 @@ import { ScheduledTransactionFormComponent } from '../scheduled-transaction-form
         MatCardModule,
         GenericListComponent
     ],
+    styles: [`
+        .scheduled-list-wrapper {
+            ::ng-deep {
+                .hide-on-mobile { display: none !important; }
+                table { min-width: 100% !important; }
+                .mat-mdc-cell {
+                    padding: 12px 8px !important;
+                    white-space: normal; 
+                    word-break: break-word;
+                }
+                .mobile-actions { display: flex !important; }
+                .actions-header, .actions-cell { display: none !important; }
+                
+                .search-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 8px;
+                    .search-bar { max-width: 100%; }
+                    button { align-self: flex-end; }
+                }
+                .mat-mdc-paginator-container { justify-content: center !important; }
+                .mat-mdc-paginator-page-size {
+                    margin-right: 0;
+                    width: 100%;
+                    justify-content: center;
+                    margin-bottom: 8px;
+                }
+                .mat-mdc-paginator-range-actions { width: 100%; justify-content: center; }
+            }
+        }
+    `],
     template: `
 <h2 mat-dialog-title>
     <mat-icon style="vertical-align: middle; margin-right: 8px;">schedule</mat-icon>
@@ -34,14 +65,15 @@ import { ScheduledTransactionFormComponent } from '../scheduled-transaction-form
         </button>
     </div>
 
-    <app-generic-list
-        [data]="schedules"
-        [columns]="columns"
-        [forceMobile]="true"
-        (editAction)="onEdit($event)"
-        (deleteAction)="onDelete($event)"
-        (restoreAction)="onRestore($event)">
-    </app-generic-list>
+    <div class="scheduled-list-wrapper">
+        <app-generic-list
+            [data]="schedules"
+            [columns]="columns"
+            (editAction)="onEdit($event)"
+            (deleteAction)="onDelete($event)"
+            (restoreAction)="onRestore($event)">
+        </app-generic-list>
+    </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

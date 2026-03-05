@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
-import { Firestore, collection, query, where, getDocs, limit, doc, getDoc } from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { Observable, of, from, combineLatest } from 'rxjs';
 import { switchMap, map, shareReplay, catchError } from 'rxjs/operators';
 import { Member } from '../models/member.model';

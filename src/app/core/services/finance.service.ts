@@ -2,9 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { of, Observable, from, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { Transaction } from '../models/transaction.model';
-import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
