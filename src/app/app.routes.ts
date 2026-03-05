@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/login/login';
+import { FirstAccessComponent } from './features/auth/first-access/first-access';
 import { MainLayoutComponent } from './core/layout/main-layout/main-layout';
 import { authGuard } from './core/guards/auth.guard';
 import { DashboardComponent } from './features/dashboard/dashboard';
@@ -15,6 +16,7 @@ import { pendingChangesGuard } from './core/guards/pending-changes.guard';
 export const routes: Routes = [
     // Rota Pública (Sem Layout)
     { path: 'login', component: LoginComponent },
+    { path: 'first-access', component: FirstAccessComponent, canActivate: [authGuard] },
 
     // Rotas Protegidas (Dentro do Layout com Menu)
     {

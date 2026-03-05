@@ -67,12 +67,16 @@ export class MainLayoutComponent implements OnInit {
     { label: 'Financeiro', icon: 'attach_money', route: '/finance', module: 'finance' },
     { label: 'Estoque', icon: 'inventory_2', route: '/stock', module: 'stock' },
     { label: 'Avisos', icon: 'campaign', route: '/notices', module: 'notices' },
+    { label: 'Configurações', icon: 'settings', route: '/settings', module: 'settings' },
   ];
 
   menuItems = signal<any[]>([]);
 
   ngOnInit() {
-    this.loadMenu();
+    // Recarrega o menu sempre que o membro (e suas permissões) mudar
+    this.authService.member$.subscribe(() => {
+      this.loadMenu();
+    });
   }
 
   loadMenu() {

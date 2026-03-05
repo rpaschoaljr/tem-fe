@@ -94,8 +94,17 @@
                         <input matInput [type]="field.type === 'number' ? 'number' : 'text'" 
                                [formControlName]="field.key"
                                [appInputMask]="field.maskType || ''"
+                               *ngIf="field.maskType; else noMask"
                                [placeholder]="field.key === 'cep' ? '00000-000' : ''"
                                (blur)="field.key === 'cep' ? onCepBlur() : null">
+                        
+                        <ng-template #noMask>
+                            <input matInput [type]="field.type === 'number' ? 'number' : 'text'" 
+                                   [formControlName]="field.key"
+                                   [placeholder]="field.key === 'cep' ? '00000-000' : ''"
+                                   (blur)="field.key === 'cep' ? onCepBlur() : null">
+                        </ng-template>
+
                         <mat-error *ngIf="group.get(field.key)?.hasError('required')">Obrigatório</mat-error>
                         <mat-error *ngIf="group.get(field.key)?.hasError('invalidCpf')">CPF Inválido</mat-error>
                         <mat-error *ngIf="group.get(field.key)?.hasError('invalidPhone')">Telefone inválido</mat-error>

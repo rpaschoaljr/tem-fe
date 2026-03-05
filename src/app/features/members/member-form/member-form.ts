@@ -147,26 +147,37 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
       });
 
       this.totalTabs = this.getFieldsBySection('Informações Adicionais').length > 0 ? 5 : 4;
+      
+      // Re-executa as validações cruzadas agora que os campos existem
+      this.setupDateCrossValidation();
     });
   }
 
   setupDateCrossValidation() {
     const ritualKeys = ['initiation', 'baptism', 'baptism1Year', 'coronation', 'crownWashing'];
 
-    this.form.get('entryDate')!.valueChanges.subscribe(() => {
-      this.form.get('exitDate')?.updateValueAndValidity({ emitEvent: false });
-      ritualKeys.forEach(k => this.form.get(`rituals.${k}`)?.updateValueAndValidity({ emitEvent: false }));
-      
-      // Valida todos os campos de data dinâmicos das consagrações
-      const consecrationsGroup = this.form.get('consecrations') as FormGroup;
-      Object.keys(consecrationsGroup.controls).forEach(key => {
-        consecrationsGroup.get(key)?.updateValueAndValidity({ emitEvent: false });
+    const entryDateControl = this.form.get('entryDate');
+    if (entryDateControl) {
+      entryDateControl.valueChanges.subscribe(() => {
+        this.form.get('exitDate')?.updateValueAndValidity({ emitEvent: false });
+        ritualKeys.forEach(k => this.form.get(`rituals.${k}`)?.updateValueAndValidity({ emitEvent: false }));
+        
+        // Valida todos os campos de data dinâmicos das consagrações
+        const consecrationsGroup = this.form.get('consecrations') as FormGroup;
+        if (consecrationsGroup) {
+          Object.keys(consecrationsGroup.controls).forEach(key => {
+            consecrationsGroup.get(key)?.updateValueAndValidity({ emitEvent: false });
+          });
+        }
       });
-    });
+    }
 
-    this.form.get('rituals.baptism')!.valueChanges.subscribe(() => {
-      this.form.get('rituals.baptism1Year')?.updateValueAndValidity({ emitEvent: false });
-    });
+    const baptismControl = this.form.get('rituals.baptism');
+    if (baptismControl) {
+      baptismControl.valueChanges.subscribe(() => {
+        this.form.get('rituals.baptism1Year')?.updateValueAndValidity({ emitEvent: false });
+      });
+    }
   }
 
   initForm() {
@@ -283,7 +294,10 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
 
   onSubmit() {
     if (this.form.valid) {
-      const memberData: Member = this.form.value;
+      const memberData: Member = {
+        ...this.form.value,
+        ...(this.isEditMode ? {} : { isFirstAccess: true })
+      };
 
       // Se for novo cadastro, remove o ID vazio para o serviço gerar um novo
       if (!this.isEditMode) delete (memberData as any).id;

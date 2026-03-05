@@ -45,6 +45,10 @@ export class InputMaskDirective {
   @HostListener('input', ['$event'])
   onInput(event: any): void {
     const input = this.el.nativeElement;
+    
+    // Se não houver máscara, não faz nada
+    if (!this.maskType) return;
+
     let cursorPosition = input.selectionStart;
     let oldLength = input.value.length;
 
@@ -98,7 +102,9 @@ export class InputMaskDirective {
     }
 
     else {
-      formatted = rawValue;
+      // Se não for nenhum dos tipos conhecidos (ex: text, name, etc)
+      // retornamos IMEDIATAMENTE sem alterar o valor do input.
+      return;
     }
 
     input.value = formatted;

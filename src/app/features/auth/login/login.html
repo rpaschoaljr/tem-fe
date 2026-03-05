@@ -22,6 +22,10 @@
                 </mat-form-field>
 
                 <div class="actions">
+                    <button mat-button type="button" (click)="openForgotPassword()" class="forgot-btn">
+                        Primeiro Acesso / Esqueci Senha
+                    </button>
+
                     <button mat-flat-button color="primary" type="submit" [disabled]="loginForm.invalid">
                         ENTRAR
                     </button>

@@ -39,7 +39,12 @@ export class DashboardComponent implements OnInit {
 
   kpis = { activeMembers: 0, balance: 0, outOfStock: 0 };
   activeNotices$: Observable<Notice[]> | undefined;
+  
+  // Observables de Permissão
   canManageNotices$: Observable<boolean> = this.authService.canManageNotices();
+  canAccessMembers$: Observable<boolean> = this.authService.hasPermission('members', 'read');
+  canAccessFinance$: Observable<boolean> = this.authService.hasPermission('finance', 'read');
+  canAccessStock$: Observable<boolean> = this.authService.hasPermission('stock', 'read');
 
   ngOnInit() {
     this.activeNotices$ = this.noticesService.getActiveNotices().pipe(

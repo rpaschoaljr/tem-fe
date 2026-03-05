@@ -21,6 +21,7 @@ export interface Member {
     // --- Sistema ---
     status: 'Ativo' | 'Inativo'; // Derivado do is_deleted ou manual
     deleted: boolean;
+    isFirstAccess?: boolean; // Novo campo para controle de primeiro acesso
     showSpiritualData?: boolean; // Permissão para o próprio membro ver sua vida espiritual
 
     // --- Vínculo e Histórico ---

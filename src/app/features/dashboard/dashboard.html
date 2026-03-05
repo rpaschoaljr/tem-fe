@@ -9,7 +9,7 @@
 
     <!-- KPIs REAIS -->
     <div class="kpi-strip">
-        <mat-card class="kpi-chip members" (click)="navigate('members')">
+        <mat-card class="kpi-chip members" (click)="navigate('members')" *ngIf="canAccessMembers$ | async">
             <mat-card-content>
                 <mat-icon>groups</mat-icon>
                 <div>
@@ -19,7 +19,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="kpi-chip finance" [class.negative]="kpis.balance < 0" (click)="navigate('finance')">
+        <mat-card class="kpi-chip finance" [class.negative]="kpis.balance < 0" (click)="navigate('finance')" *ngIf="canAccessFinance$ | async">
             <mat-card-content>
                 <mat-icon>account_balance_wallet</mat-icon>
                 <div>
@@ -29,7 +29,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="kpi-chip stock" [class.alert]="kpis.outOfStock > 0" (click)="navigate('stock')">
+        <mat-card class="kpi-chip stock" [class.alert]="kpis.outOfStock > 0" (click)="navigate('stock')" *ngIf="canAccessStock$ | async">
             <mat-card-content>
                 <mat-icon>inventory_2</mat-icon>
                 <div>
@@ -44,7 +44,7 @@
     <div class="cards-grid">
 
         <!-- Membros -->
-        <mat-card class="module-card" (click)="navigate('members')">
+        <mat-card class="module-card" (click)="navigate('members')" *ngIf="canAccessMembers$ | async">
             <mat-card-content class="card-content">
                 <div class="icon-circle members">
                     <mat-icon>groups</mat-icon>
@@ -55,7 +55,7 @@
         </mat-card>
 
         <!-- Financeiro -->
-        <mat-card class="module-card" (click)="navigate('finance')">
+        <mat-card class="module-card" (click)="navigate('finance')" *ngIf="canAccessFinance$ | async">
             <mat-card-content class="card-content">
                 <div class="icon-circle finance">
                     <mat-icon>attach_money</mat-icon>
@@ -66,7 +66,7 @@
         </mat-card>
 
         <!-- Estoque -->
-        <mat-card class="module-card" (click)="navigate('stock')">
+        <mat-card class="module-card" (click)="navigate('stock')" *ngIf="canAccessStock$ | async">
             <mat-card-content class="card-content">
                 <div class="icon-circle stock">
                     <mat-icon>inventory_2</mat-icon>
