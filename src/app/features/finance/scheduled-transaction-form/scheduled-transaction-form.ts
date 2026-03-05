@@ -36,6 +36,7 @@ import { FieldOption } from '../../../core/models/system-config.model';
         InputMaskDirective
     ],
     templateUrl: './scheduled-transaction-form.html',
+    styleUrl: './scheduled-transaction-form.scss'
 })
 export class ScheduledTransactionFormComponent implements OnInit {
     private fb = inject(FormBuilder);
