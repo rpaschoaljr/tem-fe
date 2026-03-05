@@ -106,7 +106,7 @@ table {
     }
 }
 
-@media (max-width: 768px) {
+@mixin mobile-styles {
     .hide-on-mobile {
         display: none !important;
     }
@@ -117,7 +117,6 @@ table {
 
     .mat-mdc-cell {
         padding: 12px 8px !important;
-        // Permite ver o conteúdo importante (nome/descrição)
         white-space: normal; 
         word-break: break-word;
     }
@@ -125,6 +124,40 @@ table {
     .mobile-actions {
         display: flex;
     }
+}
+
+@mixin narrow-styles {
+    .search-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        .search-bar { max-width: 100%; }
+        button { align-self: flex-end; }
+    }
+
+    ::ng-deep .mat-mdc-paginator {
+        .mat-mdc-paginator-container { justify-content: center; }
+        .mat-mdc-paginator-page-size {
+            margin-right: 0;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .mat-mdc-paginator-range-actions { width: 100%; justify-content: center; }
+    }
+}
+
+.generic-list-container.force-mobile {
+    @include mobile-styles;
+    @include narrow-styles;
+}
+
+@media (max-width: 768px) {
+    @include mobile-styles;
+}
+
+@media (max-width: 600px) {
+    @include narrow-styles;
 }
 
 /* ESTADOS DE ESTOQUE E STATUS */
@@ -182,25 +215,4 @@ html.dark-theme {
         flex-wrap: wrap;
     }
     .mat-mdc-paginator-range-label { margin: 0 8px; font-size: 0.85rem; }
-}
-
-@media (max-width: 600px) {
-    .search-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        .search-bar { max-width: 100%; }
-        button { align-self: flex-end; }
-    }
-
-    ::ng-deep .mat-mdc-paginator {
-        .mat-mdc-paginator-container { justify-content: center; }
-        .mat-mdc-paginator-page-size {
-            margin-right: 0;
-            width: 100%;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-        .mat-mdc-paginator-range-actions { width: 100%; justify-content: center; }
-    }
 }

@@ -14,6 +14,7 @@ import { ScheduledTransaction, RecurrenceType, RECURRENCE_LABELS } from '../../.
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ConfigService } from '../../../core/services/config.service';
 import { MembersService } from '../../../core/services/members.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { Member } from '../../../core/models/member.model';
 import { FieldOption } from '../../../core/models/system-config.model';
 
@@ -41,6 +42,7 @@ export class ScheduledTransactionFormComponent implements OnInit {
     private dialogRef = inject(MatDialogRef<ScheduledTransactionFormComponent>);
     private configService = inject(ConfigService);
     private membersService = inject(MembersService);
+    private notify = inject(NotificationService);
 
     scheduled: ScheduledTransaction | null = inject(MAT_DIALOG_DATA);
 
@@ -76,14 +78,13 @@ export class ScheduledTransactionFormComponent implements OnInit {
         this.setupAutoType();
         this.setupDescriptionSearch();
         this.setupRecurrenceWatcher();
-        if (this.scheduled?.recurrence === 'monthly') {
-            this.form.get('dayOfMonth')?.setValidators([Validators.required, Validators.min(1), Validators.max(28)]);
-            this.form.get('dayOfMonth')?.updateValueAndValidity();
-        }
+        
+        // Inicializa validadores baseados no valor atual
+        this.applyRecurrenceValidation(this.form.get('recurrence')?.value as RecurrenceType);
     }
 
     private formatInitialValue(val: number | undefined): string {
-        if (!val) return '0,00';
+        if (val === undefined || val === null) return '0,00';
         return Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
@@ -101,8 +102,11 @@ export class ScheduledTransactionFormComponent implements OnInit {
             const catField = config.fields.find(f => f.key === 'category');
             if (catField?.options) {
                 this.categoryOptions.set(catField.options.filter(o => !o.deleted));
-                if (this.scheduled) {
-                    this.checkMemberRequirement(this.scheduled.category);
+                
+                // Sincroniza estado inicial baseado na categoria atual (importante para Edição)
+                const currentCat = this.form.get('category')?.value;
+                if (currentCat) {
+                    this.syncCategoryState(currentCat);
                 }
             }
         });
@@ -114,41 +118,40 @@ export class ScheduledTransactionFormComponent implements OnInit {
 
     setupAutoType() {
         this.form.get('category')?.valueChanges.subscribe(catLabel => {
-            const option = this.categoryOptions().find(o => o.label === catLabel);
-            if (option) {
-                if (option.meta) {
-                    this.form.patchValue({ type: option.meta as any }, { emitEvent: false });
-                    this.form.get('type')?.disable();
-                } else {
-                    this.form.get('type')?.enable();
-                }
-                this.checkMemberRequirement(catLabel!);
+            if (catLabel) {
+                this.syncCategoryState(catLabel);
             }
         });
     }
 
-    setupRecurrenceWatcher() {
-        this.form.get('recurrence')?.valueChanges.subscribe(rec => {
-            const dayCtrl = this.form.get('dayOfMonth');
-            if (rec === 'monthly') {
-                dayCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(28)]);
-            } else {
-                dayCtrl?.clearValidators();
-                dayCtrl?.setValue(null);
-            }
-            dayCtrl?.updateValueAndValidity();
-        });
-    }
-
-    private checkMemberRequirement(catLabel: string) {
+    private syncCategoryState(catLabel: string) {
         const option = this.categoryOptions().find(o => o.label === catLabel);
-        const requires = !!option?.requiresMember;
+        
+        // 1. Sincroniza o Tipo (Entrada/Saída)
+        // Se a opção tem meta definida ou se é uma categoria conhecida (fallback)
+        let autoType = option?.meta;
+        if (!autoType) {
+            const upper = catLabel.toUpperCase();
+            if (['MENSALIDADE', 'DOAÇÃO', 'EVENTO'].includes(upper)) autoType = 'Entrada';
+            if (['CONTAS', 'MANUTENÇÃO', 'ALUGUEL', 'LIMPEZA', 'SAÍDA'].includes(upper)) autoType = 'Saída';
+        }
+
+        if (autoType) {
+            this.form.patchValue({ type: autoType as any }, { emitEvent: false });
+            this.form.get('type')?.disable();
+        } else {
+            this.form.get('type')?.enable();
+        }
+
+        // 2. Sincroniza Requisito de Membro
+        const requires = !!option?.requiresMember || ['MENSALIDADE'].includes(catLabel.toUpperCase());
         this.showMemberField.set(requires);
         if (requires) {
             this.form.get('memberId')?.setValidators(Validators.required);
         } else {
             this.form.get('memberId')?.clearValidators();
-            this.form.patchValue({ memberId: '', memberName: '' });
+            // Limpa os campos de membro se a categoria não os exigir
+            this.form.patchValue({ memberId: '', memberName: '' }, { emitEvent: false });
         }
         this.form.get('memberId')?.updateValueAndValidity();
     }
@@ -170,6 +173,23 @@ export class ScheduledTransactionFormComponent implements OnInit {
                 }).slice(0, 5)
             );
         });
+    }
+
+    setupRecurrenceWatcher() {
+        this.form.get('recurrence')?.valueChanges.subscribe(rec => {
+            this.applyRecurrenceValidation(rec as RecurrenceType);
+        });
+    }
+
+    private applyRecurrenceValidation(rec: RecurrenceType) {
+        const dayCtrl = this.form.get('dayOfMonth');
+        if (rec === 'monthly') {
+            dayCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(28)]);
+        } else {
+            dayCtrl?.clearValidators();
+            dayCtrl?.setValue(null);
+        }
+        dayCtrl?.updateValueAndValidity();
     }
 
     displayMember(member: any): string {
@@ -194,6 +214,17 @@ export class ScheduledTransactionFormComponent implements OnInit {
     onSubmit() {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
+            
+            // Tenta identificar o erro para avisar o usuário
+            if (this.showMemberField() && !this.form.get('memberId')?.value) {
+                this.notify.showError('Por favor, selecione um membro da lista no campo Descrição.');
+            } else if (this.form.get('value')?.value! <= 0) {
+                this.notify.showError('O valor deve ser maior que zero.');
+            } else if (this.form.get('type')?.invalid) {
+                this.notify.showError('Selecione o tipo do lançamento (Entrada ou Saída).');
+            } else {
+                this.notify.showError('Verifique os campos obrigatórios em vermelho.');
+            }
             return;
         }
         const raw = this.form.getRawValue();

@@ -37,6 +37,7 @@ import { ScheduledTransactionFormComponent } from '../scheduled-transaction-form
     <app-generic-list
         [data]="schedules"
         [columns]="columns"
+        [forceMobile]="true"
         (editAction)="onEdit($event)"
         (deleteAction)="onDelete($event)"
         (restoreAction)="onRestore($event)">

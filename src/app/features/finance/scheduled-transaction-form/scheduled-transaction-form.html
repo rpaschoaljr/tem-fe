@@ -24,7 +24,10 @@
       <mat-hint *ngIf="showMemberField() && !form.get('memberId')?.value">
         Digite para buscar o membro
       </mat-hint>
-      <mat-error>Obrigatório (mín. 3 caracteres)</mat-error>
+      <mat-error *ngIf="form.get('description')?.hasError('required')">Obrigatório (mín. 3 caracteres)</mat-error>
+      <mat-error *ngIf="showMemberField() && !form.get('memberId')?.value && form.get('description')?.touched">
+        Selecione um membro da lista
+      </mat-error>
     </mat-form-field>
 
     <div class="row">
@@ -32,6 +35,15 @@
         <mat-label>Categoria</mat-label>
         <mat-select formControlName="category">
           <mat-option *ngFor="let opt of categoryOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
+        </mat-select>
+        <mat-error>Obrigatório</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tipo</mat-label>
+        <mat-select formControlName="type">
+          <mat-option value="Entrada">Entrada</mat-option>
+          <mat-option value="Saída">Saída</mat-option>
         </mat-select>
         <mat-error>Obrigatório</mat-error>
       </mat-form-field>
@@ -62,14 +74,14 @@
       <mat-form-field appearance="outline">
         <mat-label>Dia do Mês</mat-label>
         <input matInput type="number" formControlName="dayOfMonth" placeholder="Ex: 5" min="1" max="28">
-        <mat-hint>Use 1–28 para garantir funcionamento em todos os meses</mat-hint>
-        <mat-error>Informe um dia entre 1 e 28</mat-error>
+        <mat-hint>Use 1–28</mat-hint>
+        <mat-error>Obrigatório (1-28)</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>Próxima Data</mat-label>
-        <input matInput type="text" [matDatepicker]="picker" formControlName="nextDueDate"
-               appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+        <input matInput [matDatepicker]="picker" formControlName="nextDueDate"
+               appInputMask="date" placeholder="DD/MM/AAAA">
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
         <mat-error>Obrigatório</mat-error>
@@ -79,8 +91,8 @@
     <div class="row" *ngIf="!isMonthly">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Próxima Data</mat-label>
-        <input matInput type="text" [matDatepicker]="picker2" formControlName="nextDueDate"
-               appInputMask="date" maxlength="10" placeholder="DD/MM/AAAA">
+        <input matInput [matDatepicker]="picker2" formControlName="nextDueDate"
+               appInputMask="date" placeholder="DD/MM/AAAA">
         <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
         <mat-datepicker #picker2></mat-datepicker>
         <mat-error>Obrigatório</mat-error>
