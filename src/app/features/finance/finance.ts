@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FinanceService } from '../../core/services/finance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Transaction } from '../../core/models/transaction.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { TransactionFormComponent } from './transaction-form/transaction-form';
@@ -40,9 +41,11 @@ export class FinanceComponent implements OnInit {
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
   private scheduledService = inject(ScheduledTransactionsService);
+  private authService = inject(AuthService);
 
   allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
+  canWrite$ = this.authService.hasPermission('finance', 'write');
 
   months = MONTHS;
   years: number[] = [];

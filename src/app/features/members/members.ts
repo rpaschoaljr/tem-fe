@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Router } from '@angular/router'; // <--- Import Router
+import { AuthService } from '../../core/services/auth.service';
 
 import { MembersService } from '../../core/services/members.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -24,9 +25,11 @@ export class MembersComponent implements OnInit {
   private membersService = inject(MembersService);
   private notify = inject(NotificationService);
   private router = inject(Router); // <--- Injeção
+  private authService = inject(AuthService); // <--- Injeção do AuthService
 
   members: Member[] = [];
   totalActive = 0;
+  canWrite$ = this.authService.hasPermission('members', 'write');
 
   tableColumns: ColumnDef[] = [
     { def: 'name', label: 'Nome' },

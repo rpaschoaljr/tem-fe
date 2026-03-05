@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { StockService } from '../../core/services/stock.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuthService } from '../../core/services/auth.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { StockFormComponent } from './stock-form/stock-form';
@@ -22,10 +23,12 @@ export class StockComponent implements OnInit {
   private stockService = inject(StockService);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
+  private authService = inject(AuthService);
 
   allItems: StockItem[] = [];
   items: StockItem[] = [];
   stockFilter: 'all' | 'low' | 'out' = 'all';
+  canWrite$ = this.authService.hasPermission('stock', 'write');
 
   totalItems = 0;
   lowStockCount = 0;

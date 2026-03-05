@@ -18,6 +18,7 @@ import { DynamicField, ModuleConfig } from '../../core/models/system-config.mode
 import { ComponentCanDeactivate } from '../../core/guards/pending-changes.guard';
 import { Observable } from 'rxjs';
 import { ImageCropperDialogComponent } from '../../shared/components/image-cropper-dialog/image-cropper-dialog';
+import { ChangePasswordDialogComponent } from './change-password-dialog/change-password-dialog';
 
 @Component({
   selector: 'app-profile',
@@ -194,5 +195,12 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
         event.target.value = '';
       });
     }
+  }
+
+  openChangePassword() {
+    this.dialog.open(ChangePasswordDialogComponent, {
+      width: '100%',
+      maxWidth: '400px'
+    });
   }
 }

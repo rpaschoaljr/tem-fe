@@ -3,7 +3,7 @@
     <!-- Cabeçalho com Ações e KPIs -->
     <div class="actions-grid">
         <!-- Botão Novo Membro -->
-        <mat-card class="action-card add-new" (click)="openRegisterDialog()">
+        <mat-card class="action-card add-new" (click)="openRegisterDialog()" *ngIf="canWrite$ | async">
             <mat-card-content>
                 <mat-icon>person_add</mat-icon>
                 <span>Novo Membro</span>
@@ -25,7 +25,9 @@
             <h3>Gestão de Membros</h3>
 
             <!-- Aqui usamos o componente que criamos antes -->
-            <app-generic-list [data]="members" [columns]="tableColumns" (editAction)="onEdit($event)"
+            <app-generic-list [data]="members" [columns]="tableColumns" 
+                [hideActions]="!(canWrite$ | async)"
+                (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
             </app-generic-list>
 

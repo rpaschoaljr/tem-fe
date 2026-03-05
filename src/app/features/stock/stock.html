@@ -44,7 +44,7 @@
             <app-generic-list 
                 [data]="items" 
                 [columns]="tableColumns" 
-                [showAdjust]="true"
+                [showAdjust]="(canWrite$ | async) === true"
                 [hideTrash]="true"
                 [hideActions]="true"
                 [rowClassFn]="getRowClass" 

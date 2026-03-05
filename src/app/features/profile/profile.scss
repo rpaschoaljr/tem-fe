@@ -6,7 +6,18 @@
 
 .profile-header {
   margin-bottom: 30px;
-  text-align: center;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
 
   h1 {
     margin: 0;

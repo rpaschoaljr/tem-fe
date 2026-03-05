@@ -41,7 +41,7 @@
     </div>
 
     <!-- BOTÕES DE AÇÃO -->
-    <div class="actions-row">
+    <div class="actions-row" *ngIf="canWrite$ | async">
         <button mat-raised-button color="primary" (click)="onNewTransaction()">
             <mat-icon>add</mat-icon> Novo Lançamento
         </button>
@@ -79,7 +79,9 @@
             <h3>Extrato Financeiro</h3>
 
             <!-- AQUI ESTAVA FALTANDO LIGAR OS EVENTOS -->
-            <app-generic-list [data]="transactions" [columns]="tableColumns" (editAction)="onEdit($event)"
+            <app-generic-list [data]="transactions" [columns]="tableColumns" 
+                [hideActions]="!(canWrite$ | async)"
+                (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
             </app-generic-list>
 

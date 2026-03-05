@@ -1,7 +1,14 @@
 <div class="profile-container">
   <header class="profile-header">
-    <h1>Meu Perfil</h1>
-    <p class="subtitle">Visualize suas informações cadastradas no sistema</p>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Meu Perfil</h1>
+        <p class="subtitle">Visualize suas informações cadastradas no sistema</p>
+      </div>
+      <button mat-flat-button color="accent" (click)="openChangePassword()">
+        <mat-icon>lock_reset</mat-icon> ALTERAR SENHA
+      </button>
+    </div>
   </header>
 
   <div *ngIf="loading()" class="loading-state">
