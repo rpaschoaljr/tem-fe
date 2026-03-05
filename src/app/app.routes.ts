@@ -12,6 +12,7 @@ import { ProfileComponent } from './features/profile/profile';
 import { NoticesComponent } from './features/notices/notices';
 import { SettingsComponent } from './features/settings/settings';
 import { pendingChangesGuard } from './core/guards/pending-changes.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
     // Rota Pública (Sem Layout)
@@ -26,16 +27,70 @@ export const routes: Routes = [
         children: [
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             { path: 'dashboard', component: DashboardComponent },
-            { path: 'members', component: MembersComponent },
-            { path: 'finance', component: FinanceComponent },
-            { path: 'stock', component: StockComponent },
-            { path: 'profile', component: ProfileComponent, canDeactivate: [pendingChangesGuard] },
-            { path: 'settings', component: SettingsComponent },
-            { path: 'notices', component: NoticesComponent },
-            { path: 'notices/archive', component: NoticesComponent },
-            { path: 'notices/trash', component: NoticesComponent },
-            { path: 'members/new', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
-            { path: 'members/edit/:id', component: MemberFormComponent, canDeactivate: [pendingChangesGuard] },
+            
+            { 
+              path: 'members', 
+              component: MembersComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'members', action: 'read' } 
+            },
+            { 
+              path: 'finance', 
+              component: FinanceComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'finance', action: 'read' } 
+            },
+            { 
+              path: 'stock', 
+              component: StockComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'stock', action: 'read' } 
+            },
+            { 
+              path: 'profile', 
+              component: ProfileComponent, 
+              canDeactivate: [pendingChangesGuard] 
+            },
+            { 
+              path: 'settings', 
+              component: SettingsComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'settings', action: 'read' } 
+            },
+            { 
+              path: 'notices', 
+              component: NoticesComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'notices', action: 'read' } 
+            },
+            { 
+              path: 'notices/archive', 
+              component: NoticesComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'notices', action: 'read' } 
+            },
+            { 
+              path: 'notices/trash', 
+              component: NoticesComponent, 
+              canActivate: [permissionGuard], 
+              data: { module: 'notices', action: 'write' } 
+            },
+            
+            // Sub-rotas de Escrita
+            { 
+              path: 'members/new', 
+              component: MemberFormComponent, 
+              canActivate: [permissionGuard], 
+              canDeactivate: [pendingChangesGuard],
+              data: { module: 'members', action: 'write' } 
+            },
+            { 
+              path: 'members/edit/:id', 
+              component: MemberFormComponent, 
+              canActivate: [permissionGuard], 
+              canDeactivate: [pendingChangesGuard],
+              data: { module: 'members', action: 'write' } 
+            },
         ]
     },
 
