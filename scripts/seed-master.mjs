@@ -9,7 +9,7 @@ const AUTH_EMULATOR = 'http://localhost:9099';
 const FIRESTORE_API = 'http://localhost:8080/v1/projects/sistematemfe/databases/(default)/documents';
 const API_KEY = 'fake-api-key-emulator';
 
-const ROLES = ['DIRETORIA', 'PAI/MÃE PEQUENO', 'OGÃ', 'CAMBONO', 'MÉDIUM', 'CONSULENTE'];
+const ROLES = ['ADMIN','DIRETORIA', 'PAI/MÃE PEQUENO', 'OGÃ', 'CAMBONO', 'MÉDIUM', 'CONSULENTE'];
 
 async function waitForEmulator(maxRetries = 30) {
   for (let i = 0; i < maxRetries; i++) {
@@ -108,7 +108,7 @@ async function seed() {
     await createUser(email);
     await firestoreCreate('permissions', email, {
       id: email, type: 'user', target: role, updatedAt: now,
-      hierarchyLevel: role === 'DIRETORIA' ? 10 : 1, modules: {}
+      hierarchyLevel: role === 'DIRETORIA' || role === 'ADMIN'? 10 : 1, modules: {}
     });
     await firestoreCreate('members', id, {
       id, name: `MEMBRO ${role}`, email, role, status: 'Ativo', deleted: false,
