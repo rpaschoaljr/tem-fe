@@ -69,11 +69,18 @@ export class MembersService {
             ...(isNew ? { createdAt: new Date(), deleted: false } : {})
         };
 
-        // REMOVIDO FALLBACK LOCAL: Se der erro no setDoc, o erro sobe para a UI
+        console.log(`💾 Salvando membro (${isNew ? 'NOVO' : 'EDIÇÃO'}):`, data);
+
         return from(setDoc(docRef, data, { merge: true })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)), // Invalida cache para forçar recarga
+            tap(() => {
+                console.log('✅ Sucesso ao gravar no Firestore');
+                localStorage.removeItem(this.TIME_KEY);
+            }),
             map(() => true),
-            catchError((err) => throwError(() => new Error('Erro ao salvar no servidor. Verifique sua internet.')))
+            catchError((err) => {
+                console.error('❌ Erro Firestore ao salvar membro:', err);
+                return throwError(() => new Error(`Erro ao salvar no servidor: ${err.message || 'Verifique suas permissões'}`));
+            })
         );
     }
 

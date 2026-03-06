@@ -48,7 +48,7 @@ await waitForEmulator();
 // ── 3. Seed ───────────────────────────────────────────────────────────────────
 console.log('\n🌱  Rodando seed...\n');
 try {
-  execSync('node scripts/seed-emulator.mjs', { stdio: 'inherit' });
+  execSync('node scripts/seed-master.mjs', { stdio: 'inherit' });
 } catch (e) {
   console.error('\n❌  Erro ao rodar seed:', e.message);
 }
@@ -57,8 +57,21 @@ try {
 console.log('\n🚀  Iniciando ng serve...\n');
 const ng = spawn('npx', ['ng', 'serve'], { stdio: 'inherit', shell: true });
 
-ng.on('close', (code) => process.exit(code ?? 0));
+function shutdown() {
+  console.log('\n🛑  Encerrando serviços (Docker compose down)...');
+  ng.kill('SIGINT');
+  try {
+    execSync('docker compose down', { stdio: 'inherit' });
+  } catch (e) {
+    console.error('⚠️  Erro ao baixar containers:', e.message);
+  }
+  process.exit(0);
+}
 
-// Repassa SIGINT/SIGTERM para encerrar o ng serve corretamente
-process.on('SIGINT', () => ng.kill('SIGINT'));
-process.on('SIGTERM', () => ng.kill('SIGTERM'));
+// Repassa SIGINT/SIGTERM para encerrar tudo corretamente
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+ng.on('close', (code) => {
+  if (code !== null) shutdown();
+});

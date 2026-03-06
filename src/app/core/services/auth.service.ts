@@ -100,21 +100,32 @@ export class AuthService {
   hasPermission(module: string, action: 'read' | 'write'): Observable<boolean> {
     return this.permissions$.pipe(
       map(perms => {
-        if (!perms) return false;
+        if (!perms) {
+          console.warn(`🚫 Permissão Negada: Sem dados de permissão para o módulo ${module}`);
+          return false;
+        }
 
         // Cargo com nível máximo de hierarquia (10) tem acesso total
-        if ((perms.rolePerm?.hierarchyLevel ?? 0) >= 10) return true;
+        if ((perms.rolePerm?.hierarchyLevel ?? 0) >= 10 || (perms.userPerm?.hierarchyLevel ?? 0) >= 10) {
+          console.log(`👑 Acesso Master concedido para o módulo ${module}`);
+          return true;
+        }
 
         // Verifica individual primeiro
         if (perms.userPerm?.modules?.[module] && perms.userPerm.modules[module][action] !== undefined) {
-          return perms.userPerm.modules[module][action];
+          const allowed = perms.userPerm.modules[module][action];
+          console.log(`👤 Permissão Individual (${module}.${action}): ${allowed ? '✅' : '❌'}`);
+          return allowed;
         }
 
         // Depois verifica cargo
         if (perms.rolePerm?.modules?.[module] && perms.rolePerm.modules[module][action] !== undefined) {
-          return perms.rolePerm.modules[module][action];
+          const allowed = perms.rolePerm.modules[module][action];
+          console.log(`👥 Permissão por Cargo (${module}.${action}): ${allowed ? '✅' : '❌'}`);
+          return allowed;
         }
 
+        console.warn(`⚠️ Nenhuma regra encontrada para ${module}.${action}. Negando por padrão.`);
         return false;
       })
     );
