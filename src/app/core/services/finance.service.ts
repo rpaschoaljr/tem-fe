@@ -44,22 +44,23 @@ export class FinanceService {
         const colRef = collection(this.firestore, this.COL);
         const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, transaction.id);
 
-        // NORMALIZAÇÃO RIGOROSA
-        transaction.description = Normalizer.text(transaction.description);
-        transaction.category = Normalizer.text(transaction.category);
-        transaction.memberName = Normalizer.text(transaction.memberName);
+        // CRIANDO CAMPOS DE BUSCA
+        const description_search = Normalizer.search(transaction.description);
+        const category_search = Normalizer.search(transaction.category);
 
-        const data = { 
+        const firestoreData: any = { 
             ...JSON.parse(JSON.stringify(transaction)), 
             id: docRef.id, 
+            description_search,
+            category_search,
             deleted: transaction.deleted ?? false,
             updatedAt: new Date()
         };
 
-        return from(setDoc(docRef, data, { merge: true })).pipe(
+        return from(setDoc(docRef, firestoreData, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
-            catchError(() => throwError(() => new Error('Falha ao registrar lançamento no servidor.')))
+            catchError(() => throwError(() => new Error('FALHA AO REGISTRAR LANÇAMENTO NO SERVIDOR.')))
         );
     }
 

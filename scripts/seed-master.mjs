@@ -89,7 +89,25 @@ async function verifyDatabase() {
   }
 }
 
-// Função para gerar CPF válido para testes
+// Funções de Normalização e Formatação
+function normalize(val) {
+  if (!val) return '';
+  return val.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+}
+
+function formatCPF(cpf) {
+  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
+function formatPhone(phone) {
+  const clean = phone.replace(/\D/g, '');
+  return clean.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+}
+
+function formatCEP(cep) {
+  return cep.replace(/(\d{5})(\d{3})/, "$1-$2");
+}
+
 function generateCPF() {
   const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
   const calc = (t) => {
@@ -119,8 +137,9 @@ async function seed() {
   for (const role of ROLES) {
     const email = `${role.toLowerCase().replace(/[^a-z]/g, '')}@tem.local`;
     const id = `seed-${email}`;
-    const cpf = generateCPF();
-    const phone = `(11) 9${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const rawCpf = generateCPF();
+    const rawPhone = `119${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const rawCep = '01001000';
 
     await createUser(email);
     await firestoreCreate('permissions', email, {
@@ -128,14 +147,33 @@ async function seed() {
       hierarchyLevel: role === 'DIRETORIA' || role === 'ADMIN'? 10 : 1, modules: {}
     });
     
+    const memberName = `Membro ${role}`;
     await firestoreCreate('members', id, {
-      id, name: `MEMBRO ${role}`, email, role, status: 'Ativo', deleted: false,
-      cpf: cpf.replace(/\D/g, ''), 
-      phone: phone.replace(/\D/g, ''),
+      id, 
+      name: memberName, 
+      name_search: normalize(memberName),
+      email, 
+      email_search: email.toLowerCase(),
+      role, 
+      status: 'Ativo', 
+      deleted: false,
+      cpf: formatCPF(rawCpf),
+      cpf_search: rawCpf,
+      phone: formatPhone(rawPhone),
+      phone_search: rawPhone,
       isExempt: role === 'DIRETORIA',
       entryDate: now, createdAt: now, updatedAt: now,
-      address: { city: 'SAO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001000' },
-      rituals: {}, consecrations: {}
+      address: { 
+        city: 'SÃO PAULO', 
+        state: 'SP', 
+        neighborhood: 'CENTRO', 
+        number: '1', 
+        street: 'RUA TESTE', 
+        cep: formatCEP(rawCep) 
+      },
+      cep_search: rawCep,
+      rituals: {}, 
+      consecrations: {}
     });
   }
 
@@ -162,26 +200,35 @@ async function seed() {
     const isIncome = Math.random() > 0.4;
     const value = (Math.random() * 200 + 20) * (isIncome ? 1 : -1);
     const date = new Date();
+    const cat = categories[Math.floor(Math.random() * categories.length)];
+    const desc = `${isIncome ? 'Entrada' : 'Saída'} de teste ${i}`;
     date.setDate(date.getDate() - Math.floor(Math.random() * 60));
     await firestoreCreate('transactions', `t${i}`, {
-      id: `t${i}`, description: `${isIncome ? 'ENTRADA' : 'SAÍDA'} DE TESTE ${i}`,
-      value, category: categories[Math.floor(Math.random() * categories.length)],
-      date, deleted: false, type: isIncome ? 'Entrada' : 'Saída'
+      id: `t${i}`, description: desc,
+      description_search: normalize(desc),
+      value, category: cat,
+      category_search: normalize(cat),
+      date, deleted: false, type: isIncome ? 'Entrada' : 'Saída',
+      updatedAt: now
     });
   }
 
   // 3. Estoque (50 itens)
   console.log('📦 Gerando 50 itens de estoque...');
-  const stockCats = ['VELAS', 'ERVAS', 'BEBIDAS', 'LIMPEZA'];
+  const stockCats = ['VELAS', 'ERVAS', 'BEBIDAS', 'LITURGIA'];
   const units = ['UN', 'KG', 'PCT', 'L'];
   for (let i = 1; i <= 50; i++) {
     const rand = Math.random();
     let quantity = Math.floor(Math.random() * 50);
     if (rand < 0.2) quantity = 0;
     else if (rand < 0.5) quantity = Math.floor(Math.random() * 5) + 1;
+    const itemName = `Item de Estoque ${i}`;
+    const catName = stockCats[Math.floor(Math.random() * stockCats.length)];
     await firestoreCreate('stock', `s${i}`, {
-      id: `s${i}`, name: `ITEM DE ESTOQUE ${i}`, 
-      category: stockCats[Math.floor(Math.random() * stockCats.length)],
+      id: `s${i}`, name: itemName,
+      name_search: normalize(itemName),
+      category: catName,
+      category_search: normalize(catName),
       quantity, unit: units[i % units.length], minStock: 10,
       deleted: false, updatedAt: now
     });
@@ -205,13 +252,10 @@ async function seed() {
   await firestoreCreate('system_configs', 'members', {
     id: 'members', updatedAt: now,
     fields: [
-      // Dados Pessoais
       { key: 'name', label: 'Nome Completo', type: 'text', required: true, order: 1, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
       { key: 'cpf', label: 'CPF', type: 'mask', maskType: 'cpf', required: true, order: 2, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
       { key: 'email', label: 'E-mail', type: 'text', required: true, order: 3, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
       { key: 'phone', label: 'Telefone/Whatsapp', type: 'mask', maskType: 'phone', required: true, order: 4, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
-
-      // Endereço
       { key: 'cep', label: 'CEP', type: 'mask', maskType: 'cep', required: true, order: 5, isSystem: true, section: 'Endereço', showInProfile: true },
       { key: 'street', label: 'Rua / Logradouro', type: 'text', required: true, order: 6, isSystem: true, section: 'Endereço', showInProfile: true },
       { key: 'number', label: 'Número', type: 'text', required: true, order: 7, isSystem: true, section: 'Endereço', showInProfile: true },
@@ -219,8 +263,6 @@ async function seed() {
       { key: 'neighborhood', label: 'Bairro', type: 'text', required: true, order: 9, isSystem: true, section: 'Endereço', showInProfile: true },
       { key: 'city', label: 'Cidade', type: 'text', required: true, order: 10, isSystem: true, section: 'Endereço', showInProfile: true },
       { key: 'state', label: 'UF', type: 'text', required: true, order: 11, isSystem: true, section: 'Endereço', showInProfile: true },
-
-      // Vida Espiritual
       { key: 'role', label: 'Função / Cargo', type: 'select', required: true, order: 12, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
         options: ROLES.map(r => ({ label: r, deleted: false })) },
       { key: 'status', label: 'Status', type: 'select', required: true, order: 13, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
@@ -230,15 +272,11 @@ async function seed() {
       { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 16, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
       { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
       { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
-
-      // Rituais
       { key: 'initiation', label: 'Lavagem / Iniciação', type: 'date', required: false, order: 18, isSystem: true, section: 'Rituais', showInProfile: true },
       { key: 'baptism', label: 'Batismo', type: 'date', required: false, order: 19, isSystem: true, section: 'Rituais', showInProfile: true },
       { key: 'baptism1Year', label: 'Batismo (1 Ano)', type: 'date', required: false, order: 20, isSystem: true, section: 'Rituais', showInProfile: true },
       { key: 'coronation', label: 'Coroação', type: 'date', required: false, order: 21, isSystem: true, section: 'Rituais', showInProfile: true },
       { key: 'crownWashing', label: 'Lavagem de Coroa', type: 'date', required: false, order: 22, isSystem: true, section: 'Rituais', showInProfile: true },
-
-      // Orixás
       { key: 'oxossi', label: 'Oxóssi', type: 'date', required: false, order: 23, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
       { key: 'iemanja', label: 'Iemanjá', type: 'date', required: false, order: 24, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
       { key: 'oxala', label: 'Oxalá', type: 'date', required: false, order: 25, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
@@ -279,17 +317,13 @@ async function seed() {
         key: 'category', label: 'Categoria', type: 'select', required: true, order: 1, isSystem: true,
         options: [
           { label: 'VELAS', deleted: false }, { label: 'ERVAS', deleted: false },
-          { label: 'BEBIDAS', deleted: false }, { label: 'LITURGIA', deleted: false },
-          { label: 'LIMPEZA', deleted: false }, { label: 'OUTROS', deleted: false }
+          { label: 'BEBIDAS', deleted: false }, { label: 'LITURGIA', deleted: false }
         ]
       },
       { 
         key: 'unit', label: 'Unidade de Medida', type: 'select', required: true, order: 2, isSystem: true,
         options: [
-          { label: 'UN', deleted: false }, { label: 'KG', deleted: false },
-          { label: 'G', deleted: false }, { label: 'L', deleted: false },
-          { label: 'ML', deleted: false }, { label: 'CX', deleted: false },
-          { label: 'PCT', deleted: false }, { label: 'MAÇO', deleted: false }
+          { label: 'UN', deleted: false }, { label: 'KG', deleted: false }, { label: 'L', deleted: false }
         ]
       }
     ]

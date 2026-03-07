@@ -1,14 +1,13 @@
 export class Normalizer {
   /**
-   * Remove acentos, espaços extras e converte para CAIXA ALTA.
-   * Ideal para nomes, categorias e descrições.
+   * Versão para busca: Sem acentos, sem espaços extras e em CAIXA ALTA.
    */
-  static text(val: string | null | undefined): string {
+  static search(val: string | null | undefined): string {
     if (!val) return '';
     return val
       .trim()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[\u0300-\u036f]/g, '')
       .toUpperCase();
   }
 

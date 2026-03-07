@@ -45,43 +45,43 @@ export class StockService {
         const isNew = !item.id;
         const colRef = collection(this.firestore, this.COL);
 
-        // NORMALIZAÇÃO RIGOROSA
-        item.name = Normalizer.text(item.name);
-        item.category = Normalizer.text(item.category);
+        // CRIANDO CAMPOS DE BUSCA
+        const name_search = Normalizer.search(item.name);
+        const category_search = Normalizer.search(item.category);
+
+        const firestoreData: any = {
+            ...JSON.parse(JSON.stringify(item)),
+            name_search,
+            category_search,
+            updatedAt: new Date()
+        };
 
         if (isNew) {
-            const q = query(colRef, where('name', '==', item.name), where('deleted', '==', false));
+            // Verificação de duplicidade usando o campo de busca
+            const q = query(colRef, where('name_search', '==', name_search), where('deleted', '==', false));
             return from(getDocs(q)).pipe(
                 switchMap(snap => {
                     if (!snap.empty) {
-                        return throwError(() => new Error('Já existe um item ativo com este nome no catálogo.'));
+                        return throwError(() => new Error('JA EXISTE UM ITEM ATIVO COM ESTE NOME NO CATALOGO.'));
                     }
                     const docRef = doc(colRef);
-                    const data = { 
-                        ...JSON.parse(JSON.stringify(item)), 
-                        id: docRef.id, 
-                        updatedAt: new Date(), 
-                        deleted: false, 
-                        quantity: item.quantity || 0 
-                    };
-                    return from(setDoc(docRef, data));
+                    firestoreData.id = docRef.id;
+                    firestoreData.deleted = false;
+                    firestoreData.quantity = item.quantity || 0;
+                    
+                    return from(setDoc(docRef, firestoreData));
                 }),
                 tap(() => localStorage.removeItem(this.TIME_KEY)),
                 map(() => true),
-                catchError(err => throwError(() => new Error(err.message || 'Erro ao salvar item.')))
+                catchError(err => throwError(() => new Error(err.message || 'ERRO AO SALVAR ITEM.')))
             );
         }
 
         const docRef = doc(this.firestore, this.COL, item.id);
-        const data = { 
-            ...JSON.parse(JSON.stringify(item)), 
-            updatedAt: new Date()
-        };
-
-        return from(setDoc(docRef, data, { merge: true })).pipe(
+        return from(setDoc(docRef, firestoreData, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
-            catchError(() => throwError(() => new Error('Falha ao salvar item no servidor.')))
+            catchError(() => throwError(() => new Error('FALHA AO ATUALIZAR ITEM NO SERVIDOR.')))
         );
     }
 

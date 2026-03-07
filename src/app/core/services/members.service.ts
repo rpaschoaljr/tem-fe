@@ -55,24 +55,30 @@ export class MembersService {
         const isNew = !member.id;
         const colRef = collection(this.firestore, this.COL);
 
-        // NORMALIZAÇÃO RIGOROSA
-        member.name = Normalizer.text(member.name);
-        member.email = Normalizer.email(member.email);
-        member.cpf = Normalizer.numbers(member.cpf);
-        member.phone = Normalizer.numbers(member.phone);
+        // CRIANDO CAMPOS DE BUSCA / NORMALIZADOS
+        const name_search = Normalizer.search(member.name);
+        const email_search = Normalizer.email(member.email);
+        const cpf_search = Normalizer.numbers(member.cpf);
+        const phone_search = Normalizer.numbers(member.phone);
         
+        const firestoreData: any = {
+            ...this.toFirestore(member),
+            name_search,
+            email_search,
+            cpf_search,
+            phone_search,
+            updatedAt: new Date()
+        };
+
         if (member.address) {
-            member.address.cep = Normalizer.numbers(member.address.cep);
-            member.address.street = Normalizer.text(member.address.street);
-            member.address.neighborhood = Normalizer.text(member.address.neighborhood);
-            member.address.city = Normalizer.text(member.address.city);
-            member.address.state = Normalizer.text(member.address.state);
+            firestoreData.cep_search = Normalizer.numbers(member.address.cep);
+            // Mantemos o endereço original para exibir com acentos/caixa mista
         }
 
-        // Se for novo membro, verifica duplicidade usando os dados normalizados
+        // Se for novo membro, verifica duplicidade usando os campos _search
         if (isNew) {
-            const cpfQuery = query(colRef, where('cpf', '==', member.cpf), where('deleted', '==', false));
-            const emailQuery = query(colRef, where('email', '==', member.email), where('deleted', '==', false));
+            const cpfQuery = query(colRef, where('cpf_search', '==', cpf_search), where('deleted', '==', false));
+            const emailQuery = query(colRef, where('email_search', '==', email_search), where('deleted', '==', false));
 
             return forkJoin({
                 cpfExists: from(getDocs(cpfQuery)).pipe(map(s => !s.empty)),
@@ -83,14 +89,11 @@ export class MembersService {
                     if (res.emailExists) return throwError(() => new Error('ESTE E-MAIL JA ESTA EM USO POR OUTRO MEMBRO ATIVO.'));
 
                     const docRef = doc(colRef);
-                    const data = {
-                        ...this.toFirestore(member),
-                        id: docRef.id,
-                        updatedAt: new Date(),
-                        createdAt: new Date(),
-                        deleted: false
-                    };
-                    return from(setDoc(docRef, data));
+                    firestoreData.id = docRef.id;
+                    firestoreData.createdAt = new Date();
+                    firestoreData.deleted = false;
+                    
+                    return from(setDoc(docRef, firestoreData));
                 }),
                 tap(() => localStorage.removeItem(this.TIME_KEY)),
                 map(() => true),
@@ -100,12 +103,7 @@ export class MembersService {
 
         // Edição
         const docRef = doc(this.firestore, this.COL, member.id);
-        const data = {
-            ...this.toFirestore(member),
-            updatedAt: new Date()
-        };
-
-        return from(setDoc(docRef, data, { merge: true })).pipe(
+        return from(setDoc(docRef, firestoreData, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
             catchError(() => throwError(() => new Error('FALHA AO ATUALIZAR MEMBRO NO SERVIDOR.')))
