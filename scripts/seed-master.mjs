@@ -89,6 +89,20 @@ async function verifyDatabase() {
   }
 }
 
+// Função para gerar CPF válido para testes
+function generateCPF() {
+  const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+  const calc = (t) => {
+    let s = 0;
+    for (let i = 0; i < t; i++) s += n[i] * ((t + 1) - i);
+    s = (s * 10) % 11;
+    return s === 10 ? 0 : s;
+  };
+  n.push(calc(9));
+  n.push(calc(10));
+  return n.join('');
+}
+
 async function seed() {
   console.log('\n🚀 Iniciando SEED de alta carga...');
   const collections = ['system_configs', 'members', 'permissions', 'transactions', 'stock', 'notices'];
@@ -105,16 +119,22 @@ async function seed() {
   for (const role of ROLES) {
     const email = `${role.toLowerCase().replace(/[^a-z]/g, '')}@tem.local`;
     const id = `seed-${email}`;
+    const cpf = generateCPF();
+    const phone = `(11) 9${Math.floor(10000000 + Math.random() * 90000000)}`;
+
     await createUser(email);
     await firestoreCreate('permissions', email, {
       id: email, type: 'user', target: role, updatedAt: now,
       hierarchyLevel: role === 'DIRETORIA' || role === 'ADMIN'? 10 : 1, modules: {}
     });
+    
     await firestoreCreate('members', id, {
       id, name: `MEMBRO ${role}`, email, role, status: 'Ativo', deleted: false,
-      isExempt: role === 'DIRETORIA', // Diretoria isenta para teste
+      cpf, phone,
+      isExempt: role === 'DIRETORIA',
       entryDate: now, createdAt: now, updatedAt: now,
-      address: { city: 'SÃO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001-000' }
+      address: { city: 'SÃO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001-000' },
+      rituals: {}, consecrations: {}
     });
   }
 
