@@ -10,4 +10,8 @@ export interface Transaction {
     // Vínculo com membro (opcional conforme categoria)
     memberId?: string;
     memberName?: string;
+
+    // Referência (útil para mensalidades)
+    refMonth?: number; // 0-11
+    refYear?: number;
 }

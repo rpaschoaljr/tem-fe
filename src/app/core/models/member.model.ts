@@ -23,6 +23,7 @@ export interface Member {
     deleted: boolean;
     isFirstAccess?: boolean; // Novo campo para controle de primeiro acesso
     showSpiritualData?: boolean; // Permissão para o próprio membro ver sua vida espiritual
+    isExempt?: boolean; // Isenção de mensalidade
 
     // --- Vínculo e Histórico ---
     role: 'MÉDIUM' | 'CAMBONO' | 'OGÃ' | 'PAI/MÃE PEQUENO' | 'DIRETORIA'; // Exemplo

@@ -37,6 +37,22 @@
       </mat-form-field>
     </div>
 
+    <div class="row" *ngIf="showMemberField()">
+      <mat-form-field appearance="outline">
+        <mat-label>Mês de Referência</mat-label>
+        <mat-select formControlName="refMonth">
+          <mat-option *ngFor="let m of months" [value]="m.value">{{ m.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Ano de Referência</mat-label>
+        <mat-select formControlName="refYear">
+          <mat-option *ngFor="let y of years" [value]="y">{{ y }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
     <div class="row">
       <mat-form-field appearance="outline">
         <mat-label>Valor (R$)</mat-label>

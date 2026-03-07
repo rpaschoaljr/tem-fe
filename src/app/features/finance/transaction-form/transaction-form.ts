@@ -16,6 +16,13 @@ import { MembersService } from '../../../core/services/members.service';
 import { Member } from '../../../core/models/member.model';
 import { FieldOption } from '../../../core/models/system-config.model';
 
+const MONTHS = [
+  { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
+  { value: 3, label: 'Abril' }, { value: 4, label: 'Maio' }, { value: 5, label: 'Junho' },
+  { value: 6, label: 'Julho' }, { value: 7, label: 'Agosto' }, { value: 8, label: 'Setembro' },
+  { value: 9, label: 'Outubro' }, { value: 10, label: 'Novembro' }, { value: 11, label: 'Dezembro' },
+];
+
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
@@ -46,6 +53,8 @@ export class TransactionFormComponent implements OnInit {
   allMembers = signal<Member[]>([]);
   filteredMembers = signal<Member[]>([]);
   showMemberField = signal(false);
+  months = MONTHS;
+  years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
   form = this.fb.group({
     description: [this.transaction?.description ?? '', [Validators.required, Validators.minLength(3)]],
@@ -55,7 +64,9 @@ export class TransactionFormComponent implements OnInit {
     value:       [Math.abs(this.transaction?.value ?? 0), [Validators.required, Validators.min(0.01)]],
     valueDisplay: [this.formatInitialValue(this.transaction?.value), Validators.required],
     memberId:    [this.transaction?.memberId ?? ''],
-    memberName:  [this.transaction?.memberName ?? '']
+    memberName:  [this.transaction?.memberName ?? ''],
+    refMonth:    [this.transaction?.refMonth ?? new Date().getMonth()],
+    refYear:     [this.transaction?.refYear ?? new Date().getFullYear()]
   });
 
   ngOnInit() {
@@ -200,7 +211,9 @@ export class TransactionFormComponent implements OnInit {
       date: raw.date as Date,
       value: signedValue,
       memberId: raw.memberId || undefined,
-      memberName: raw.memberName || undefined
+      memberName: raw.memberName || undefined,
+      refMonth: raw.refMonth ?? undefined,
+      refYear: raw.refYear ?? undefined
     };
     this.dialogRef.close(result);
   }

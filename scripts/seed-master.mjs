@@ -112,6 +112,7 @@ async function seed() {
     });
     await firestoreCreate('members', id, {
       id, name: `MEMBRO ${role}`, email, role, status: 'Ativo', deleted: false,
+      isExempt: role === 'DIRETORIA', // Diretoria isenta para teste
       entryDate: now, createdAt: now, updatedAt: now,
       address: { city: 'SÃO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001-000' }
     });
@@ -203,8 +204,9 @@ async function seed() {
         options: ROLES.map(r => ({ label: r, deleted: false })) },
       { key: 'status', label: 'Status', type: 'select', required: true, order: 13, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
         options: [{ label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }] },
-      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
-      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 15, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'isExempt', label: 'Isento de Mensalidade', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 15, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 16, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
       { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
       { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
 

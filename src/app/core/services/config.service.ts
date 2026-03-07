@@ -219,21 +219,10 @@ export class ConfigService {
                     isSystem: true,
                     section: 'Vida Espiritual'
                 },
-                {
-                    key: 'status',
-                    label: 'Status',
-                    type: 'select',
-                    options: [
-                        { label: 'Ativo', deleted: false },
-                        { label: 'Inativo', deleted: false }
-                    ],
-                    required: true,
-                    order: 13,
-                    isSystem: true,
-                    section: 'Vida Espiritual'
-                },
-                { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual' },
-                { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 15, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }], required: true, order: 13, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'isExempt', label: 'Isento de Mensalidade', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 15, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 16, isSystem: true, section: 'Vida Espiritual' },
                 { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual' },
                 { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual' },
 
