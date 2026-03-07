@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { of, Observable, from, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { of, Observable, from, throwError, forkJoin } from 'rxjs';
+import { tap, catchError, map, switchMap } from 'rxjs/operators';
 import { Member } from '../models/member.model';
 import { Firestore } from '@angular/fire/firestore';
-import { collection, getDocs, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class MembersService {
