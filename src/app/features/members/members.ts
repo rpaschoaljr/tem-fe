@@ -57,8 +57,8 @@ export class MembersComponent implements OnInit {
   tableColumns: ColumnDef[] = [
     { def: 'name', label: 'Nome' },
     { def: 'role', label: 'Função', hideOnMobile: true },
-    { def: 'status', label: 'Status' },
-    { def: 'financeStatus', label: 'Financeiro', type: 'status' }
+    { def: 'status', label: 'Status', hideOnMobile: true },
+    { def: 'financeStatus', label: 'Financeiro', type: 'status', hideOnMobile: true }
   ];
 
   ngOnInit() {

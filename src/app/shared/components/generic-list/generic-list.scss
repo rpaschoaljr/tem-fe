@@ -117,8 +117,16 @@ table {
 
     .mat-mdc-cell {
         padding: 12px 8px !important;
-        white-space: normal; 
-        word-break: break-word;
+        white-space: normal;       // Permite quebra de linha
+        word-break: normal;        // NÃO quebra palavras ao meio
+        overflow-wrap: break-word; // Quebra apenas se a palavra for maior que a tela (raro)
+        line-height: 1.4;
+    }
+
+    .detail-value {
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: break-word;
     }
 
     .mobile-actions {
@@ -175,8 +183,8 @@ table {
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    
-    &.ativo { background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+    white-space: nowrap; // Evita quebra de linha
+    display: inline-block;
     &.inativo { background-color: #f5f5f5; color: #424242; border: 1px solid #e0e0e0; }
     &.pendente { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
     

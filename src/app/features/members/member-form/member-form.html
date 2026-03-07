@@ -150,12 +150,17 @@
                 <mat-icon>chevron_left</mat-icon> VOLTAR
             </button>
 
+            <!-- Botão Salvar Rápido (Apenas na Edição) -->
+            <button mat-flat-button color="accent" type="submit" [disabled]="form.invalid" *ngIf="isEditMode && selectedIndex < totalTabs - 1">
+                <mat-icon>save</mat-icon> SALVAR ALTERAÇÕES
+            </button>
+
             <button mat-raised-button color="primary" type="button" (click)="nextTab()" *ngIf="selectedIndex < totalTabs - 1">
                 PRÓXIMO <mat-icon>chevron_right</mat-icon>
             </button>
 
             <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid" *ngIf="selectedIndex === totalTabs - 1">
-                <mat-icon>save</mat-icon> SALVAR MEMBRO
+                <mat-icon>save</mat-icon> {{ isEditMode ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR MEMBRO' }}
             </button>
         </div>
     </form>
