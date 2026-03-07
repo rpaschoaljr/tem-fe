@@ -56,31 +56,51 @@ export class MembersService {
     save(member: Member): Observable<boolean> {
         const isNew = !member.id;
         const colRef = collection(this.firestore, this.COL);
-        const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, member.id);
 
         if (member.name) {
             member.name = member.name.trim().toUpperCase();
         }
 
+        // Se for novo membro, verifica duplicidade de CPF e Email
+        if (isNew) {
+            const cpfQuery = query(colRef, where('cpf', '==', member.cpf), where('deleted', '==', false));
+            const emailQuery = query(colRef, where('email', '==', member.email), where('deleted', '==', false));
+
+            return forkJoin({
+                cpfExists: from(getDocs(cpfQuery)).pipe(map(s => !s.empty)),
+                emailExists: from(getDocs(emailQuery)).pipe(map(s => !s.empty))
+            }).pipe(
+                switchMap(res => {
+                    if (res.cpfExists) return throwError(() => new Error('Este CPF já está cadastrado para outro membro ativo.'));
+                    if (res.emailExists) return throwError(() => new Error('Este E-mail já está em uso por outro membro ativo.'));
+
+                    const docRef = doc(colRef);
+                    const data = {
+                        ...this.toFirestore(member),
+                        id: docRef.id,
+                        updatedAt: new Date(),
+                        createdAt: new Date(),
+                        deleted: false
+                    };
+                    return from(setDoc(docRef, data));
+                }),
+                tap(() => localStorage.removeItem(this.TIME_KEY)),
+                map(() => true),
+                catchError(err => throwError(() => new Error(err.message || 'Erro ao salvar membro.')))
+            );
+        }
+
+        // Edição
+        const docRef = doc(this.firestore, this.COL, member.id);
         const data = {
             ...this.toFirestore(member),
-            id: docRef.id,
-            updatedAt: new Date(),
-            ...(isNew ? { createdAt: new Date(), deleted: false } : {})
+            updatedAt: new Date()
         };
 
-        console.log(`💾 Salvando membro (${isNew ? 'NOVO' : 'EDIÇÃO'}):`, data);
-
         return from(setDoc(docRef, data, { merge: true })).pipe(
-            tap(() => {
-                console.log('✅ Sucesso ao gravar no Firestore');
-                localStorage.removeItem(this.TIME_KEY);
-            }),
+            tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
-            catchError((err) => {
-                console.error('❌ Erro Firestore ao salvar membro:', err);
-                return throwError(() => new Error(`Erro ao salvar no servidor: ${err.message || 'Verifique suas permissões'}`));
-            })
+            catchError(() => throwError(() => new Error('Falha ao atualizar membro no servidor.')))
         );
     }
 

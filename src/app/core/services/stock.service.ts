@@ -3,8 +3,9 @@ import { of, Observable, from, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { StockItem } from '../models/stock-item.model';
 import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction
+    Firestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction, query, where
 } from '@angular/fire/firestore';
+import { switchMap } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class StockService {
@@ -42,18 +43,39 @@ export class StockService {
     save(item: StockItem): Observable<boolean> {
         const isNew = !item.id;
         const colRef = collection(this.firestore, this.COL);
-        const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, item.id);
 
         // PADRONIZAÇÃO: CAIXA ALTA E SEM ESPAÇOS SOBRANDO
         if (item.name) {
             item.name = item.name.trim().toUpperCase();
         }
 
+        if (isNew) {
+            const q = query(colRef, where('name', '==', item.name), where('deleted', '==', false));
+            return from(getDocs(q)).pipe(
+                switchMap(snap => {
+                    if (!snap.empty) {
+                        return throwError(() => new Error('Já existe um item ativo com este nome no catálogo.'));
+                    }
+                    const docRef = doc(colRef);
+                    const data = { 
+                        ...JSON.parse(JSON.stringify(item)), 
+                        id: docRef.id, 
+                        updatedAt: new Date(), 
+                        deleted: false, 
+                        quantity: item.quantity || 0 
+                    };
+                    return from(setDoc(docRef, data));
+                }),
+                tap(() => localStorage.removeItem(this.TIME_KEY)),
+                map(() => true),
+                catchError(err => throwError(() => new Error(err.message || 'Erro ao salvar item.')))
+            );
+        }
+
+        const docRef = doc(this.firestore, this.COL, item.id);
         const data = { 
             ...JSON.parse(JSON.stringify(item)), 
-            id: docRef.id, 
-            updatedAt: new Date(), 
-            ...(isNew ? { deleted: false, quantity: item.quantity || 0 } : {}) 
+            updatedAt: new Date()
         };
 
         return from(setDoc(docRef, data, { merge: true })).pipe(
