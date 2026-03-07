@@ -5,6 +5,7 @@ import { tap, catchError, map, switchMap } from 'rxjs/operators';
 import { Member } from '../models/member.model';
 import { Firestore } from '@angular/fire/firestore';
 import { collection, getDocs, doc, setDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
+import { Normalizer } from '../../shared/utils/normalizer';
 
 @Injectable({ providedIn: 'root' })
 export class MembersService {
@@ -24,7 +25,6 @@ export class MembersService {
         const hasCache = localStorage.getItem(this.CACHE_KEY);
         const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
 
-        // Retorna cache apenas se estiver fresco e não for refresh forçado
         if (!forceRefresh && hasCache && isCacheFresh) {
             return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
         }
@@ -34,11 +34,9 @@ export class MembersService {
             map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
             tap(data => this.updateCache(data)),
             catchError((err) => {
-                // Se falhar a rede mas tiver cache (mesmo velho), usamos como último recurso
                 if (hasCache) {
                     return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
                 }
-                // Se não tem nada, retorna erro real para a UI tratar
                 return throwError(() => new Error('Sem comunicação com o servidor e sem dados em cache.'));
             })
         );
@@ -57,11 +55,21 @@ export class MembersService {
         const isNew = !member.id;
         const colRef = collection(this.firestore, this.COL);
 
-        if (member.name) {
-            member.name = member.name.trim().toUpperCase();
+        // NORMALIZAÇÃO RIGOROSA
+        member.name = Normalizer.text(member.name);
+        member.email = Normalizer.email(member.email);
+        member.cpf = Normalizer.numbers(member.cpf);
+        member.phone = Normalizer.numbers(member.phone);
+        
+        if (member.address) {
+            member.address.cep = Normalizer.numbers(member.address.cep);
+            member.address.street = Normalizer.text(member.address.street);
+            member.address.neighborhood = Normalizer.text(member.address.neighborhood);
+            member.address.city = Normalizer.text(member.address.city);
+            member.address.state = Normalizer.text(member.address.state);
         }
 
-        // Se for novo membro, verifica duplicidade de CPF e Email
+        // Se for novo membro, verifica duplicidade usando os dados normalizados
         if (isNew) {
             const cpfQuery = query(colRef, where('cpf', '==', member.cpf), where('deleted', '==', false));
             const emailQuery = query(colRef, where('email', '==', member.email), where('deleted', '==', false));
@@ -71,8 +79,8 @@ export class MembersService {
                 emailExists: from(getDocs(emailQuery)).pipe(map(s => !s.empty))
             }).pipe(
                 switchMap(res => {
-                    if (res.cpfExists) return throwError(() => new Error('Este CPF já está cadastrado para outro membro ativo.'));
-                    if (res.emailExists) return throwError(() => new Error('Este E-mail já está em uso por outro membro ativo.'));
+                    if (res.cpfExists) return throwError(() => new Error('ESTE CPF JA ESTA CADASTRADO PARA OUTRO MEMBRO ATIVO.'));
+                    if (res.emailExists) return throwError(() => new Error('ESTE E-MAIL JA ESTA EM USO POR OUTRO MEMBRO ATIVO.'));
 
                     const docRef = doc(colRef);
                     const data = {
@@ -86,7 +94,7 @@ export class MembersService {
                 }),
                 tap(() => localStorage.removeItem(this.TIME_KEY)),
                 map(() => true),
-                catchError(err => throwError(() => new Error(err.message || 'Erro ao salvar membro.')))
+                catchError(err => throwError(() => new Error(err.message || 'ERRO AO SALVAR MEMBRO.')))
             );
         }
 
@@ -100,7 +108,7 @@ export class MembersService {
         return from(setDoc(docRef, data, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
-            catchError(() => throwError(() => new Error('Falha ao atualizar membro no servidor.')))
+            catchError(() => throwError(() => new Error('FALHA AO ATUALIZAR MEMBRO NO SERVIDOR.')))
         );
     }
 
@@ -164,25 +172,18 @@ export class MembersService {
 
     private fixDate(val: any): Date | null {
         if (!val) return null;
-        // Se for string de data (ISO), converte
         if (typeof val === 'string' && val.includes('-') && val.includes('T')) {
             return new Date(val);
         }
-        // Se for objeto de data nativo
         if (val instanceof Date) return val;
-        // Se for timestamp do Firebase
         if (val && typeof val === 'object' && 'seconds' in val) {
             return new Date(val.seconds * 1000);
         }
-        // Fallback
         const d = new Date(val);
         return isNaN(d.getTime()) ? null : d;
     }
 
     private toFirestore(member: Member): any {
-        // Remove circular references if any (not expected here) and prepare for Firestore
-        // We use a simple shallow clone or recursive one if needed.
-        // For now, let's just make sure we don't use JSON.stringify if possible.
         const data = { ...member };
         delete (data as any).id;
         return data;

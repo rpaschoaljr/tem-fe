@@ -130,10 +130,11 @@ async function seed() {
     
     await firestoreCreate('members', id, {
       id, name: `MEMBRO ${role}`, email, role, status: 'Ativo', deleted: false,
-      cpf, phone,
+      cpf: cpf.replace(/\D/g, ''), 
+      phone: phone.replace(/\D/g, ''),
       isExempt: role === 'DIRETORIA',
       entryDate: now, createdAt: now, updatedAt: now,
-      address: { city: 'SÃO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001-000' },
+      address: { city: 'SAO PAULO', state: 'SP', neighborhood: 'CENTRO', number: '1', street: 'RUA TESTE', cep: '01001000' },
       rituals: {}, consecrations: {}
     });
   }

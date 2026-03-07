@@ -4,6 +4,7 @@ import { tap, map, catchError } from 'rxjs/operators';
 import { Transaction } from '../models/transaction.model';
 import { Firestore } from '@angular/fire/firestore';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { Normalizer } from '../../shared/utils/normalizer';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
@@ -42,7 +43,18 @@ export class FinanceService {
         const isNew = !transaction.id;
         const colRef = collection(this.firestore, this.COL);
         const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, transaction.id);
-        const data = { ...JSON.parse(JSON.stringify(transaction)), id: docRef.id, deleted: transaction.deleted ?? false };
+
+        // NORMALIZAÇÃO RIGOROSA
+        transaction.description = Normalizer.text(transaction.description);
+        transaction.category = Normalizer.text(transaction.category);
+        transaction.memberName = Normalizer.text(transaction.memberName);
+
+        const data = { 
+            ...JSON.parse(JSON.stringify(transaction)), 
+            id: docRef.id, 
+            deleted: transaction.deleted ?? false,
+            updatedAt: new Date()
+        };
 
         return from(setDoc(docRef, data, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
@@ -53,7 +65,7 @@ export class FinanceService {
 
     softDelete(id: string): Observable<boolean> {
         const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: true })).pipe(
+        return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
             catchError(() => throwError(() => new Error('Erro ao excluir lançamento.')))
@@ -62,7 +74,7 @@ export class FinanceService {
 
     restore(id: string): Observable<boolean> {
         const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: false })).pipe(
+        return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
             catchError(() => throwError(() => new Error('Erro ao restaurar lançamento.')))

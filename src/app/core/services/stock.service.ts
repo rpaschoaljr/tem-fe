@@ -6,6 +6,7 @@ import {
     Firestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction, query, where
 } from '@angular/fire/firestore';
 import { switchMap } from 'rxjs/operators';
+import { Normalizer } from '../../shared/utils/normalizer';
 
 @Injectable({ providedIn: 'root' })
 export class StockService {
@@ -44,10 +45,9 @@ export class StockService {
         const isNew = !item.id;
         const colRef = collection(this.firestore, this.COL);
 
-        // PADRONIZAÇÃO: CAIXA ALTA E SEM ESPAÇOS SOBRANDO
-        if (item.name) {
-            item.name = item.name.trim().toUpperCase();
-        }
+        // NORMALIZAÇÃO RIGOROSA
+        item.name = Normalizer.text(item.name);
+        item.category = Normalizer.text(item.category);
 
         if (isNew) {
             const q = query(colRef, where('name', '==', item.name), where('deleted', '==', false));
