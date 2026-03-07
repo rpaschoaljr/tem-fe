@@ -89,9 +89,49 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
     this.setupCustomFilter();
+    this.setupNaturalSort();
     
     // Notifica dados iniciais
     setTimeout(() => this.emitFilteredData(), 0);
+  }
+
+  setupNaturalSort() {
+    const collator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+    
+    this.dataSource.sortData = (data: any[], sort: MatSort) => {
+      const active = sort.active;
+      const direction = sort.direction;
+      
+      if (!active || direction === '') {
+        return data;
+      }
+
+      return [...data].sort((a, b) => {
+        let valueA = a[active];
+        let valueB = b[active];
+
+        // Se os valores forem nulos/indefinidos, trata como string vazia para não quebrar a ordem
+        if (valueA === null || valueA === undefined) valueA = '';
+        if (valueB === null || valueB === undefined) valueB = '';
+
+        let comparison = 0;
+
+        // 1. Comparação de Números Reais
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+          comparison = valueA - valueB;
+        }
+        // 2. Comparação de Datas
+        else if (valueA instanceof Date && valueB instanceof Date) {
+          comparison = valueA.getTime() - valueB.getTime();
+        }
+        // 3. Comparação de Strings (Natural Sort: "Item 2" antes de "Item 10")
+        else {
+          comparison = collator.compare(String(valueA), String(valueB));
+        }
+
+        return direction === 'asc' ? comparison : -comparison;
+      });
+    };
   }
 
   updateTable() {
@@ -115,8 +155,11 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
 
   emitFilteredData() {
     // Retorna os dados que passaram pelo filtro interno do MatTableDataSource
-    const filtered = this.dataSource.filteredData;
-    this.filteredDataChange.emit(filtered);
+    // Usamos Promise.resolve() para emitir fora do ciclo de detecção atual (evita NG0100)
+    Promise.resolve().then(() => {
+      const filtered = this.dataSource.filteredData;
+      this.filteredDataChange.emit(filtered);
+    });
   }
 
   setupCustomFilter() {
