@@ -69,6 +69,7 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
   @Output() deleteAction = new EventEmitter<any>();
   @Output() restoreAction = new EventEmitter<any>();
   @Output() adjustAction = new EventEmitter<{ item: any, type: 'add' | 'remove' }>();
+  @Output() filteredDataChange = new EventEmitter<any[]>();
 
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = [];
@@ -88,12 +89,16 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
     this.setupCustomFilter();
+    
+    // Notifica dados iniciais
+    setTimeout(() => this.emitFilteredData(), 0);
   }
 
   updateTable() {
     this.displayedColumns = [...this.columns.map(c => c.def), 'actions'];
     const filteredData = this.data.filter(item => !!item.deleted === this.showDeleted);
     this.dataSource.data = filteredData;
+    this.emitFilteredData();
   }
 
   toggleDeletedMode() {
@@ -105,6 +110,13 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filterValue.trim().toLowerCase();
     if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
+    this.emitFilteredData();
+  }
+
+  emitFilteredData() {
+    // Retorna os dados que passaram pelo filtro interno do MatTableDataSource
+    const filtered = this.dataSource.filteredData;
+    this.filteredDataChange.emit(filtered);
   }
 
   setupCustomFilter() {

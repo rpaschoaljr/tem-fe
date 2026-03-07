@@ -38,8 +38,18 @@
     <!-- LISTA DE MOVIMENTAÇÃO -->
     <mat-card>
         <mat-card-content>
-            <h3>Inventário e Movimentação</h3>
-            <p class="subtitle">Clique em um item para ajustar a quantidade ou ver detalhes.</p>
+            <div class="header-with-actions">
+                <div class="title-group">
+                    <h3>Inventário e Movimentação</h3>
+                    <p class="subtitle">Utilize a busca da tabela para encontrar itens específicos.</p>
+                </div>
+                <div class="actions-group">
+                    <button mat-stroked-button color="primary" (click)="exportStock()" [disabled]="exportData.length === 0">
+                        <mat-icon>download</mat-icon>
+                        Exportar CSV
+                    </button>
+                </div>
+            </div>
             
             <app-generic-list 
                 [data]="items" 
@@ -47,7 +57,8 @@
                 [showAdjust]="(canWrite$ | async) === true"
                 [hideTrash]="true"
                 [hideActions]="true"
-                [rowClassFn]="getRowClass" 
+                [rowClassFn]="getRowClass"
+                (filteredDataChange)="exportData = $event"
                 (adjustAction)="onAdjust($event)">
             </app-generic-list>
         </mat-card-content>

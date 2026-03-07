@@ -50,7 +50,7 @@
         </button>
     </div>
 
-    <!-- FILTRO POR PERÍODO -->
+    <!-- FILTRO POR PERÍODO E BUSCA -->
     <div class="filter-row">
         <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Mês</mat-label>
@@ -68,6 +68,11 @@
             </mat-select>
         </mat-form-field>
 
+        <button mat-stroked-button color="primary" (click)="exportFinance()" [disabled]="exportData.length === 0">
+            <mat-icon>download</mat-icon>
+            Exportar CSV
+        </button>
+
         <button mat-icon-button (click)="clearFilter()" matTooltip="Limpar filtro" *ngIf="selectedMonth !== null || selectedYear !== null">
             <mat-icon>filter_alt_off</mat-icon>
         </button>
@@ -78,9 +83,9 @@
         <mat-card-content>
             <h3>Extrato Financeiro</h3>
 
-            <!-- AQUI ESTAVA FALTANDO LIGAR OS EVENTOS -->
             <app-generic-list [data]="transactions" [columns]="tableColumns" 
                 [hideActions]="!(canWrite$ | async)"
+                (filteredDataChange)="exportData = $event"
                 (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
             </app-generic-list>

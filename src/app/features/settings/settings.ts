@@ -416,6 +416,7 @@ export class SettingsComponent implements OnInit {
           if (found.deleted) {
             found.deleted = false;
             found.meta = res.meta;
+            found.requiresMember = res.requiresMember;
             this.saveAndReload(config, 'Opção restaurada!');
           } else {
             this.notify.showWarning('Esta opção já existe.');
@@ -423,11 +424,13 @@ export class SettingsComponent implements OnInit {
         } else if (existingOption) {
           existingOption.label = sanitized;
           existingOption.meta = res.meta;
+          existingOption.requiresMember = res.requiresMember;
           this.saveAndReload(config, 'Opção atualizada!');
         } else {
-          field.options.push({ label: sanitized, deleted: false, meta: res.meta });
+          field.options.push({ label: sanitized, deleted: false, meta: res.meta, requiresMember: res.requiresMember });
           this.saveAndReload(config, 'Opção adicionada!');
         }
+
       }
     });
   }

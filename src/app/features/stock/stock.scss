@@ -92,3 +92,41 @@
 .actions-row {
     margin-bottom: 20px;
 }
+
+.header-with-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+
+    .title-group {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .actions-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+
+        .search-field {
+            width: 300px;
+            margin-bottom: -1.25em; // Ajuste para alinhar com o botão
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .header-with-actions {
+        flex-direction: column;
+
+        .actions-group {
+            width: 100%;
+            .search-field { width: 100%; }
+            button { width: 100%; }
+        }
+    }
+}

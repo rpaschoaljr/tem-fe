@@ -19,14 +19,39 @@
         </mat-card>
     </div>
 
+    <!-- FILTROS E BUSCA -->
+    <div class="filter-row">
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="statusFilter" (selectionChange)="applyFilter()">
+                <mat-option value="">Todos</mat-option>
+                <mat-option value="Ativo">Ativo</mat-option>
+                <mat-option value="Inativo">Inativo</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Cargo/Função</mat-label>
+            <mat-select [(ngModel)]="roleFilter" (selectionChange)="applyFilter()">
+                <mat-option value="">Todos</mat-option>
+                <mat-option *ngFor="let role of roles" [value]="role">{{ role }}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <button mat-stroked-button color="primary" (click)="exportMembers()" [disabled]="exportData.length === 0">
+            <mat-icon>download</mat-icon>
+            Exportar CSV
+        </button>
+    </div>
+
     <!-- Lista Genérica (Tabela) -->
     <mat-card>
         <mat-card-content>
             <h3>Gestão de Membros</h3>
 
-            <!-- Aqui usamos o componente que criamos antes -->
             <app-generic-list [data]="members" [columns]="tableColumns" 
                 [hideActions]="!(canWrite$ | async)"
+                (filteredDataChange)="exportData = $event"
                 (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">
             </app-generic-list>

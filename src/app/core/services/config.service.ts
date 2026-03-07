@@ -173,11 +173,11 @@ export class ConfigService {
                     label: 'Categoria Financeira', 
                     type: 'select', 
                     options: [
-                        { label: 'DOAÇÃO', deleted: false, meta: 'Entrada' },
-                        { label: 'MENSALIDADE', deleted: false, meta: 'Entrada' },
-                        { label: 'CONTAS', deleted: false, meta: 'Saída' },
-                        { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída' },
-                        { label: 'EVENTO', deleted: false, meta: 'Entrada' }
+                        { label: 'DOAÇÃO', deleted: false, meta: 'Entrada', requiresMember: false },
+                        { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true },
+                        { label: 'CONTAS', deleted: false, meta: 'Saída', requiresMember: false },
+                        { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída', requiresMember: false },
+                        { label: 'EVENTO', deleted: false, meta: 'Entrada', requiresMember: false }
                     ], 
                     required: true, 
                     order: 1, 

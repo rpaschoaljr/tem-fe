@@ -114,8 +114,29 @@
 .filter-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
-    margin-bottom: 20px;
+    margin: 20px 0;
+    padding: 0 5px;
 
-    .filter-field { width: 160px; }
+    .filter-field { width: 140px; }
+
+    .search-field { 
+        flex-grow: 1;
+        min-width: 300px;
+    }
+
+    button {
+        height: 56px; // Altura padrão do mat-form-field appearance="outline"
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+
+        .filter-field, .search-field { width: 100%; min-width: auto; }
+        button { width: 100%; }
+    }
 }

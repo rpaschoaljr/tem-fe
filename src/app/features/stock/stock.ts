@@ -1,12 +1,16 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
 import { StockService } from '../../core/services/stock.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ExportService } from '../../core/services/export.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { StockFormComponent } from './stock-form/stock-form';
@@ -15,7 +19,17 @@ import { StockAdjustComponent, AdjustResult } from './stock-adjust/stock-adjust'
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, MatDialogModule, GenericListComponent],
+  imports: [
+    CommonModule, 
+    MatCardModule, 
+    MatIconModule, 
+    MatButtonModule, 
+    MatDialogModule, 
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    GenericListComponent
+  ],
   templateUrl: './stock.html',
   styleUrl: './stock.scss'
 })
@@ -24,9 +38,11 @@ export class StockComponent implements OnInit {
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
   private authService = inject(AuthService);
+  private exportService = inject(ExportService);
 
   allItems: StockItem[] = [];
   items: StockItem[] = [];
+  exportData: StockItem[] = []; // Dados filtrados prontos para exportar
   stockFilter: 'all' | 'low' | 'out' = 'all';
   canWrite$ = this.authService.hasPermission('stock', 'write');
 
@@ -67,18 +83,33 @@ export class StockComponent implements OnInit {
   }
 
   applyFilter() {
+    let filtered = this.allItems;
+
+    // Filtro de Categoria/Status (KPIs)
     if (this.stockFilter === 'low') {
-      this.items = this.allItems.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock);
+      filtered = filtered.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock);
     } else if (this.stockFilter === 'out') {
-      this.items = this.allItems.filter(i => i.quantity <= 0);
-    } else {
-      this.items = this.allItems;
+      filtered = filtered.filter(i => i.quantity <= 0);
     }
+
+    this.items = filtered;
   }
 
   setFilter(filter: 'all' | 'low' | 'out') {
     this.stockFilter = (this.stockFilter === filter) ? 'all' : filter;
     this.applyFilter();
+  }
+
+  exportStock() {
+    const columns = [
+      { key: 'name', label: 'Item' },
+      { key: 'category', label: 'Categoria' },
+      { key: 'unit', label: 'Unidade' },
+      { key: 'quantity', label: 'Quantidade Atual' },
+      { key: 'minStock', label: 'Estoque Mínimo' },
+      { key: 'updatedAt', label: 'Última Atualização' }
+    ];
+    this.exportService.exportToCsv(this.exportData, 'estoque_temfe', columns);
   }
 
   onAdjust(event: { item: StockItem, type: 'add' | 'remove' }) {

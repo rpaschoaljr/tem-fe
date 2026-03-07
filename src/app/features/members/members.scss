@@ -62,4 +62,33 @@
         font-size: 0.9rem;
         margin-top: 5px;
     }
-}
+    }
+
+    .filter-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
+
+    .filter-field { width: 160px; }
+
+    .search-field { 
+        flex-grow: 1;
+        min-width: 300px;
+    }
+
+    button {
+        height: 56px; 
+    }
+    }
+
+    @media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+
+        .filter-field, .search-field { width: 100%; min-width: auto; }
+        button { width: 100%; }
+    }
+    }

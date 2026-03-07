@@ -7,11 +7,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FinanceService } from '../../core/services/finance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ExportService } from '../../core/services/export.service';
 import { Transaction } from '../../core/models/transaction.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { TransactionFormComponent } from './transaction-form/transaction-form';
@@ -31,8 +33,19 @@ const MONTHS = [
 @Component({
   selector: 'app-finance',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, MatDialogModule,
-            MatSelectModule, MatFormFieldModule, FormsModule, MatTooltipModule, GenericListComponent],
+  imports: [
+    CommonModule, 
+    MatCardModule, 
+    MatIconModule, 
+    MatButtonModule, 
+    MatDialogModule,
+    MatSelectModule, 
+    MatFormFieldModule, 
+    MatInputModule,
+    FormsModule, 
+    MatTooltipModule, 
+    GenericListComponent
+  ],
   templateUrl: './finance.html',
   styleUrl: './finance.scss'
 })
@@ -42,9 +55,11 @@ export class FinanceComponent implements OnInit {
   private dialog = inject(MatDialog);
   private scheduledService = inject(ScheduledTransactionsService);
   private authService = inject(AuthService);
+  private exportService = inject(ExportService);
 
   allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
+  exportData: Transaction[] = []; // Dados filtrados prontos para exportar
   canWrite$ = this.authService.hasPermission('finance', 'write');
 
   months = MONTHS;
@@ -112,6 +127,18 @@ export class FinanceComponent implements OnInit {
   setFilter(type: 'all' | 'income' | 'expense') {
     this.typeFilter = (this.typeFilter === type) ? 'all' : type;
     this.applyFilter();
+  }
+
+  exportFinance() {
+    const columns = [
+      { key: 'date', label: 'Data' },
+      { key: 'description', label: 'Descrição' },
+      { key: 'memberName', label: 'Membro' },
+      { key: 'category', label: 'Categoria' },
+      { key: 'value', label: 'Valor' },
+      { key: 'type', label: 'Tipo' }
+    ];
+    this.exportService.exportToCsv(this.exportData, 'financeiro_temfe', columns);
   }
 
   clearFilter() {

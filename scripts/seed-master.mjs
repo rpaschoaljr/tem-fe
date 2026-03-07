@@ -183,10 +183,92 @@ async function seed() {
   await firestoreCreate('system_configs', 'members', {
     id: 'members', updatedAt: now,
     fields: [
+      // Dados Pessoais
       { key: 'name', label: 'Nome Completo', type: 'text', required: true, order: 1, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
+      { key: 'cpf', label: 'CPF', type: 'mask', maskType: 'cpf', required: true, order: 2, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
       { key: 'email', label: 'E-mail', type: 'text', required: true, order: 3, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
-      { key: 'role', label: 'Cargo', type: 'select', required: true, order: 4, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
-        options: ROLES.map(r => ({ label: r, deleted: false })) }
+      { key: 'phone', label: 'Telefone/Whatsapp', type: 'mask', maskType: 'phone', required: true, order: 4, isSystem: true, section: 'Dados Pessoais', showInProfile: true },
+
+      // Endereço
+      { key: 'cep', label: 'CEP', type: 'mask', maskType: 'cep', required: true, order: 5, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'street', label: 'Rua / Logradouro', type: 'text', required: true, order: 6, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'number', label: 'Número', type: 'text', required: true, order: 7, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'complement', label: 'Complemento', type: 'text', required: false, order: 8, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'neighborhood', label: 'Bairro', type: 'text', required: true, order: 9, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'city', label: 'Cidade', type: 'text', required: true, order: 10, isSystem: true, section: 'Endereço', showInProfile: true },
+      { key: 'state', label: 'UF', type: 'text', required: true, order: 11, isSystem: true, section: 'Endereço', showInProfile: true },
+
+      // Vida Espiritual
+      { key: 'role', label: 'Função / Cargo', type: 'select', required: true, order: 12, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
+        options: ROLES.map(r => ({ label: r, deleted: false })) },
+      { key: 'status', label: 'Status', type: 'select', required: true, order: 13, isSystem: true, section: 'Vida Espiritual', showInProfile: true,
+        options: [{ label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }] },
+      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 15, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+      { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual', showInProfile: true },
+
+      // Rituais
+      { key: 'initiation', label: 'Lavagem / Iniciação', type: 'date', required: false, order: 18, isSystem: true, section: 'Rituais', showInProfile: true },
+      { key: 'baptism', label: 'Batismo', type: 'date', required: false, order: 19, isSystem: true, section: 'Rituais', showInProfile: true },
+      { key: 'baptism1Year', label: 'Batismo (1 Ano)', type: 'date', required: false, order: 20, isSystem: true, section: 'Rituais', showInProfile: true },
+      { key: 'coronation', label: 'Coroação', type: 'date', required: false, order: 21, isSystem: true, section: 'Rituais', showInProfile: true },
+      { key: 'crownWashing', label: 'Lavagem de Coroa', type: 'date', required: false, order: 22, isSystem: true, section: 'Rituais', showInProfile: true },
+
+      // Orixás
+      { key: 'oxossi', label: 'Oxóssi', type: 'date', required: false, order: 23, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'iemanja', label: 'Iemanjá', type: 'date', required: false, order: 24, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'oxala', label: 'Oxalá', type: 'date', required: false, order: 25, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'ogum', label: 'Ogum', type: 'date', required: false, order: 26, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'obaluae', label: 'Obaluaê', type: 'date', required: false, order: 27, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'oxum', label: 'Oxum', type: 'date', required: false, order: 28, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'xango', label: 'Xangô', type: 'date', required: false, order: 29, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'oba', label: 'Obá', type: 'date', required: false, order: 30, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'omulu', label: 'Omulú', type: 'date', required: false, order: 31, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'logunan', label: 'Logunã', type: 'date', required: false, order: 32, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'iansa', label: 'Iansã', type: 'date', required: false, order: 33, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'nana', label: 'Nanã', type: 'date', required: false, order: 34, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'oxumare', label: 'Oxumaré', type: 'date', required: false, order: 35, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true },
+      { key: 'oroina', label: 'Oroiná (Egunitá)', type: 'date', required: false, order: 36, isSystem: true, section: 'Consagrações (Orixás)', showInProfile: true }
+    ]
+  });
+
+  await firestoreCreate('system_configs', 'finance', {
+    id: 'finance', updatedAt: now,
+    fields: [
+      { 
+        key: 'category', label: 'Categoria Financeira', type: 'select', required: true, order: 1, isSystem: true,
+        options: [
+          { label: 'DOAÇÃO', deleted: false, meta: 'Entrada', requiresMember: false },
+          { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true },
+          { label: 'CONTAS', deleted: false, meta: 'Saída', requiresMember: false },
+          { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída', requiresMember: false },
+          { label: 'EVENTO', deleted: false, meta: 'Entrada', requiresMember: false }
+        ]
+      }
+    ]
+  });
+
+  await firestoreCreate('system_configs', 'stock', {
+    id: 'stock', updatedAt: now,
+    fields: [
+      { 
+        key: 'category', label: 'Categoria', type: 'select', required: true, order: 1, isSystem: true,
+        options: [
+          { label: 'VELAS', deleted: false }, { label: 'ERVAS', deleted: false },
+          { label: 'BEBIDAS', deleted: false }, { label: 'LITURGIA', deleted: false },
+          { label: 'LIMPEZA', deleted: false }, { label: 'OUTROS', deleted: false }
+        ]
+      },
+      { 
+        key: 'unit', label: 'Unidade de Medida', type: 'select', required: true, order: 2, isSystem: true,
+        options: [
+          { label: 'UN', deleted: false }, { label: 'KG', deleted: false },
+          { label: 'G', deleted: false }, { label: 'L', deleted: false },
+          { label: 'ML', deleted: false }, { label: 'CX', deleted: false },
+          { label: 'PCT', deleted: false }, { label: 'MAÇO', deleted: false }
+        ]
+      }
     ]
   });
 
