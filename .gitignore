@@ -45,3 +45,5 @@ Thumbs.db
 # Firebase credentials
 src/app/app.config.ts
 firebase-debug.log
+
+afazer.txt
