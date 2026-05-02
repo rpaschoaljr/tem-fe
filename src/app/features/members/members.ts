@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
 import { FinanceService } from '../../core/services/finance.service';
-import { forkJoin } from 'rxjs';
+import { combineLatest } from 'rxjs';
 
 import { MembersService } from '../../core/services/members.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -69,11 +69,12 @@ export class MembersComponent implements OnInit {
     const curMonth = new Date().getMonth();
     const curYear = new Date().getFullYear();
 
-    forkJoin({
+    combineLatest({
       members: this.membersService.getMembers(),
       transactions: this.financeService.getTransactions()
     }).subscribe({
       next: (res) => {
+        console.log('📦 MembersComponent: Dados brutos recebidos:', res);
         // Filtra transações de mensalidade do mês atual (que não estejam deletadas)
         const currentMensalidades = res.transactions.filter(t => 
           !t.deleted && 

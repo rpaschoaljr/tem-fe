@@ -123,7 +123,7 @@ function generateCPF() {
 
 async function seed() {
   console.log('\n🚀 Iniciando SEED de alta carga...');
-  const collections = ['system_configs', 'members', 'permissions', 'transactions', 'stock', 'notices'];
+  const collections = ['system_configs', 'members', 'members_private', 'members_spiritual', 'permissions', 'transactions', 'stock', 'notices'];
   for (const col of collections) {
     process.stdout.write(`🧹 Limpando ${col}... `);
     await firestoreDeleteAll(col);
@@ -133,7 +133,7 @@ async function seed() {
   const now = new Date();
 
   // 1. Permissões e Membros por Role
-  console.log('👤 Criando Membros e Permissões...');
+  console.log('👤 Criando Membros e Permissões (Fatiados)...');
   for (const role of ROLES) {
     const email = `${role.toLowerCase().replace(/[^a-z]/g, '')}@tem.local`;
     const id = `seed-${email}`;
@@ -142,11 +142,8 @@ async function seed() {
     const rawCep = '01001000';
 
     await createUser(email);
-    await firestoreCreate('permissions', email, {
-      id: email, type: 'user', target: role, updatedAt: now,
-      hierarchyLevel: role === 'DIRETORIA' || role === 'ADMIN'? 10 : 1, modules: {}
-    });
     
+    // --- FATIA 1: BÁSICA (members) ---
     const memberName = `Membro ${role}`;
     await firestoreCreate('members', id, {
       id, 
@@ -157,12 +154,18 @@ async function seed() {
       role, 
       status: 'Ativo', 
       deleted: false,
+      isExempt: role === 'DIRETORIA',
+      entryDate: now, createdAt: now, updatedAt: now,
+    });
+
+    // --- FATIA 2: PRIVADA (members_private) ---
+    await firestoreCreate('members_private', id, {
+      id,
+      email, // usado para busca e validação de posse
       cpf: formatCPF(rawCpf),
       cpf_search: rawCpf,
       phone: formatPhone(rawPhone),
       phone_search: rawPhone,
-      isExempt: role === 'DIRETORIA',
-      entryDate: now, createdAt: now, updatedAt: now,
       address: { 
         city: 'SÃO PAULO', 
         state: 'SP', 
@@ -172,8 +175,23 @@ async function seed() {
         cep: formatCEP(rawCep) 
       },
       cep_search: rawCep,
+      updatedAt: now
+    });
+
+    // --- FATIA 3: ESPIRITUAL (members_spiritual) ---
+    await firestoreCreate('members_spiritual', id, {
+      id,
+      email,
+      showSpiritualData: true,
       rituals: {}, 
-      consecrations: {}
+      consecrations: {},
+      observations: `Observações para o cargo ${role}`,
+      updatedAt: now
+    });
+
+    await firestoreCreate('permissions', email, {
+      id: email, type: 'user', target: role, updatedAt: now,
+      hierarchyLevel: role === 'DIRETORIA' || role === 'ADMIN'? 10 : 1, modules: {}
     });
   }
 

@@ -1,190 +1,208 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { of, Observable, from, throwError, forkJoin } from 'rxjs';
-import { tap, catchError, map, switchMap } from 'rxjs/operators';
+import { of, Observable, from, throwError, forkJoin, catchError, map, tap } from 'rxjs';
 import { Member } from '../models/member.model';
-import { Firestore } from '@angular/fire/firestore';
-import { collection, getDocs, doc, setDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
+import { 
+    Firestore, 
+    collection, 
+    collectionData, 
+    doc, 
+    docData, 
+    writeBatch, 
+    query, 
+    where, 
+    getDocs,
+    updateDoc,
+    getDoc,
+    limit
+} from '@angular/fire/firestore';
 import { Normalizer } from '../../shared/utils/normalizer';
 
 @Injectable({ providedIn: 'root' })
 export class MembersService {
     private firestore = inject(Firestore);
     private http = inject(HttpClient);
-    private COL = 'members';
+    
+    private COL_BASE = 'members';
+    private COL_PRIVATE = 'members_private';
+    private COL_SPIRITUAL = 'members_spiritual';
 
-    private CACHE_KEY = 'members_data';
-    private TIME_KEY = 'members_last_fetch';
-    private CACHE_DURATION = 15 * 60 * 1000;
+    // --- LEITURA EM TEMPO REAL (Fatia Básica) ---
+    getMembers(): Observable<Member[]> {
+        console.log('🔥 MembersService: Chamando getMembers()...');
+        const colRef = collection(this.firestore, this.COL_BASE);
+        // O collectionData já usa onSnapshot internamente. 
+        // É tempo real e economiza leituras (Delta updates).
+        return (collectionData(colRef, { idField: 'id' }) as Observable<any[]>).pipe(
+            tap((data: any[]) => console.log('🔥 MembersService: Dados brutos do collectionData:', data)),
+            map((data: any[]) => data.map((m: any) => this.fixDates(m))),
+            tap((data: Member[]) => console.log('🔥 MembersService: Membros processados:', data))
+        );
+    }
 
-    constructor() { }
+    // --- LEITURA DETALHADA (Junta as fatias) ---
+    getById(id: string): Observable<Member | undefined> {
+        const docBase = doc(this.firestore, this.COL_BASE, id);
+        const docPrivate = doc(this.firestore, this.COL_PRIVATE, id);
+        const docSpiritual = doc(this.firestore, this.COL_SPIRITUAL, id);
 
-    // --- LEITURA ---
-    getMembers(forceRefresh = false): Observable<Member[]> {
-        const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
-        const hasCache = localStorage.getItem(this.CACHE_KEY);
-        const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
-
-        if (!forceRefresh && hasCache && isCacheFresh) {
-            return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
-        }
-
-        const colRef = collection(this.firestore, this.COL);
-        return from(getDocs(colRef)).pipe(
-            map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
-            tap(data => this.updateCache(data)),
-            catchError((err) => {
-                if (hasCache) {
-                    return of(JSON.parse(hasCache).map((m: any) => this.fixDates(m)));
-                }
-                return throwError(() => new Error('Sem comunicação com o servidor e sem dados em cache.'));
+        return forkJoin({
+            base: from(getDoc(docBase)).pipe(map(s => s.data())),
+            private: from(getDoc(docPrivate)).pipe(map(s => s.data()), catchError(() => of(undefined))),
+            spiritual: from(getDoc(docSpiritual)).pipe(map(s => s.data()), catchError(() => of(undefined)))
+        }).pipe(
+            map(res => {
+                if (!res.base) return undefined;
+                // Mescla as 3 fatias em um único objeto Member para a UI
+                return this.fixDates({
+                    ...res.base,
+                    ...res.private,
+                    ...res.spiritual,
+                    id
+                } as any);
             })
         );
     }
 
-    getById(id: string): Observable<Member | undefined> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(getDoc(docRef)).pipe(
-            map(d => d.exists() ? this.fromFirestore(d.id, d.data()!) : undefined),
-            catchError(() => throwError(() => new Error('Não foi possível carregar o membro. Verifique sua conexão.')))
-        );
-    }
-
-    // --- ESCRITA (SEGURA: Só confirma se gravar no Firestore) ---
+    // --- ESCRITA ATÔMICA (Fatiada) ---
     save(member: Member): Observable<boolean> {
         const isNew = !member.id;
-        const colRef = collection(this.firestore, this.COL);
-
-        // CRIANDO CAMPOS DE BUSCA / NORMALIZADOS
-        const name_search = Normalizer.search(member.name);
-        const email_search = Normalizer.email(member.email);
-        const cpf_search = Normalizer.numbers(member.cpf);
-        const phone_search = Normalizer.numbers(member.phone);
+        const batch = writeBatch(this.firestore);
         
-        const firestoreData: any = {
-            ...this.toFirestore(member),
-            name_search,
-            email_search,
-            cpf_search,
-            phone_search,
-            updatedAt: new Date()
-        };
+        // Se for novo, gera o ID primeiro
+        const id = isNew ? doc(collection(this.firestore, this.COL_BASE)).id : member.id;
+        
+        const docBase = doc(this.firestore, this.COL_BASE, id);
+        const docPrivate = doc(this.firestore, this.COL_PRIVATE, id);
+        const docSpiritual = doc(this.firestore, this.COL_SPIRITUAL, id);
 
-        if (member.address) {
-            firestoreData.cep_search = Normalizer.numbers(member.address.cep);
-            // Mantemos o endereço original para exibir com acentos/caixa mista
-        }
+        // Prepara as 3 fatias de dados
+        const { base, priv, spir } = this.splitMemberData(member, id);
 
-        // Se for novo membro, verifica duplicidade usando os campos _search
+        // Se for novo, faz validações de duplicidade ANTES de rodar o batch
         if (isNew) {
-            const cpfQuery = query(colRef, where('cpf_search', '==', cpf_search), where('deleted', '==', false));
-            const emailQuery = query(colRef, where('email_search', '==', email_search), where('deleted', '==', false));
-
-            return forkJoin({
-                cpfExists: from(getDocs(cpfQuery)).pipe(map(s => !s.empty)),
-                emailExists: from(getDocs(emailQuery)).pipe(map(s => !s.empty))
-            }).pipe(
-                switchMap(res => {
-                    if (res.cpfExists) return throwError(() => new Error('ESTE CPF JA ESTA CADASTRADO PARA OUTRO MEMBRO ATIVO.'));
-                    if (res.emailExists) return throwError(() => new Error('ESTE E-MAIL JA ESTA EM USO POR OUTRO MEMBRO ATIVO.'));
-
-                    const docRef = doc(colRef);
-                    firestoreData.id = docRef.id;
-                    firestoreData.createdAt = new Date();
-                    firestoreData.deleted = false;
-                    
-                    return from(setDoc(docRef, firestoreData));
+            return this.checkDuplicates(member).pipe(
+                map(() => {
+                    batch.set(docBase, { ...base, createdAt: new Date(), deleted: false });
+                    batch.set(docPrivate, priv);
+                    batch.set(docSpiritual, spir);
+                    from(batch.commit());
+                    return true;
                 }),
-                tap(() => localStorage.removeItem(this.TIME_KEY)),
-                map(() => true),
                 catchError(err => throwError(() => new Error(err.message || 'ERRO AO SALVAR MEMBRO.')))
             );
         }
 
-        // Edição
-        const docRef = doc(this.firestore, this.COL, member.id);
-        return from(setDoc(docRef, firestoreData, { merge: true })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
+        // Edição (Usa merge: true para não apagar campos existentes nas fatias)
+        batch.set(docBase, { ...base, updatedAt: new Date() }, { merge: true });
+        batch.set(docPrivate, { ...priv, updatedAt: new Date() }, { merge: true });
+        batch.set(docSpiritual, { ...spir, updatedAt: new Date() }, { merge: true });
+
+        return from(batch.commit()).pipe(
             map(() => true),
             catchError(() => throwError(() => new Error('FALHA AO ATUALIZAR MEMBRO NO SERVIDOR.')))
         );
     }
 
+    private checkDuplicates(member: Member): Observable<void> {
+        const colPriv = collection(this.firestore, this.COL_PRIVATE);
+        const cpf_search = Normalizer.numbers(member.cpf);
+        const email_search = member.email.toLowerCase();
+
+        const cpfQuery = query(colPriv, where('cpf_search', '==', cpf_search), limit(1));
+        const emailQuery = query(colPriv, where('email_search', '==', email_search), limit(1));
+
+        return forkJoin({
+            cpfExists: from(getDocs(cpfQuery)).pipe(map(s => !s.empty)),
+            emailExists: from(getDocs(emailQuery)).pipe(map(s => !s.empty))
+        }).pipe(
+            map(res => {
+                if (res.cpfExists) throw new Error('ESTE CPF JÁ ESTÁ CADASTRADO.');
+                if (res.emailExists) throw new Error('ESTE E-MAIL JÁ ESTÁ EM USO.');
+            })
+        );
+    }
+
+    private splitMemberData(member: Member, id: string) {
+        // FATIA 1: BÁSICA
+        const base = {
+            id,
+            name: member.name,
+            name_search: Normalizer.search(member.name),
+            email: member.email.toLowerCase(),
+            role: member.role,
+            status: member.status,
+            isExempt: member.isExempt ?? false,
+            entryDate: member.entryDate,
+            updatedAt: new Date()
+        };
+
+        // FATIA 2: PRIVADA
+        const priv = {
+            id,
+            email: member.email.toLowerCase(),
+            cpf: member.cpf,
+            cpf_search: Normalizer.numbers(member.cpf),
+            phone: member.phone,
+            phone_search: Normalizer.numbers(member.phone),
+            address: member.address,
+            cep_search: Normalizer.numbers(member.address.cep),
+            updatedAt: new Date()
+        };
+
+        // FATIA 3: ESPIRITUAL
+        const spir = {
+            id,
+            email: member.email.toLowerCase(),
+            showSpiritualData: member.showSpiritualData ?? false,
+            rituals: member.rituals || {},
+            consecrations: member.consecrations || {},
+            observations: member.observations || '',
+            updatedAt: new Date()
+        };
+
+        return { base, priv, spir };
+    }
+
     softDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
+        const docRef = doc(this.firestore, this.COL_BASE, id);
         return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
-            map(() => true),
-            catchError(() => throwError(() => new Error('Não foi possível excluir. Erro de conexão.')))
+            map(() => true)
         );
     }
 
     restore(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
+        const docRef = doc(this.firestore, this.COL_BASE, id);
         return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
-            map(() => true),
-            catchError(() => throwError(() => new Error('Não foi possível restaurar. Erro de conexão.')))
+            map(() => true)
         );
     }
 
-    private updateCache(data: Member[]) {
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
-        localStorage.setItem(this.TIME_KEY, Date.now().toString());
-    }
-
-    private fromFirestore(id: string, data: any): Member {
-        const member = {
-            ...data,
-            id,
-            createdAt: this.fixDate(data.createdAt),
-            updatedAt: this.fixDate(data.updatedAt),
-            entryDate: this.fixDate(data.entryDate),
-            exitDate: this.fixDate(data.exitDate),
-        } as Member;
-
-        if (member.rituals) {
-            Object.keys(member.rituals).forEach(k => {
-                (member.rituals as any)[k] = this.fixDate((member.rituals as any)[k]);
-            });
-        }
-
-        if (member.consecrations) {
-            Object.keys(member.consecrations).forEach(k => {
-                (member.consecrations as any)[k] = this.fixDate((member.consecrations as any)[k]);
-            });
-        }
-
-        if ((member as any).customFields) {
-            Object.keys((member as any).customFields).forEach(k => {
-                (member as any).customFields[k] = this.fixDate((member as any).customFields[k]);
-            });
-        }
-
-        return member;
-    }
-
     private fixDates(m: any): Member {
-        return this.fromFirestore(m.id, m);
+        return {
+            ...m,
+            createdAt: this.fixDate(m.createdAt),
+            updatedAt: this.fixDate(m.updatedAt),
+            entryDate: this.fixDate(m.entryDate),
+            exitDate: this.fixDate(m.exitDate),
+            rituals: m.rituals ? this.fixObjectDates(m.rituals) : {},
+            consecrations: m.consecrations ? this.fixObjectDates(m.consecrations) : {}
+        } as Member;
+    }
+
+    private fixObjectDates(obj: any) {
+        const newObj = { ...obj };
+        Object.keys(newObj).forEach(k => {
+            newObj[k] = this.fixDate(newObj[k]);
+        });
+        return newObj;
     }
 
     private fixDate(val: any): Date | null {
         if (!val) return null;
-        if (typeof val === 'string' && val.includes('-') && val.includes('T')) {
-            return new Date(val);
-        }
-        if (val instanceof Date) return val;
-        if (val && typeof val === 'object' && 'seconds' in val) {
-            return new Date(val.seconds * 1000);
-        }
+        if (val.toDate) return val.toDate(); // Firebase Timestamp
         const d = new Date(val);
         return isNaN(d.getTime()) ? null : d;
-    }
-
-    private toFirestore(member: Member): any {
-        const data = { ...member };
-        delete (data as any).id;
-        return data;
     }
 
     getAddressByCep(cep: string): Observable<any> {

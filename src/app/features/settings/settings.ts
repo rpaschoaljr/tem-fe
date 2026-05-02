@@ -122,7 +122,7 @@ export class SettingsComponent implements OnInit {
   }
 
   loadMembers() {
-    this.membersService.getMembers(true).subscribe(m => {
+    this.membersService.getMembers().subscribe(m => {
       this.members.set(m);
     });
   }
