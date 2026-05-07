@@ -10,12 +10,14 @@ services:
       - "9099:9099"   # Auth
       - "8080:8080"   # Firestore
       - "9199:9199"   # Storage
+      - "5001:5001"   # Functions
     volumes:
       # Persiste os dados dos emuladores entre reinicializações
       - emulator-data:/app/emulator-data
       # Permite recarregar as rules sem rebuild da imagem
       - ./firestore.rules:/app/firestore.rules:ro
       - ./storage.rules:/app/storage.rules:ro
+      - ./functions:/app/functions
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
       interval: 10s

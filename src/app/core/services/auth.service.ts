@@ -33,50 +33,20 @@ export class AuthService {
     shareReplay(1)
   );
 
-  permissions$ = this.member$.pipe(
-    switchMap(member => {
-      if (!member) {
-        console.log('🔒 Permissions: Sem membro, sem permissões.');
-        return of(null);
-      }
+  permissions$ = this.user$.pipe(
+    switchMap(async user => {
+      if (!user) return null;
       
-      console.log(`🔍 Permissions: Buscando regras para ${member.email} (Cargo: ${member.role})`);
-      
-      // ID individual é exatamente o email
-      const userPermRef = doc(this.firestore, `permissions/${member.email}`);
-      // Sanitiza o nome do cargo para bater com o permissionId salvo no banco
-      const roleId = `role_${member.role.replace(/\//g, '_')}`; 
-      const rolePermRef = doc(this.firestore, `permissions/${roleId}`);
+      const tokenResult = await user.getIdTokenResult();
+      const claims = tokenResult.claims as any;
 
-      return combineLatest([
-        from(getDoc(userPermRef)).pipe(
-          map(s => {
-            const data = s.exists() ? s.data() as PermissionConfig : {} as PermissionConfig;
-            console.log(`📄 User Perms (${member.email}):`, data);
-            return data;
-          }),
-          catchError(err => {
-            console.error('❌ Erro User Perm:', err);
-            return of({} as PermissionConfig);
-          })
-        ),
-        from(getDoc(rolePermRef)).pipe(
-          map(s => {
-            const data = s.exists() ? s.data() as PermissionConfig : {} as PermissionConfig;
-            console.log(`📄 Role Perms (${roleId}):`, data);
-            return data;
-          }),
-          catchError(err => {
-            console.error('❌ Erro Role Perm:', err);
-            return of({} as PermissionConfig);
-          })
-        )
-      ]).pipe(
-        map(([userPerm, rolePerm]) => {
-          console.log(`✅ Permissões consolidadas geradas.`);
-          return { userPerm, rolePerm };
-        })
-      );
+      if (!claims.perms) {
+        console.warn('⚠️ Claims não encontrados. Tentando forçar refresh...');
+        const refreshedResult = await user.getIdTokenResult(true);
+        return refreshedResult.claims as any;
+      }
+
+      return claims;
     }),
     shareReplay(1)
   );
@@ -99,34 +69,14 @@ export class AuthService {
 
   hasPermission(module: string, action: 'read' | 'write'): Observable<boolean> {
     return this.permissions$.pipe(
-      map(perms => {
-        if (!perms) {
-          console.warn(`🚫 Permissão Negada: Sem dados de permissão para o módulo ${module}`);
-          return false;
-        }
+      map(claims => {
+        if (!claims) return false;
 
-        // Cargo com nível máximo de hierarquia (10) tem acesso total
-        if ((perms.rolePerm?.hierarchyLevel ?? 0) >= 10 || (perms.userPerm?.hierarchyLevel ?? 0) >= 10) {
-          console.log(`👑 Acesso Master concedido para o módulo ${module}`);
-          return true;
-        }
+        const hierarchyLevel = claims.hierarchyLevel ?? 0;
+        if (hierarchyLevel >= 10) return true;
 
-        // Verifica individual primeiro
-        if (perms.userPerm?.modules?.[module] && perms.userPerm.modules[module][action] !== undefined) {
-          const allowed = perms.userPerm.modules[module][action];
-          console.log(`👤 Permissão Individual (${module}.${action}): ${allowed ? '✅' : '❌'}`);
-          return allowed;
-        }
-
-        // Depois verifica cargo
-        if (perms.rolePerm?.modules?.[module] && perms.rolePerm.modules[module][action] !== undefined) {
-          const allowed = perms.rolePerm.modules[module][action];
-          console.log(`👥 Permissão por Cargo (${module}.${action}): ${allowed ? '✅' : '❌'}`);
-          return allowed;
-        }
-
-        console.warn(`⚠️ Nenhuma regra encontrada para ${module}.${action}. Negando por padrão.`);
-        return false;
+        const perms = claims.perms || {};
+        return !!perms[module]?.[action];
       })
     );
   }

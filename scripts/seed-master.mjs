@@ -42,10 +42,12 @@ function formatFirestoreValue(v) {
 }
 
 async function firestoreCreate(collection, id, data) {
-  const url = `${FIRESTORE_API}/${collection}?documentId=${id}`;
+  const url = `${FIRESTORE_API}/${collection}/${id}`; // URL direta para o documento
   const body = { fields: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, formatFirestoreValue(v)])) };
+  
+  // Usamos PATCH para fazer um UPSERT (cria ou atualiza)
   const res = await fetch(url, { 
-    method: 'POST', 
+    method: 'PATCH', 
     headers: { 
       'Content-Type': 'application/json', 
       'Authorization': 'Bearer owner' 
@@ -54,7 +56,7 @@ async function firestoreCreate(collection, id, data) {
   });
   if (!res.ok) {
     const err = await res.json();
-    console.error(`❌ Erro ao criar ${collection}/${id}:`, JSON.stringify(err));
+    console.error(`❌ Erro ao salvar ${collection}/${id}:`, JSON.stringify(err));
   }
 }
 

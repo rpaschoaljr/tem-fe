@@ -1,25 +1,33 @@
 # Copilot Instructions - Projeto TEM-FE
 
 ## Objetivo do Projeto
-O **TEM-FE** é um sistema de gestão completo para terreiros de religiões afro-brasileiras. O foco principal é centralizar a administração de membros, financeiro e estoque, permitindo que a liderança espiritual foque na caridade, enquanto a tecnologia cuida da burocracia. O sistema é otimizado para o plano **Spark (Gratuito) do Firebase**, priorizando economia de banda (360MB/dia) e leituras/escritas (50k/20k dia).
+O **TEM-FE** é um sistema de gestão completo para terreiros de religiões afro-brasileiras. O foco principal é centralizar a administração de membros, financeiro e estoque, permitindo que a liderança espiritual foque na caridade, enquanto a tecnologia cuida da burocracia. O sistema utiliza o plano **Blaze (Pay-as-you-go) do Firebase** para habilitar o uso de **Cloud Functions**, mantendo a prioridade na economia de recursos e alta segurança.
 
 ---
 
 ## 🛡️ Segurança e Integridade
-O sistema deve seguir os mais altos padrões de segurança para proteção de dados sensíveis e religiosos.
-- **Pentesting Compliance:** O projeto deve ser aprovado em varreduras de ferramentas como **OWASP ZAP**, **Nuclei**, **Checkov**, **Snyk**, **Gitleaks** e **SQLmap** (testando contra NoSQL injection e falhas de lógica).
-- **Security Rules:** Proteção a nível de servidor (Firestore) para garantir que apenas usuários autorizados acessem fatias específicas de dados.
+O sistema segue os mais altos padrões de segurança para proteção de dados sensíveis e religiosos.
+- **Custom Claims (JWT):** As permissões de acesso não são mais buscadas via Firestore rules (`get()`), mas injetadas diretamente no Token do usuário via Cloud Function. Isso reduz custos de leitura e aumenta a segurança.
+- **Permissions Isolation:** A coleção de permissões reais será movida para um local inacessível ao frontend (ex: `_internal_permissions`), sendo manipulada exclusivamente por Cloud Functions.
+- **Pentesting Compliance:** O projeto deve ser aprovado em varreduras de ferramentas como **OWASP ZAP**, **Nuclei**, **Checkov**, **Snyk**, **Gitleaks** e **SQLmap**.
+- **Security Rules:** Proteção a nível de servidor (Firestore) validando fatias de dados através dos Custom Claims presentes no token.
 - **Data Slicing:** Separação física de dados básicos, sensíveis e espirituais.
+
+---
+
+## ⚡ Cloud Functions & Automação
+Com o plano Blaze, implementamos lógicas de backend robustas:
+1.  **Sincronização de Permissões:** Uma Cloud Function disparada no login (ou via trigger de atualização) que consolida as permissões do usuário e do cargo nos Custom Claims do Firebase Auth.
+2.  **Agendamento de Pagamentos (Cron):** Uma tarefa diária que verifica `scheduled_transactions` e realiza os lançamentos automáticos no financeiro.
+3.  **Processamento de Imagens:** Redimensionamento e otimização de fotos de membros no Storage.
+
+---
 
 ## 🧪 Estratégia de Testes
 Iniciando a cultura de qualidade total:
 - **Testes Unitários:** Validação de lógicas de serviço, validadores customizados e pipes.
 - **Testes de Integração:** Fluxos completos entre componentes e serviços do Firebase (usando emuladores).
-- **Garantia de Qualidade:** Cada nova funcionalidade deve vir acompanhada de sua respectiva suíte de testes.
-
-## 🚀 DevOps & CI/CD
-- **Pipeline:** Configuração de CI/CD para automação de testes, build e deploy.
-- **Ambientes:** Separação clara entre Desenvolvimento (Emuladores), Staging e Produção.
+- **Testes de Cloud Functions:** Garantia de que as lógicas de backend e segurança estão íntegras.
 
 ---
 
@@ -38,7 +46,8 @@ Iniciando a cultura de qualidade total:
 - [x] Categorias Customizáveis
 - [x] Agendamentos de Transações Recorrentes
 - [ ] **Sincronização em Tempo Real (onSnapshot)**
-- [ ] Relatórios e Gráficos Mensais
+- [ ] Relatórios e Gráficos Mensais (DRE)
+- [ ] **Lançamento Automático via Cloud Function (Cron)**
 
 ### Gestão de Estoque
 - [x] Controle de Entrada/Saída
@@ -50,7 +59,8 @@ Iniciando a cultura de qualidade total:
 - [x] Autenticação (Email/Senha)
 - [x] Firebase Emulators no Docker
 - [x] Firestore Security Rules (Iniciais)
-- [ ] **Custom Claims no Token (JWT)**
+- [x] **Migração para Plano Blaze**
+- [ ] **Implementação de Custom Claims (Token JWT)**
 - [ ] **Checkov (IaC Security)**
 - [ ] **Snyk (Dependency Scan)**
 - [ ] **Gitleaks (Secret Detection)**

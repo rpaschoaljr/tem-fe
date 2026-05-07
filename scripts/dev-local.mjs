@@ -13,6 +13,13 @@ const MAX_RETRIES = 60;
 const RETRY_INTERVAL_MS = 2000;
 
 // ── 1. Sobe os emuladores via Docker ──────────────────────────────────────────
+console.log('\n📦  Compilando Cloud Functions...');
+try {
+  execSync('npm run build --prefix functions', { stdio: 'inherit' });
+} catch (e) {
+  console.warn('⚠️  Aviso: Falha ao compilar funções. Verifique se o diretório existe.');
+}
+
 console.log('\n🐳  Iniciando emuladores Firebase (Docker)...');
 try {
   execSync('docker compose up --build -d firebase-emulators', { stdio: 'inherit' });
