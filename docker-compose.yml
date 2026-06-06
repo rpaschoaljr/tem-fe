@@ -11,6 +11,7 @@ services:
       - "8080:8080"   # Firestore
       - "9199:9199"   # Storage
       - "5001:5001"   # Functions
+      - "5000:5000"   # Hosting
     volumes:
       # Persiste os dados dos emuladores entre reinicializações
       - emulator-data:/app/emulator-data
@@ -18,6 +19,8 @@ services:
       - ./firestore.rules:/app/firestore.rules:ro
       - ./storage.rules:/app/storage.rules:ro
       - ./functions:/app/functions
+      # Permite que o emulador de Hosting sirva os arquivos buildados no host
+      - ./dist:/app/dist:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
       interval: 10s

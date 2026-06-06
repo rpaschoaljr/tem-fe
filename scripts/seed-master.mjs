@@ -137,7 +137,8 @@ async function seed() {
   // 1. Permissões e Membros por Role
   console.log('👤 Criando Membros e Permissões (Fatiados)...');
   for (const role of ROLES) {
-    const email = `${role.toLowerCase().replace(/[^a-z]/g, '')}@tem.local`;
+    const normalizedRole = normalize(role).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const email = `${normalizedRole}@tem.local`;
     const id = `seed-${email}`;
     const rawCpf = generateCPF();
     const rawPhone = `119${Math.floor(10000000 + Math.random() * 90000000)}`;

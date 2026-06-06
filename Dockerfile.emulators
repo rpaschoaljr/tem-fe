@@ -29,8 +29,8 @@ RUN firebase setup:emulators:firestore --project sistematemfe
 RUN firebase setup:emulators:storage --project sistematemfe
 RUN firebase setup:emulators:ui --project sistematemfe
 
-# Portas: UI(4000), Hub(4400), Auth(9099), Firestore(8080), Storage(9199), Functions(5001)
-EXPOSE 4000 4400 9099 8080 9199 5001
+# Portas: UI(4000), Hub(4400), Auth(9099), Firestore(8080), Storage(9199), Functions(5001), Hosting(5000)
+EXPOSE 4000 4400 9099 8080 9199 5001 5000
 
 # Inicia todos os emuladores configurados no firebase.json
 CMD ["firebase", "emulators:start", \
