@@ -25,15 +25,14 @@ COPY functions ./functions
 RUN cd functions && npm install && npm run build
 
 # Pré-baixa os binários dos emuladores
-RUN firebase setup:emulators:firestore --project sistematemfe
-RUN firebase setup:emulators:storage --project sistematemfe
-RUN firebase setup:emulators:ui --project sistematemfe
+RUN firebase setup:emulators:firestore --project demo-sistematemfe
+RUN firebase setup:emulators:storage --project demo-sistematemfe
+RUN firebase setup:emulators:ui --project demo-sistematemfe
 
 # Portas: UI(4000), Hub(4400), Auth(9099), Firestore(8080), Storage(9199), Functions(5001), Hosting(5000)
 EXPOSE 4000 4400 9099 8080 9199 5001 5000
 
 # Inicia todos os emuladores configurados no firebase.json
+# Usamos o projeto default 'demo-sistematemfe'
 CMD ["firebase", "emulators:start", \
-     "--project", "sistematemfe", \
-     "--import", "/app/emulator-data", \
-     "--export-on-exit", "/app/emulator-data"]
+     "--project", "demo-sistematemfe"]

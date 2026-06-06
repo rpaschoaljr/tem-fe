@@ -20,7 +20,7 @@ import { getStorage, provideStorage, connectStorageEmulator } from '@angular/fir
 const firebaseConfig = {
   apiKey: 'fake-api-key-emulator',
   authDomain: 'sistematemfe.firebaseapp.com',
-  projectId: 'sistematemfe',
+  projectId: "demo-sistematemfe",
   storageBucket: 'sistematemfe.appspot.com',
   messagingSenderId: '000000000000',
   appId: '1:000000000000:web:0000000000000000',

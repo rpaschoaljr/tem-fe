@@ -50,6 +50,12 @@ export class LoginComponent {
 
       try {
         await signInWithEmailAndPassword(this.auth, email!, password!);
+        
+        // TESTE DE CONECTIVIDADE COM FUNCTIONS
+        fetch('http://localhost:5001/demo-sistematemfe/southamerica-east1/helloWorld')
+          .then(response => response.json())
+          .then(data => console.log('🔌 [TESTE BACKEND] Resposta das Functions:', data))
+          .catch(err => console.error('🔌 [TESTE BACKEND] Erro ao falar com Functions:', err));
 
         // Aguarda carregar o membro para decidir a rota
         this.authService.member$.pipe(

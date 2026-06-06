@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile.emulators
     container_name: tem-fe-emulators
+    environment:
+      - FIREBASE_PROJECT=demo-sistematemfe
     ports:
       - "4000:4000"   # Emulator UI
       - "4400:4400"   # Emulator Hub

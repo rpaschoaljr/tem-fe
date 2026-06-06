@@ -1,102 +1,142 @@
 import {setGlobalOptions} from "firebase-functions";
 import {onDocumentWritten, FirestoreEvent} from "firebase-functions/v2/firestore";
-import {onSchedule, ScheduledEvent} from "firebase-functions/v2/scheduler";
+import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {Change} from "firebase-functions/v2/firestore";
 
-admin.initializeApp();
+admin.initializeApp({
+  projectId: "demo-sistematemfe",
+});
 
 setGlobalOptions({region: "southamerica-east1", maxInstances: 10});
+
+/**
+ * FUNÇÃO DE TESTE: Acesse http://localhost:5001/demo-sistematemfe/southamerica-east1/helloWorld
+ */
+export const helloWorld = onRequest({cors: true}, (req, res) => {
+  logger.info("👋 HELLO WORLD: O Emulador de Functions está vivo!");
+  res.status(200).send({
+    message: "Axé! O backend de Functions está funcionando perfeitamente.",
+    timestamp: new Date().toISOString(),
+    projectId: "demo-sistematemfe",
+  });
+});
 
 /**
  * Trigger para atualizar os Custom Claims de um usuário quando suas permissões mudam.
  */
 export const onPermissionUpdate = onDocumentWritten("permissions/{permId}", async (event: FirestoreEvent<Change<admin.firestore.DocumentSnapshot> | undefined>) => {
-  const data = event.data?.after.data();
-  const permId = event.params.permId;
+  try {
+    const data = event.data?.after.data();
+    const permId = event.params.permId;
 
-  if (!data) {
-    logger.info(`Permissão ${permId} deletada.`);
-    return;
-  }
+    logger.info(`🔥 TRIGGER DISPARADA: onPermissionUpdate para ${permId}`);
 
-  // Se for uma permissão de usuário (ID é o email)
-  if (data.type === "user") {
-    await updateClaimsByEmail(permId, data);
-  } 
-  else if (data.type === "role") {
-    const roleName = data.target;
-    const membersSnap = await admin.firestore().collection("members")
-        .where("role", "==", roleName)
-        .get();
+    if (!data) {
+      logger.info(`Permissão ${permId} deletada.`);
+      return;
+    }
 
-    const updates = membersSnap.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => {
-      const member = doc.data();
-      return updateClaimsByEmail(member.email, null); 
-    });
+    // Se for uma permissão de usuário (ID é o email)
+    if (data.type === "user") {
+      await updateClaimsByEmail(permId, data);
+    } else if (data.type === "role") {
+      const roleName = data.target;
+      const membersSnap = await admin.firestore().collection("members")
+          .where("role", "==", roleName)
+          .get();
 
-    await Promise.all(updates);
-    logger.info(`Claims atualizados para ${updates.length} usuários da role ${roleName}`);
+      const updates = membersSnap.docs.map((doc) => {
+        const member = doc.data();
+        return updateClaimsByEmail(member.email, null);
+      });
+
+      await Promise.all(updates);
+      logger.info(`Claims atualizados para ${updates.length} usuários da role ${roleName}`);
+    }
+  } catch (err) {
+    logger.error("Erro na trigger onPermissionUpdate:", err);
   }
 });
+
+/**
+ * Função auxiliar para normalizar strings (remover acentos e espaços)
+ */
+function normalize(val: string): string {
+  if (!val) return "";
+  return val.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
 
 /**
  * Função auxiliar para consolidar permissões e salvar no Token
  */
 async function updateClaimsByEmail(email: string, userPermDoc: any) {
   try {
+    logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    logger.info(`🔍 DEBUG CLAIMS: Iniciando para ${email}`);
+
     const user = await admin.auth().getUserByEmail(email);
-    
+    logger.info(`🆔 UID do Usuário: ${user.uid}`);
+
+    // 1. Busca permissões INDIVIDUAIS
     let userPerm = userPermDoc;
     if (!userPerm) {
       const uSnap = await admin.firestore().collection("permissions").doc(email).get();
       userPerm = uSnap.exists ? uSnap.data() : null;
     }
+    logger.info(`👤 Permissões Individuais: ${userPerm ? "SIM" : "NÃO"}`);
 
+    // 2. Busca o cargo do membro
     const memberSnap = await admin.firestore().collection("members")
         .where("email", "==", email).limit(1).get();
-    
+
     let rolePerm = null;
     if (!memberSnap.empty) {
       const member = memberSnap.docs[0].data();
-      const roleId = `role_${member.role.replace(/\//g, "_")}`;
+      const roleId = `role_${normalize(member.role).replace(/[^A-Z0-9]/g, "")}`;
       const rSnap = await admin.firestore().collection("permissions").doc(roleId).get();
       rolePerm = rSnap.exists ? rSnap.data() : null;
+      logger.info(`🎭 Role: ${member.role} (ID: ${roleId}) -> Encontrada: ${!!rolePerm}`);
     }
 
+    // 3. Hierarquia
     const hierarchyLevel = Math.max(userPerm?.hierarchyLevel || 0, rolePerm?.hierarchyLevel || 0);
-    const perms: any = {};
 
-    const modules = ["members", "finance", "stock", "settings", "notices"];
+    // 4. Consolidação
+    const perms: any = {};
+    const modules = ["members", "finance", "stock", "settings", "notices", "dashboard"];
     modules.forEach((mod) => {
       const rM = rolePerm?.modules?.[mod] || {read: false, write: false};
       const uM = userPerm?.modules?.[mod];
-      
       perms[mod] = {
         read: uM?.read !== undefined ? uM.read : rM.read,
         write: uM?.write !== undefined ? uM.write : rM.write,
       };
     });
 
-    await admin.auth().setCustomUserClaims(user.uid, {
-      hierarchyLevel,
-      perms,
-    });
+    const finalClaims = {hierarchyLevel, perms};
+    logger.info(`🚀 SALVANDO NO AUTH: ${JSON.stringify(finalClaims)}`);
 
-    logger.info(`Claims atualizados para ${email}: Nível ${hierarchyLevel}`);
+    await admin.auth().setCustomUserClaims(user.uid, finalClaims);
+
+    // Verificação
+    const updatedUser = await admin.auth().getUser(user.uid);
+    logger.info(`✅ CLAIMS ATUAIS NO AUTH: ${JSON.stringify(updatedUser.customClaims)}`);
+    logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   } catch (error) {
-    logger.error(`Erro ao atualizar claims para ${email}:`, error);
+    logger.error(`❌ ERRO CLAIMS (${email}):`, error);
   }
 }
 
 /**
  * Tarefa agendada para rodar todo dia à meia-noite
  */
-export const processScheduledTransactions = onSchedule("0 0 * * *", async (event: ScheduledEvent) => {
+export const processScheduledTransactions = onSchedule("0 0 * * *", async () => {
   const now = new Date();
   const firestore = admin.firestore();
-  
+
   const snap = await firestore.collection("scheduled_transactions")
       .where("active", "==", true)
       .where("deleted", "==", false)
@@ -106,7 +146,7 @@ export const processScheduledTransactions = onSchedule("0 0 * * *", async (event
 
   for (const doc of snap.docs) {
     const scheduled = doc.data();
-    const nextDue = new Date(scheduled.nextDueDate.toDate()); // Converte Timestamp para Date
+    const nextDue = new Date(scheduled.nextDueDate.toDate());
 
     if (nextDue <= now) {
       try {
@@ -123,7 +163,7 @@ export const processScheduledTransactions = onSchedule("0 0 * * *", async (event
 
 async function applySchedule(id: string, scheduled: any) {
   const firestore = admin.firestore();
-  const signedValue = scheduled.type === "Saída" ? 
+  const signedValue = scheduled.type === "Saída" ?
     -Math.abs(scheduled.value) : Math.abs(scheduled.value);
 
   const txRef = firestore.collection("transactions").doc();

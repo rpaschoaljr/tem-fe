@@ -35,15 +35,22 @@ export class AuthService {
 
   permissions$ = this.user$.pipe(
     switchMap(async user => {
-      if (!user) return null;
+      if (!user) {
+        console.log('🚪 [AuthService] Sem usuário para carregar claims.');
+        return null;
+      }
       
-      const tokenResult = await user.getIdTokenResult();
-      const claims = tokenResult.claims as any;
+      console.log('🔑 [AuthService] Buscando Claims do Token...');
+      let tokenResult = await user.getIdTokenResult();
+      let claims = tokenResult.claims as any;
 
-      if (!claims.perms) {
-        console.warn('⚠️ Claims não encontrados. Tentando forçar refresh...');
-        const refreshedResult = await user.getIdTokenResult(true);
-        return refreshedResult.claims as any;
+      console.log('📊 [AuthService] Claims atuais no Token:', JSON.stringify(claims, null, 2));
+
+      if (!claims.perms && claims.hierarchyLevel === undefined) {
+        console.warn('⚠️ [AuthService] Claims NÃO encontrados no token atual. Forçando Refresh (pode demorar 1-2s)...');
+        tokenResult = await user.getIdTokenResult(true);
+        claims = tokenResult.claims as any;
+        console.log('🔄 [AuthService] Claims após Refresh:', JSON.stringify(claims, null, 2));
       }
 
       return claims;

@@ -4,9 +4,9 @@
  * Com VERIFICAÇÃO de leitura final para confirmar a criação.
  */
 
-const PROJECT_ID = 'sistematemfe';
+const PROJECT_ID = 'demo-sistematemfe';
 const AUTH_EMULATOR = 'http://localhost:9099';
-const FIRESTORE_API = 'http://localhost:8080/v1/projects/sistematemfe/databases/(default)/documents';
+const FIRESTORE_API = 'http://localhost:8080/v1/projects/demo-sistematemfe/databases/(default)/documents';
 const API_KEY = 'fake-api-key-emulator';
 
 const ROLES = ['ADMIN','DIRETORIA', 'PAI/MÃE PEQUENO', 'OGÃ', 'CAMBONO', 'MÉDIUM', 'CONSULENTE'];
@@ -204,15 +204,84 @@ async function seed() {
     hierarchyLevel: 10, modules: {}
   });
 
-  await firestoreCreate('permissions', 'role_DIRETORIA', {
-    id: 'role_DIRETORIA', type: 'role', target: 'DIRETORIA', updatedAt: now,
-    hierarchyLevel: 10,
-    modules: {
-      members: { read: true, write: true }, finance: { read: true, write: true },
-      stock: { read: true, write: true }, settings: { read: true, write: true }, 
-      notices: { read: true, write: true }, dashboard: { read: true, write: true }
+  console.log('🎭 Criando permissões de Role...');
+  const rolePermissions = [
+    {
+      role: 'ADMIN',
+      hierarchyLevel: 10,
+      modules: {
+        members: { read: true, write: true }, finance: { read: true, write: true },
+        stock: { read: true, write: true }, settings: { read: true, write: true }, 
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'DIRETORIA',
+      hierarchyLevel: 10,
+      modules: {
+        members: { read: true, write: true }, finance: { read: true, write: true },
+        stock: { read: true, write: true }, settings: { read: true, write: true }, 
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'PAI/MÃE PEQUENO',
+      hierarchyLevel: 5,
+      modules: {
+        members: { read: true, write: true }, finance: { read: false, write: false },
+        stock: { read: true, write: true }, settings: { read: false, write: false }, 
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'OGÃ',
+      hierarchyLevel: 2,
+      modules: {
+        members: { read: true, write: false }, finance: { read: false, write: false },
+        stock: { read: true, write: true }, settings: { read: false, write: false }, 
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'CAMBONO',
+      hierarchyLevel: 2,
+      modules: {
+        members: { read: true, write: false }, finance: { read: false, write: false },
+        stock: { read: true, write: true }, settings: { read: false, write: false }, 
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'MÉDIUM',
+      hierarchyLevel: 1,
+      modules: {
+        members: { read: true, write: false }, finance: { read: false, write: false },
+        stock: { read: false, write: false }, settings: { read: false, write: false }, 
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+      }
+    },
+    {
+      role: 'CONSULENTE',
+      hierarchyLevel: 0,
+      modules: {
+        members: { read: false, write: false }, finance: { read: false, write: false },
+        stock: { read: false, write: false }, settings: { read: false, write: false }, 
+        notices: { read: true, write: false }, dashboard: { read: true, write: false }
+      }
     }
-  });
+  ];
+
+  for (const p of rolePermissions) {
+    const roleId = `role_${normalize(p.role).replace(/[^A-Z0-9]/g, "")}`;
+    await firestoreCreate('permissions', roleId, {
+      id: roleId,
+      type: 'role',
+      target: p.role,
+      hierarchyLevel: p.hierarchyLevel,
+      modules: p.modules,
+      updatedAt: now
+    });
+  }
 
   // 2. Financeiro (50 operações)
   console.log('💰 Gerando 50 operações financeiras...');

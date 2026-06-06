@@ -9,6 +9,7 @@ import { spawn, execSync } from 'child_process';
 import http from 'http';
 
 const EMULATOR_URL = 'http://localhost:9099';
+const PROJECT_ID = 'demo-sistematemfe';
 const MAX_RETRIES = 60;
 const RETRY_INTERVAL_MS = 2000;
 
