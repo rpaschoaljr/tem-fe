@@ -147,3 +147,38 @@ html.dark-theme {
     display: none !important;
   }
 }
+
+// ── Tipografia padrão ──
+.page-container {
+    h1 {
+        font-size: 2rem;
+        font-weight: 300;
+        margin: 0 0 8px;
+        color: var(--mat-sys-on-surface);
+    }
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin: 0;
+    }
+    .subtitle {
+        font-size: 0.875rem;
+        color: var(--mat-sys-on-surface-variant);
+        margin: 4px 0 0;
+    }
+}
+
+// ── Tab animations ──
+.mat-mdc-tab-body-active .mat-mdc-tab-body-content {
+    animation: tabContentIn 0.3s ease-out both;
+}
+
+@keyframes tabContentIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+// Smooth ink bar
+.mat-mdc-tab-group {
+    --mat-tab-animation-duration: 250ms;
+}

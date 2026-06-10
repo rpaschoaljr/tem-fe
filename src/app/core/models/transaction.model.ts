@@ -1,17 +1,21 @@
+import { FirestoreTimestamp } from './common';
+
 export interface Transaction {
     id: string;
     description: string;
-    value: number; // Positivo = Entrada, Negativo = Saída
+    value: number;
     type: 'Entrada' | 'Saída';
-    category: string; // Ex: Mensalidade, Aluguel, Velas
+    category: string;
     date: Date;
     deleted: boolean;
 
-    // Vínculo com membro (opcional conforme categoria)
     memberId?: string;
     memberName?: string;
 
-    // Referência (útil para mensalidades)
-    refMonth?: number; // 0-11
+    refMonth?: number;
     refYear?: number;
 }
+
+export type FirestoreTransaction = Omit<Transaction, 'date'> & {
+    date: FirestoreTimestamp;
+};

@@ -2,19 +2,23 @@
 
     <!-- BARRA SUPERIOR (Horizontal) -->
     <mat-toolbar color="primary" class="topbar">
-        <!-- Hambúrguer apenas no Mobile -->
-        <button type="button" mat-icon-button (click)="drawer.toggle()" *ngIf="isHandset$ | async">
+        <!-- Hambúrguer para telas < 960px -->
+        <button type="button" mat-icon-button (click)="drawer.toggle()" *ngIf="isSmallScreen$ | async">
             <mat-icon>menu</mat-icon>
         </button>
 
-        <span class="logo-text" [routerLink]="['/dashboard']" style="cursor: pointer;">Tem-Fé ERP</span>
+        <span class="logo-text" [routerLink]="['/dashboard']" style="cursor: pointer;">
+            <span class="logo-badge">TF</span>
+            <span class="logo-full">Tem-Fé ERP</span>
+        </span>
 
-        <!-- NAVEGAÇÃO DESKTOP (No topo) -->
-        <div class="desktop-nav" *ngIf="!(isHandset$ | async)">
+        <!-- NAVEGAÇÃO DESKTOP (>= 960px) -->
+        <div class="desktop-nav" *ngIf="!(isSmallScreen$ | async)">
             <button mat-button *ngFor="let item of menuItems()" [routerLink]="item.route" routerLinkActive="active-nav">
                 <mat-icon>{{ item.icon }}</mat-icon>
                 <span>{{ item.label }}</span>
             </button>
+            <mat-progress-bar mode="indeterminate" *ngIf="menuLoading()" class="nav-loader"></mat-progress-bar>
         </div>
 
         <span class="spacer"></span>
@@ -29,7 +33,7 @@
             <ng-template #noPhoto>
                 <mat-icon class="mini-avatar-icon">account_circle</mat-icon>
             </ng-template>
-            <span class="user-name-top" *ngIf="!(isHandset$ | async)">
+            <span class="user-name-top" *ngIf="!(isSmallScreen$ | async)">
                 {{ (member$ | async)?.name || user.displayName || 'Usuário' }}
             </span>
             <mat-icon class="arrow-down">keyboard_arrow_down</mat-icon>
@@ -71,11 +75,11 @@
     <!-- CONTAINER PRINCIPAL -->
     <mat-sidenav-container class="sidenav-container">
 
-        <!-- MENU LATERAL (Apenas para Mobile/Drawer) -->
+        <!-- MENU LATERAL (Telas < 960px) -->
         <mat-sidenav #drawer class="sidenav" 
-            [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-            [mode]="(isHandset$ | async) ? 'over' : 'side'" 
-            [opened]="!(isHandset$ | async) ? false : isSidebarOpened">
+            [attr.role]="(isSmallScreen$ | async) ? 'dialog' : 'navigation'"
+            [mode]="(isSmallScreen$ | async) ? 'over' : 'side'" 
+            [opened]="!(isSmallScreen$ | async) ? false : isSidebarOpened">
 
             <div class="mobile-drawer-header" *ngIf="currentUser$ | async as user">
                 <img *ngIf="user.photoURL as photoUrl; else noPhoto" [src]="photoUrl" class="avatar-img">

@@ -4,96 +4,88 @@ import { FirstAccessComponent } from './features/auth/first-access/first-access'
 import { MainLayoutComponent } from './core/layout/main-layout/main-layout';
 import { authGuard } from './core/guards/auth.guard';
 import { DashboardComponent } from './features/dashboard/dashboard';
-import { MembersComponent } from './features/members/members';
-import { FinanceComponent } from './features/finance/finance';
-import { StockComponent } from './features/stock/stock';
-import { MemberFormComponent } from './features/members/member-form/member-form';
-import { ProfileComponent } from './features/profile/profile';
-import { NoticesComponent } from './features/notices/notices';
-import { SettingsComponent } from './features/settings/settings';
 import { pendingChangesGuard } from './core/guards/pending-changes.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
-    // Rota Pública (Sem Layout)
-    { path: 'login', component: LoginComponent },
-    { path: 'first-access', component: FirstAccessComponent, canActivate: [authGuard] },
+  // Rota Pública (Sem Layout)
+  { path: 'login', component: LoginComponent },
+  { path: 'first-access', component: FirstAccessComponent, canActivate: [authGuard] },
 
-    // Rotas Protegidas (Dentro do Layout com Menu)
-    {
-        path: '',
-        component: MainLayoutComponent,
-        canActivate: [authGuard],
-        children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-            { path: 'dashboard', component: DashboardComponent },
-            
-            { 
-              path: 'members', 
-              component: MembersComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'members', action: 'read' } 
-            },
-            { 
-              path: 'finance', 
-              component: FinanceComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'finance', action: 'read' } 
-            },
-            { 
-              path: 'stock', 
-              component: StockComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'stock', action: 'read' } 
-            },
-            { 
-              path: 'profile', 
-              component: ProfileComponent, 
-              canDeactivate: [pendingChangesGuard] 
-            },
-            { 
-              path: 'settings', 
-              component: SettingsComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'settings', action: 'read' } 
-            },
-            { 
-              path: 'notices', 
-              component: NoticesComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'notices', action: 'read' } 
-            },
-            { 
-              path: 'notices/archive', 
-              component: NoticesComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'notices', action: 'read' } 
-            },
-            { 
-              path: 'notices/trash', 
-              component: NoticesComponent, 
-              canActivate: [permissionGuard], 
-              data: { module: 'notices', action: 'write' } 
-            },
-            
-            // Sub-rotas de Escrita
-            { 
-              path: 'members/new', 
-              component: MemberFormComponent, 
-              canActivate: [permissionGuard], 
-              canDeactivate: [pendingChangesGuard],
-              data: { module: 'members', action: 'write' } 
-            },
-            { 
-              path: 'members/edit/:id', 
-              component: MemberFormComponent, 
-              canActivate: [permissionGuard], 
-              canDeactivate: [pendingChangesGuard],
-              data: { module: 'members', action: 'write' } 
-            },
-        ]
-    },
+  // Rotas Protegidas (Dentro do Layout com Menu)
+  {
+    path: '',
+    component: MainLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: DashboardComponent },
 
-    // Redireciona qualquer rota errada para o login
-    { path: '**', redirectTo: 'login' }
+      // ── Lazy-loaded features ──
+      {
+        path: 'members',
+        canActivate: [permissionGuard],
+        data: { module: 'members', action: 'read' },
+        loadComponent: () => import('./features/members/members').then(m => m.MembersComponent),
+      },
+      {
+        path: 'members/new',
+        canActivate: [permissionGuard],
+        canDeactivate: [pendingChangesGuard],
+        data: { module: 'members', action: 'write' },
+        loadComponent: () => import('./features/members/member-form/member-form').then(m => m.MemberFormComponent),
+      },
+      {
+        path: 'members/edit/:id',
+        canActivate: [permissionGuard],
+        canDeactivate: [pendingChangesGuard],
+        data: { module: 'members', action: 'write' },
+        loadComponent: () => import('./features/members/member-form/member-form').then(m => m.MemberFormComponent),
+      },
+      {
+        path: 'finance',
+        canActivate: [permissionGuard],
+        data: { module: 'finance', action: 'read' },
+        loadComponent: () => import('./features/finance/finance').then(m => m.FinanceComponent),
+      },
+      {
+        path: 'stock',
+        canActivate: [permissionGuard],
+        data: { module: 'stock', action: 'read' },
+        loadComponent: () => import('./features/stock/stock').then(m => m.StockComponent),
+      },
+      {
+        path: 'profile',
+        canDeactivate: [pendingChangesGuard],
+        loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent),
+      },
+      {
+        path: 'settings',
+        canActivate: [permissionGuard],
+        data: { module: 'settings', action: 'read' },
+        loadComponent: () => import('./features/settings/settings').then(m => m.SettingsComponent),
+      },
+      {
+        path: 'notices',
+        canActivate: [permissionGuard],
+        data: { module: 'notices', action: 'read' },
+        loadComponent: () => import('./features/notices/notices').then(m => m.NoticesComponent),
+      },
+      {
+        path: 'notices/archive',
+        canActivate: [permissionGuard],
+        data: { module: 'notices', action: 'read' },
+        loadComponent: () => import('./features/notices/notices').then(m => m.NoticesComponent),
+      },
+      {
+        path: 'notices/trash',
+        canActivate: [permissionGuard],
+        data: { module: 'notices', action: 'write' },
+        loadComponent: () => import('./features/notices/notices').then(m => m.NoticesComponent),
+      },
+    ]
+  },
+
+  // Redireciona qualquer rota errada para o login
+  { path: '**', redirectTo: 'login' }
 ];

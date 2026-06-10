@@ -1,11 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, authState } from '@angular/fire/auth';
+import { Auth, authState, User } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { Observable, of, from } from 'rxjs';
 import { switchMap, map, shareReplay, catchError } from 'rxjs/operators';
 import { Member } from '../models/member.model';
+import { UserClaims } from '../models/common';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,19 +16,20 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private functions = inject(Functions);
+  private logger = inject(LoggerService);
 
   user$ = authState(this.auth);
 
   member$ = this.user$.pipe(
     switchMap(user => {
       if (!user) {
-        console.log('🔒 Auth: Nenhum usuário logado.');
+        this.logger.debug('Auth: Nenhum usuário logado.');
         return of(null);
       }
-      console.log(`👤 Auth: Usuário logado detectado: ${user.email}`);
+      this.logger.debug(`Auth: Usuário logado detectado: ${this.maskEmail(user.email!)}`);
       return this.getMemberByEmail(user.email!).pipe(
         catchError(err => {
-          console.error('❌ Erro ao buscar membro por email:', err);
+          this.logger.error('Erro ao buscar membro por email:', err);
           return of(null);
         })
       );
@@ -34,12 +37,6 @@ export class AuthService {
     shareReplay(1)
   );
 
-  /**
-   * permissions$ com retry + fallback Firestore.
-   * 1. Tenta sync via callable Function (rápido se Functions estiverem rodando).
-   * 2. Tenta claims do token com exponential backoff (até 3 tentativas, ~7s).
-   * 3. Se claims não chegarem, faz fallback lendo direto do Firestore.
-   */
   permissions$ = this.user$.pipe(
     switchMap(user => {
       if (!user) {
@@ -50,8 +47,7 @@ export class AuthService {
     shareReplay(1)
   );
 
-  private async loadPermissions(user: any): Promise<any> {
-    // 1. Tenta sync via callable (se Functions emulador estiver rodando)
+  private async loadPermissions(user: User): Promise<UserClaims | null> {
     try {
       const syncFn = httpsCallable(this.functions, 'syncUserClaims');
       await syncFn();
@@ -59,12 +55,11 @@ export class AuthService {
       // Silencioso: Functions podem não estar disponíveis no emulador
     }
 
-    // 2. Retry com exponential backoff
     const maxRetries = 3;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const forceRefresh = attempt > 0;
       const tokenResult = await user.getIdTokenResult(forceRefresh);
-      const claims = tokenResult.claims as any;
+      const claims = tokenResult.claims as unknown as UserClaims;
 
       const hasPerms = claims?.perms && Object.keys(claims.perms).length > 0;
       const hasHierarchyLevel = claims?.hierarchyLevel !== undefined && claims?.hierarchyLevel !== null;
@@ -74,39 +69,33 @@ export class AuthService {
       }
 
       if (attempt < maxRetries - 1) {
-        const delay = 1000 * Math.pow(2, attempt); // 1s, 2s
+        const delay = 1000 * Math.pow(2, attempt);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
-    // 3. Fallback: ler permissões direto do Firestore
     const email = user.email;
     if (email) {
       try {
         return await this.loadPermissionsFromFirestore(email);
       } catch (err) {
-        console.error('❌ [AuthService] Fallback Firestore falhou:', err);
+        this.logger.error('[AuthService] Fallback Firestore falhou:', err);
       }
     }
 
-    return (await user.getIdTokenResult(true)).claims as any;
+    return (await user.getIdTokenResult(true)).claims as unknown as UserClaims;
   }
 
-  /**
-   * Lê permissões direto do Firestore (fallback quando Cloud Function não disponível).
-   */
-  private async loadPermissionsFromFirestore(email: string): Promise<any> {
-    // 1. Busca permissão individual do usuário
+  private async loadPermissionsFromFirestore(email: string): Promise<UserClaims> {
     const userPermDoc = await getDoc(doc(this.firestore, 'permissions', email));
     const userPerm = userPermDoc.exists() ? userPermDoc.data() : null;
 
-    // 2. Busca role do membro
     const memberSnap = await getDocs(
       query(collection(this.firestore, 'members'), where('email', '==', email), limit(1))
     );
 
     let rolePerm = null;
-    let hierarchyLevel = (userPerm as any)?.['hierarchyLevel'] || 0;
+    let hierarchyLevel = (userPerm as Record<string, unknown>)?.['hierarchyLevel'] as number || 0;
 
     if (!memberSnap.empty) {
       const member = memberSnap.docs[0].data();
@@ -117,17 +106,16 @@ export class AuthService {
         const roleDoc = await getDoc(doc(this.firestore, 'permissions', roleId));
         if (roleDoc.exists()) {
           rolePerm = roleDoc.data();
-          hierarchyLevel = Math.max(hierarchyLevel, (rolePerm as any)?.['hierarchyLevel'] || 0);
+          hierarchyLevel = Math.max(hierarchyLevel, (rolePerm as Record<string, unknown>)?.['hierarchyLevel'] as number || 0);
         }
       }
     }
 
-    // 3. Consolida permissões (user override role)
-    const perms: any = {};
+    const perms: Record<string, { read: boolean; write: boolean }> = {};
     const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard'];
     for (const mod of modules) {
-      const rM = (rolePerm as any)?.['modules']?.[mod] || { read: false, write: false };
-      const uM = (userPerm as any)?.['modules']?.[mod];
+      const rM = ((rolePerm as Record<string, unknown>)?.['modules'] as Record<string, { read: boolean; write: boolean }>)?.[mod] || { read: false, write: false };
+      const uM = ((userPerm as Record<string, unknown>)?.['modules'] as Record<string, { read: boolean; write: boolean }>)?.[mod];
       perms[mod] = {
         read: uM?.read !== undefined ? uM.read : rM.read,
         write: uM?.write !== undefined ? uM.write : rM.write,
@@ -143,7 +131,7 @@ export class AuthService {
     return from(getDocs(q)).pipe(
       map(snap => {
         if (snap.empty) {
-          console.warn(`⚠️ Membro não encontrado na coleção 'members' para o email: ${email}`);
+          this.logger.warn(`Membro não encontrado na coleção 'members' para o email: ${this.maskEmail(email)}`);
           return null;
         }
         const d = snap.docs[0];
@@ -174,5 +162,16 @@ export class AuthService {
 
   isAdmin$(): Observable<boolean> {
     return this.hasPermission('settings', 'read');
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.split('@');
+    if (!domain) return '***';
+    const maskedLocal = local.length > 1 ? local[0] + '***' : '***';
+    const domainParts = domain.split('.');
+    const maskedDomain = domainParts.length > 1
+      ? domainParts[0][0] + '***.' + domainParts[domainParts.length - 1]
+      : domain[0] + '***';
+    return `${maskedLocal}@${maskedDomain}`;
   }
 }

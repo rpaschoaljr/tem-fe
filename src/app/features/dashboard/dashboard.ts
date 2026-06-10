@@ -10,10 +10,10 @@ import { FinanceService } from '../../core/services/finance.service';
 import { StockService } from '../../core/services/stock.service';
 import { NoticesService } from '../../core/services/notices.service';
 import { AuthService } from '../../core/services/auth.service';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin, Observable, combineLatest } from 'rxjs';
 import { Notice } from '../../core/models/notice.model';
 import { AsyncPipe } from '@angular/common';
-import { tap } from 'rxjs/operators';
+import { map, take, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -47,14 +47,12 @@ export class DashboardComponent implements OnInit {
   canAccessStock$: Observable<boolean> = this.authService.hasPermission('stock', 'read');
 
   ngOnInit() {
-    this.activeNotices$ = this.noticesService.getActiveNotices().pipe(
-      tap(notices => console.log('Avisos Ativos (Dashboard):', notices))
-    );
+    this.activeNotices$ = this.noticesService.getActiveNotices();
 
     forkJoin({
-      members: this.membersService.getMembers(),
-      transactions: this.financeService.getTransactions(),
-      stock: this.stockService.getStock(),
+      members: this.membersService.getMembers().pipe(take(1)),
+      transactions: this.financeService.getTransactions().pipe(take(1)),
+      stock: this.stockService.getStock().pipe(take(1)),
     }).subscribe(({ members, transactions, stock }) => {
       this.kpis.activeMembers = members.filter(m => !m.deleted).length;
 

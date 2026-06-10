@@ -14,6 +14,7 @@ import { FinanceService } from '../../core/services/finance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
+import { LoggerService } from '../../core/services/logger.service';
 import { Transaction } from '../../core/models/transaction.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { TransactionFormComponent } from './transaction-form/transaction-form';
@@ -56,10 +57,11 @@ export class FinanceComponent implements OnInit {
   private scheduledService = inject(ScheduledTransactionsService);
   private authService = inject(AuthService);
   private exportService = inject(ExportService);
+  private logger = inject(LoggerService);
 
   allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
-  exportData: Transaction[] = []; // Dados filtrados prontos para exportar
+  exportData: Transaction[] = [];
   canWrite$ = this.authService.hasPermission('finance', 'write');
 
   months = MONTHS;
@@ -68,7 +70,6 @@ export class FinanceComponent implements OnInit {
   selectedYear: number | null = null;
   typeFilter: 'all' | 'income' | 'expense' = 'all';
 
-  // KPIs
   totalBalance = 0;
   totalIncome = 0;
   totalExpense = 0;
@@ -97,7 +98,8 @@ export class FinanceComponent implements OnInit {
         }
         this.applyFilter();
       },
-      error: (err) => {
+      error: (err: unknown) => {
+        this.logger.error('Erro ao carregar dados financeiros', err);
         this.notify.showError('Erro ao carregar dados financeiros.');
       }
     });
@@ -169,7 +171,10 @@ export class FinanceComponent implements OnInit {
           this.notify.showSuccess(transaction ? 'Lançamento atualizado!' : 'Lançamento registrado!');
           this.loadData();
         },
-        error: (e: any) => this.notify.showError('Erro ao salvar: ' + e.message),
+        error: (e: unknown) => {
+          this.logger.error('Erro ao salvar transação', e);
+          this.notify.showError('Erro ao salvar: ' + (e instanceof Error ? e.message : ''));
+        },
       });
     });
   }
@@ -183,7 +188,10 @@ export class FinanceComponent implements OnInit {
         this.notify.showSuccess('Item movido para a lixeira.');
         this.loadData();
       },
-      error: (err) => this.notify.showError('Erro ao deletar: ' + err.message)
+      error: (err: unknown) => {
+        this.logger.error('Erro ao deletar transação', err);
+        this.notify.showError('Erro ao deletar: ' + (err instanceof Error ? err.message : ''));
+      }
     });
   }
 
@@ -193,7 +201,10 @@ export class FinanceComponent implements OnInit {
         this.notify.showSuccess('Item restaurado com sucesso!');
         this.loadData();
       },
-      error: (err) => this.notify.showError('Erro ao restaurar: ' + err.message)
+      error: (err: unknown) => {
+        this.logger.error('Erro ao restaurar transação', err);
+        this.notify.showError('Erro ao restaurar: ' + (err instanceof Error ? err.message : ''));
+      }
     });
   }
 
@@ -222,11 +233,14 @@ export class FinanceComponent implements OnInit {
               this.notify.showSuccess(`${due.length} lançamento(s) realizados com sucesso!`);
               this.loadData();
             },
-            error: (e: any) => this.notify.showError('Erro ao lançar agendamentos: ' + e.message)
+            error: (e: unknown) => {
+              this.logger.error('Erro ao aplicar agendamentos', e);
+              this.notify.showError('Erro ao lançar agendamentos: ' + (e instanceof Error ? e.message : ''));
+            }
           });
         });
       },
-      error: () => { /* silencioso — não bloqueia a tela */ }
+      error: () => {}
     });
   }
 }

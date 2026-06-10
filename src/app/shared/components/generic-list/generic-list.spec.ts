@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { GenericList } from './generic-list';
+import { GenericListComponent } from './generic-list';
 
-describe('GenericList', () => {
-  let component: GenericList;
-  let fixture: ComponentFixture<GenericList>;
+describe('GenericListComponent', () => {
+  let component: GenericListComponent<any>;
+  let fixture: ComponentFixture<GenericListComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GenericList]
+      imports: [GenericListComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(GenericList);
+    fixture = TestBed.createComponent(GenericListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

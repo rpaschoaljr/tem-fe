@@ -11,30 +11,23 @@ export class InputMaskDirective {
   constructor(private el: ElementRef, private control: NgControl) { }
 
   @HostListener('blur', ['$event'])
-  @HostListener('change', ['$event']) // Intercepta também o evento de mudança nativo
-  onBlurOrChange(event: any): void {
+  @HostListener('change', ['$event'])
+  onBlurOrChange(event: Event): void {
     if (this.maskType !== 'date') return;
-    const input = this.el.nativeElement;
+    const input = this.el.nativeElement as HTMLInputElement;
     const val = (input.value || '').trim();
 
-    // BLOQUEIO DO AUTOCOMPLETE "01/MM/2001"
-    // Se o valor tem 10 caracteres, mas o ano é 2001 e o dia é 01, 
-    // e o usuário NÃO digitou isso manualmente (baseado no tamanho do rawValue interno), limpamos.
     if (val.length > 0 && val.length < 10) {
       this.clearField(input);
     } else if (val.length === 10) {
-      // Se por algum motivo o matDatepicker injetou a data mágica "01/MM/2001"
-      // mas o usuário só digitou 1 ou 2 números (ex: "12"), nós detectamos e limpamos.
       const parts = val.split('/');
       if (parts[2] === '2001' && parts[0] === '01') {
-         // Opcional: Você pode querer manter se o usuário REALMENTE digitou 2001.
-         // Mas como padrão de segurança contra o bug citado:
          this.clearField(input);
       }
     }
   }
 
-  private clearField(input: any) {
+  private clearField(input: HTMLInputElement) {
     input.value = '';
     if (this.control?.control) {
       this.control.control.setValue(null, { emitEvent: true });
@@ -43,13 +36,12 @@ export class InputMaskDirective {
   }
 
   @HostListener('input', ['$event'])
-  onInput(event: any): void {
-    const input = this.el.nativeElement;
+  onInput(event: Event): void {
+    const input = this.el.nativeElement as HTMLInputElement;
     
-    // Se não houver máscara, não faz nada
     if (!this.maskType) return;
 
-    let cursorPosition = input.selectionStart;
+    let cursorPosition = input.selectionStart ?? 0;
     let oldLength = input.value.length;
 
     let rawValue = input.value.replace(/\D/g, '');
@@ -58,7 +50,6 @@ export class InputMaskDirective {
     if (this.maskType === 'date') {
       if (rawValue.length > 8) rawValue = rawValue.substring(0, 8);
 
-      // Validação básica de limites
       if (rawValue.length >= 2) {
         const day = parseInt(rawValue.substring(0, 2));
         if (day > 31) rawValue = '31' + rawValue.substring(2);
@@ -102,8 +93,6 @@ export class InputMaskDirective {
     }
 
     else {
-      // Se não for nenhum dos tipos conhecidos (ex: text, name, etc)
-      // retornamos IMEDIATAMENTE sem alterar o valor do input.
       return;
     }
 

@@ -4,9 +4,11 @@
  * Com VERIFICAÇÃO de leitura final para confirmar a criação.
  */
 
-const PROJECT_ID = 'demo-sistematemfe';
-const AUTH_EMULATOR = 'http://localhost:9099';
-const FIRESTORE_API = 'http://localhost:8080/v1/projects/demo-sistematemfe/databases/(default)/documents';
+const PROJECT_ID = process.env.FIREBASE_PROJECT || 'demo-sistematemfe';
+const AUTH_PORT = process.env.FIREBASE_AUTH_PORT || '9099';
+const FIRESTORE_PORT = process.env.FIREBASE_FIRESTORE_PORT || '8080';
+const AUTH_EMULATOR = `http://localhost:${AUTH_PORT}`;
+const FIRESTORE_API = `http://localhost:${FIRESTORE_PORT}/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const API_KEY = 'fake-api-key-emulator';
 
 const ROLES = ['ADMIN','DIRETORIA', 'PAI/MÃE PEQUENO', 'OGÃ', 'CAMBONO', 'MÉDIUM', 'CONSULENTE'];
@@ -66,7 +68,7 @@ async function firestoreDeleteAll(collectionName) {
   const json = await res.json();
   const docs = json.documents || [];
   for (const doc of docs) {
-    await fetch(`http://localhost:8080/v1/${doc.name}`, { 
+    await fetch(`http://localhost:${FIRESTORE_PORT}/v1/${doc.name}`, { 
       method: 'DELETE', 
       headers: { 'Authorization': 'Bearer owner' } 
     });

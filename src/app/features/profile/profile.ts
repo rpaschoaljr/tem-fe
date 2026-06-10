@@ -14,6 +14,7 @@ import { Firestore } from '@angular/fire/firestore';
 import { doc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfigService } from '../../core/services/config.service';
+import { LoggerService } from '../../core/services/logger.service';
 import { Member } from '../../core/models/member.model';
 import { DynamicField, ModuleConfig } from '../../core/models/system-config.model';
 import { ComponentCanDeactivate } from '../../core/guards/pending-changes.guard';
@@ -45,6 +46,7 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
   private notification = inject(NotificationService);
   private configService = inject(ConfigService);
   private dialog = inject(MatDialog);
+  private logger = inject(LoggerService);
 
   member = signal<Member | null>(null);
   loading = signal(true);
@@ -103,37 +105,41 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
           this.notification.showError('Perfil não encontrado no cadastro.');
         }
       } catch (error) {
+        this.logger.error('Erro ao carregar dados do perfil', error);
         this.notification.showError('Erro ao carregar dados do perfil.');
       }
     }
     this.loading.set(false);
   }
 
-  private fixDates(data: any): any {
+  private fixDates(data: Record<string, unknown>): Record<string, unknown> {
     if (!data) return data;
     const result = { ...data };
     
     const dateFields = ['createdAt', 'updatedAt', 'entryDate', 'exitDate'];
     dateFields.forEach(f => { if (result[f]) result[f] = this.fixDate(result[f]); });
 
-    if (result.rituals) {
-      Object.keys(result.rituals).forEach(k => { result.rituals[k] = this.fixDate(result.rituals[k]); });
+    if (result['rituals']) {
+      const rituals = result['rituals'] as Record<string, unknown>;
+      Object.keys(rituals).forEach(k => { rituals[k] = this.fixDate(rituals[k]); });
     }
-    if (result.consecrations) {
-      Object.keys(result.consecrations).forEach(k => { result.consecrations[k] = this.fixDate(result.consecrations[k]); });
+    if (result['consecrations']) {
+      const consecrations = result['consecrations'] as Record<string, unknown>;
+      Object.keys(consecrations).forEach(k => { consecrations[k] = this.fixDate(consecrations[k]); });
     }
-    if (result.customFields) {
-      Object.keys(result.customFields).forEach(k => { result.customFields[k] = this.fixDate(result.customFields[k]); });
+    if (result['customFields']) {
+      const customFields = result['customFields'] as Record<string, unknown>;
+      Object.keys(customFields).forEach(k => { customFields[k] = this.fixDate(customFields[k]); });
     }
     return result;
   }
 
-  private fixDate(val: any): Date | null {
+  private fixDate(val: unknown): Date | null {
     if (!val) return null;
-    if (val.toDate) return val.toDate();
+    if (val && typeof val === 'object' && 'toDate' in val && typeof (val as Record<string, unknown>)['toDate'] === 'function') return (val as { toDate(): Date }).toDate();
     if (val instanceof Date) return val;
-    if (val.seconds) return new Date(val.seconds * 1000);
-    return new Date(val);
+    if (val && typeof val === 'object' && 'seconds' in val) return new Date((val as { seconds: number }).seconds * 1000);
+    return new Date(val as string);
   }
 
   getFieldsBySection(section: string): DynamicField[] {
@@ -142,27 +148,29 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
       .sort((a, b) => a.order - b.order) || [];
   }
 
-  getFieldValue(field: DynamicField): any {
+  getFieldValue(field: DynamicField): string | null {
     const m = this.member();
     if (!m) return null;
 
-    const val = (m as any)[field.key] ?? 
-                (m.address as any)?.[field.key] ?? 
-                (m.rituals as any)?.[field.key] ?? 
-                (m.consecrations as any)?.[field.key] ?? 
-                (m.customFields as any)?.[field.key];
+    const memberRecord = m as unknown as Record<string, unknown>;
+    const val = memberRecord[field.key] ?? 
+                (m.address as Record<string, unknown>)?.[field.key] ?? 
+                (m.rituals as Record<string, unknown>)?.[field.key] ?? 
+                (m.consecrations as Record<string, unknown>)?.[field.key] ?? 
+                (m.customFields as Record<string, unknown>)?.[field.key];
     
     if (field.type === 'date' && val) {
-      return new Date(val).toLocaleDateString('pt-BR');
+      return new Date(val as string).toLocaleDateString('pt-BR');
     }
     if (field.type === 'boolean') {
       return val ? 'Sim' : 'Não';
     }
-    return val || '-';
+    return val ? String(val) : '-';
   }
 
-  async onFileSelected(event: any) {
-    if (event.target.files && event.target.files.length > 0 && this.member()) {
+  async onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0 && this.member()) {
       const dialogRef = this.dialog.open(ImageCropperDialogComponent, {
         data: { event },
         width: '500px',
@@ -184,16 +192,15 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
             this.profileImageUrl = downloadURL;
             this.notification.showSuccess('Foto de perfil atualizada!');
             
-            // Recarrega membro para atualizar o sinal
             this.loadMember();
           } catch (error) {
-            console.error('Error uploading image: ', error);
+            this.logger.error('Erro ao fazer upload da imagem', error);
             this.notification.showError('Erro ao salvar a foto.');
           } finally {
             this.loading.set(false);
           }
         }
-        event.target.value = '';
+        input.value = '';
       });
     }
   }

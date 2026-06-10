@@ -16,8 +16,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ConfigService } from '../../core/services/config.service';
-import { ModuleConfig, DynamicField } from '../../core/models/system-config.model';
+import { ModuleConfig, DynamicField, FieldOption } from '../../core/models/system-config.model';
 import { NotificationService } from '../../core/services/notification.service';
+import { LoggerService } from '../../core/services/logger.service';
 
 import { StockService } from '../../core/services/stock.service';
 import { MembersService } from '../../core/services/members.service';
@@ -61,6 +62,7 @@ export class SettingsComponent implements OnInit {
   private membersService = inject(MembersService);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
+  private logger = inject(LoggerService);
 
   stockConfig = signal<ModuleConfig | null>(null);
   financeConfig = signal<ModuleConfig | null>(null);
@@ -72,13 +74,11 @@ export class SettingsComponent implements OnInit {
   mainTabIndex = 0;
   showOptionsTrash = signal<{ [key: string]: boolean }>({});
 
-  // --- PERMISSÕES ---
   rolesList = signal<string[]>([]);
   selectedRole = signal<string>('');
   rolePermission = signal<PermissionConfig | null>(null);
   allRolePermissions = signal<PermissionConfig[]>([]);
 
-  // Por Usuário
   userSearchQuery = '';
   filteredUsersForPerm: Member[] = [];
   selectedUserForPerm = signal<Member | null>(null);
@@ -123,24 +123,21 @@ export class SettingsComponent implements OnInit {
 
   loadMembers() {
     this.membersService.getMembers().subscribe(m => {
-      this.members.set(m);
+      this.members.set(m as Member[]);
     });
   }
 
   loadConfigs(initial = false) {
     if (initial) this.loading.set(true);
     
-    // Carrega Config de Estoque
     this.configService.getConfig('stock').subscribe({
       next: (conf) => this.stockConfig.set(conf),
       complete: () => this.checkLoading()
     });
-    // Carrega Config de Financeiro
     this.configService.getConfig('finance').subscribe({
       next: (conf) => this.financeConfig.set(conf),
       complete: () => this.checkLoading()
     });
-    // Carrega Config de Membros
     this.configService.getConfig('members').subscribe({
       next: (conf) => {
         this.membersConfig.set(conf);
@@ -148,11 +145,9 @@ export class SettingsComponent implements OnInit {
         if (roleField) {
           const roles = roleField.options?.filter(o => !o.deleted).map(o => o.label).sort((a, b) => a.localeCompare(b)) || [];
           this.rolesList.set(roles);
-          // Se não houver cargo selecionado e a lista tiver itens, seleciona o primeiro
           if (!this.selectedRole() && roles.length > 0) {
             this.selectRole(roles[0]);
           }
-          // Carrega todas as permissões de cargo para a visão geral
           this.configService.getAllRolePermissions(roles).subscribe(perms => {
             this.allRolePermissions.set(perms);
           });
@@ -161,8 +156,6 @@ export class SettingsComponent implements OnInit {
       complete: () => this.checkLoading()
     });
   }
-
-  // --- MÉTODOS DE PERMISSÃO ---
 
   selectRole(role: string) {
     this.selectedRole.set(role);
@@ -185,12 +178,10 @@ export class SettingsComponent implements OnInit {
 
     const currentVal = perm.modules[moduleId][action];
     
-    // Regra: Se tirar a leitura, tira a escrita automaticamente
     if (action === 'read' && currentVal === true) {
       perm.modules[moduleId].read = false;
       perm.modules[moduleId].write = false;
     } 
-    // Regra: Se dar escrita, dá leitura automaticamente
     else if (action === 'write' && currentVal === false) {
       perm.modules[moduleId].write = true;
       perm.modules[moduleId].read = true;
@@ -198,7 +189,6 @@ export class SettingsComponent implements OnInit {
       perm.modules[moduleId][action] = !currentVal;
     }
 
-    // Como é uma mutação direta, forçamos o sinal a notificar a UI
     this.rolePermission.set({ ...perm });
   }
 
@@ -210,7 +200,6 @@ export class SettingsComponent implements OnInit {
     this.configService.savePermission(perm).subscribe({
       next: () => {
         this.notify.showSuccess(`Permissões do cargo ${perm.target} atualizadas!`);
-        // Atualiza a lista para a visão geral
         this.configService.getAllRolePermissions(this.rolesList()).subscribe(perms => {
           this.allRolePermissions.set(perms);
         });
@@ -222,8 +211,6 @@ export class SettingsComponent implements OnInit {
       }
     });
   }
-
-  // --- PERMISSÕES POR USUÁRIO ---
 
   searchUserForPerm(query: string) {
     this.userSearchQuery = query;
@@ -284,8 +271,6 @@ export class SettingsComponent implements OnInit {
     this.filteredUsersForPerm = [];
   }
 
-  // --- HIERARQUIA ---
-
   getHierarchyLabel(level: number): string {
     if (level >= 10) return 'Admin Total';
     if (level >= 7) return 'Alta autoridade';
@@ -321,8 +306,6 @@ export class SettingsComponent implements OnInit {
       this.loading.set(false);
     }
   }
-
-  // --- GESTÃO DE ITENS DO ESTOQUE ---
 
   onNewStockItem() {
     const ref = this.dialog.open(StockFormComponent, {
@@ -371,7 +354,10 @@ export class SettingsComponent implements OnInit {
             this.notify.showSuccess('Itens mesclados com sucesso!');
             this.loadStockItems();
           },
-          error: (err) => this.notify.showError('Erro ao mesclar: ' + err.message)
+          error: (err: unknown) => {
+            this.logger.error('Erro ao mesclar itens', err);
+            this.notify.showError('Erro ao mesclar: ' + (err instanceof Error ? err.message : ''));
+          }
         });
       }
     });
@@ -391,9 +377,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  // --- GESTÃO DE OPÇÕES (CATEGORIAS/UNIDADES) ---
-
-  addOption(config: ModuleConfig, field: DynamicField, existingOption?: any) {
+  addOption(config: ModuleConfig, field: DynamicField, existingOption?: FieldOption) {
     const dialogRef = this.dialog.open(OptionFormDialogComponent, {
       data: {
         label: field.label,
@@ -435,8 +419,15 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  removeOption(config: ModuleConfig, field: DynamicField, option: any) {
-    // Se for estoque, verifica dependências
+  private getMemberFieldValue(m: Member, fieldKey: string): unknown {
+    return (m as unknown as Record<string, unknown>)[fieldKey] ?? 
+           (m.address as unknown as Record<string, unknown>)?.[fieldKey] ?? 
+           (m.rituals as unknown as Record<string, unknown>)?.[fieldKey] ?? 
+           (m.consecrations as unknown as Record<string, unknown>)?.[fieldKey] ?? 
+           (m.customFields as unknown as Record<string, unknown>)?.[fieldKey];
+  }
+
+  removeOption(config: ModuleConfig, field: DynamicField, option: FieldOption) {
     if (config.id === 'stock') {
       const fieldKey = field.key as keyof StockItem;
       const dependentItems = this.stockItems().filter(item => !item.deleted && item[fieldKey] === option.label);
@@ -459,12 +450,7 @@ export class SettingsComponent implements OnInit {
     } else if (config.id === 'members') {
       const fieldKey = field.key;
       const dependentMembers = this.members().filter(m => {
-        // Verifica no root, address, rituals, consecrations ou customFields
-        const val = (m as any)[fieldKey] || 
-                    (m.address as any)?.[fieldKey] || 
-                    (m.rituals as any)?.[fieldKey] || 
-                    (m.consecrations as any)?.[fieldKey] || 
-                    (m.customFields as any)?.[fieldKey];
+        const val = this.getMemberFieldValue(m, fieldKey);
         return val === option.label;
       });
 
@@ -485,20 +471,19 @@ export class SettingsComponent implements OnInit {
     this.saveAndReload(config, 'Opção movida para a lixeira.');
   }
 
-  restoreOption(config: ModuleConfig, option: any) {
+  restoreOption(config: ModuleConfig, option: FieldOption) {
     option.deleted = false;
     this.saveAndReload(config, 'Opção restaurada!');
   }
 
-  // Wrappers para o GenericList
-  removeOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {
+  removeOptionGeneric(option: FieldOption, config: ModuleConfig, field: DynamicField) {
     if (confirm(`Deseja mover o tipo de lançamento "${option.label}" para a lixeira?`)) {
       option.deleted = true;
       this.saveAndReload(config, 'Tipo de lançamento movido para a lixeira.');
     }
   }
 
-  restoreOptionGeneric(option: any, config: ModuleConfig, field: DynamicField) {
+  restoreOptionGeneric(option: FieldOption, config: ModuleConfig, field: DynamicField) {
     option.deleted = false;
     this.saveAndReload(config, 'Tipo de lançamento restaurado!');
   }
@@ -510,7 +495,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  // Helpers de Template
   toggleOptionsTrash(fieldKey: string) {
     this.showOptionsTrash.update(prev => ({
       ...prev,
@@ -530,14 +514,12 @@ export class SettingsComponent implements OnInit {
     return field.options?.filter(o => o.deleted).sort((a, b) => a.label.localeCompare(b.label)) || [];
   }
 
-  // Helpers para Agrupamento de Seções de Campos
   getSections(config: ModuleConfig | null): string[] {
     if (!config) return [];
     const sections = config.fields
       .filter(f => !f.deleted)
       .map(f => f.section || 'Geral');
     return [...new Set(sections)].sort((a, b) => {
-      // Prioriza seções conhecidas do formulário
       const order = ['Dados Pessoais', 'Endereço', 'Vida Espiritual', 'Consagrações (Orixás)', 'Informações Adicionais'];
       const idxA = order.indexOf(a);
       const idxB = order.indexOf(b);
@@ -559,8 +541,6 @@ export class SettingsComponent implements OnInit {
     return config.fields.filter(f => f.deleted);
   }
 
-  // --- GESTÃO DE CAMPOS ---
-
   addField(moduleId: string) {
     let config: ModuleConfig | null = null;
     if (moduleId === 'stock') config = this.stockConfig();
@@ -576,7 +556,6 @@ export class SettingsComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(res => {
       if (res && config) {
-        // Verifica se a key já existe
         if (config.fields.some(f => f.key === res.key)) {
           this.notify.showWarning('Já existe um campo com este nome.');
           return;
@@ -600,18 +579,11 @@ export class SettingsComponent implements OnInit {
   }
 
   editField(config: ModuleConfig, field: DynamicField) {
-    // Permite editar qualquer campo, incluindo sistema, para mudar visibilidade no perfil ou opções
-    // Só bloqueamos se tentar excluir o fundamental 'role', mas aqui é edição
-
     let isUsed = false;
     if (config.id === 'members') {
       const fieldKey = field.key;
       isUsed = this.members().some(m => {
-        const val = (m as any)[fieldKey] || 
-                    (m.address as any)?.[fieldKey] || 
-                    (m.rituals as any)?.[fieldKey] || 
-                    (m.consecrations as any)?.[fieldKey] || 
-                    (m.customFields as any)?.[fieldKey];
+        const val = this.getMemberFieldValue(m, fieldKey);
         return val !== null && val !== undefined && val !== '' && val !== false;
       });
     }
@@ -653,11 +625,7 @@ export class SettingsComponent implements OnInit {
     if (config.id === 'members') {
       const fieldKey = field.key;
       const dependentMembers = this.members().filter(m => {
-        const val = (m as any)[fieldKey] || 
-                    (m.address as any)?.[fieldKey] || 
-                    (m.rituals as any)?.[fieldKey] || 
-                    (m.consecrations as any)?.[fieldKey] || 
-                    (m.customFields as any)?.[fieldKey];
+        const val = this.getMemberFieldValue(m, fieldKey);
         return val !== null && val !== undefined && val !== '' && val !== false;
       });
 

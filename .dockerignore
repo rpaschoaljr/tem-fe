@@ -3,6 +3,9 @@ node_modules
 .angular
 dist
 .firebase
+.Trash-*
 firestore-debug.log
 ui-debug.log
 firebase-debug.log
+.opencode
+.specs

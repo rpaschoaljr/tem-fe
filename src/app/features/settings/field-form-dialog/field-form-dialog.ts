@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { DynamicField, FieldOption } from '../../../core/models/system-config.model';
 
 @Component({
   selector: 'app-field-form-dialog',
@@ -87,9 +88,8 @@ export class FieldFormDialogComponent {
   
   form: FormGroup;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { value?: any, edit?: boolean, disableType?: boolean }) {
-    // Transforma as opções existentes em uma string separada por linhas para o textarea
-    const existingOptions = this.data.value?.options?.filter((o: any) => !o.deleted).map((o: any) => o.label).join('\n') || '';
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { value?: DynamicField, edit?: boolean, disableType?: boolean }) {
+    const existingOptions = this.data.value?.options?.filter((o: FieldOption) => !o.deleted).map((o: FieldOption) => o.label).join('\n') || '';
 
     this.form = this.fb.group({
       label: [this.data.value?.label || '', [Validators.required, Validators.minLength(2)]],
@@ -105,17 +105,14 @@ export class FieldFormDialogComponent {
     if (this.form.valid) {
       const val = this.form.getRawValue(); 
       
-      // Processa a lista de opções se for do tipo select
       if (val.type === 'select') {
         const rawOptions = val.optionsList
-          .split(/[\n,]+/) // Divide por linha ou vírgula
+          .split(/[\n,]+/)
           .map((o: string) => o.trim().toUpperCase())
           .filter((o: string) => o !== '');
         
-        // Mantém as opções deletadas do banco para não perder histórico, 
-        // mas atualiza as ativas conforme o textarea
         const currentOptions = this.data.value?.options || [];
-        const deletedOptions = currentOptions.filter((o: any) => o.deleted);
+        const deletedOptions = currentOptions.filter((o: FieldOption) => o.deleted);
         
         val.options = [
           ...rawOptions.map((label: string) => ({ label, deleted: false })),
@@ -123,15 +120,14 @@ export class FieldFormDialogComponent {
         ];
       }
       
-      delete val.optionsList; // Remove o campo auxiliar antes de retornar
+      delete val.optionsList;
 
-      // Gera uma key a partir do label se não existir
       if (!this.data.edit) {
         val.key = val.label.toLowerCase()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
-          .replace(/[^a-z0-9]/g, '_'); // Replace special chars with _
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, '_');
       } else {
-        val.key = this.data.value.key;
+        val.key = this.data.value!.key;
       }
       this.dialogRef.close(val);
     }
