@@ -21,6 +21,8 @@ services:
       - ./firestore.rules:/app/firestore.rules:ro
       - ./storage.rules:/app/storage.rules:ro
       - ./functions:/app/functions
+      # Preserva node_modules da imagem (evita que o bind mount do host sobrescreva)
+      - /app/functions/node_modules
       # Permite que o emulador de Hosting sirva os arquivos buildados no host
       - ./dist:/app/dist:ro
     healthcheck:

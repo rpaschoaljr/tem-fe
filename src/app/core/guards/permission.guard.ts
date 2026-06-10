@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../services/notification.service';
-import { map, take, tap } from 'rxjs/operators';
+import { take, tap } from 'rxjs/operators';
 
 export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
@@ -21,11 +21,15 @@ export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
   }
 
   return authService.hasPermission(module, action).pipe(
+    // Aguarda até 12s para claims carregarem (retry interno do auth.service)
     take(1),
     tap(hasPermission => {
       if (!hasPermission) {
+        console.warn(`🚫 PermissionGuard: Acesso negado a ${module}/${action}`);
         notify.showError(`Você não tem permissão de ${action === 'read' ? 'acesso' : 'escrita'} para o módulo ${module}.`);
         router.navigate(['/dashboard']);
+      } else {
+        console.log(`✅ PermissionGuard: Acesso permitido a ${module}/${action}`);
       }
     })
   );
