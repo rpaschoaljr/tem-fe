@@ -61,6 +61,32 @@ export const onPermissionUpdate = onDocumentWritten("permissions/{permId}", asyn
   }
 });
 
+import { onCall } from "firebase-functions/v2/https";
+
+/**
+ * Função chamável pelo frontend para forçar a sincronização de Claims
+ */
+export const syncUserClaims = onCall(async (request) => {
+  try {
+    if (!request.auth) {
+      throw new Error("Não autenticado");
+    }
+
+    const email = request.auth.token.email;
+    if (!email) {
+      throw new Error("Email não encontrado no token");
+    }
+
+    logger.info(`🔄 FORCING SYNC for user: ${email}`);
+    await updateClaimsByEmail(email, null);
+
+    return { success: true };
+  } catch (error) {
+    logger.error("Erro no syncUserClaims:", error);
+    throw error;
+  }
+});
+
 /**
  * Função auxiliar para normalizar strings (remover acentos e espaços)
  */
@@ -74,11 +100,7 @@ function normalize(val: string): string {
  */
 async function updateClaimsByEmail(email: string, userPermDoc: any) {
   try {
-    logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    logger.info(`🔍 DEBUG CLAIMS: Iniciando para ${email}`);
-
     const user = await admin.auth().getUserByEmail(email);
-    logger.info(`🆔 UID do Usuário: ${user.uid}`);
 
     // 1. Busca permissões INDIVIDUAIS
     let userPerm = userPermDoc;
@@ -86,7 +108,6 @@ async function updateClaimsByEmail(email: string, userPermDoc: any) {
       const uSnap = await admin.firestore().collection("permissions").doc(email).get();
       userPerm = uSnap.exists ? uSnap.data() : null;
     }
-    logger.info(`👤 Permissões Individuais: ${userPerm ? "SIM" : "NÃO"}`);
 
     // 2. Busca o cargo do membro
     const memberSnap = await admin.firestore().collection("members")
@@ -98,11 +119,12 @@ async function updateClaimsByEmail(email: string, userPermDoc: any) {
       const roleId = `role_${normalize(member.role).replace(/[^A-Z0-9]/g, "")}`;
       const rSnap = await admin.firestore().collection("permissions").doc(roleId).get();
       rolePerm = rSnap.exists ? rSnap.data() : null;
-      logger.info(`🎭 Role: ${member.role} (ID: ${roleId}) -> Encontrada: ${!!rolePerm}`);
     }
 
     // 3. Hierarquia
-    const hierarchyLevel = Math.max(userPerm?.hierarchyLevel || 0, rolePerm?.hierarchyLevel || 0);
+    const userHLevel = userPerm?.hierarchyLevel ?? 0;
+    const roleHLevel = rolePerm?.hierarchyLevel ?? 0;
+    const hierarchyLevel = Math.max(userHLevel, roleHLevel);
 
     // 4. Consolidação
     const perms: any = {};
@@ -117,14 +139,8 @@ async function updateClaimsByEmail(email: string, userPermDoc: any) {
     });
 
     const finalClaims = {hierarchyLevel, perms};
-    logger.info(`🚀 SALVANDO NO AUTH: ${JSON.stringify(finalClaims)}`);
-
     await admin.auth().setCustomUserClaims(user.uid, finalClaims);
-
-    // Verificação
-    const updatedUser = await admin.auth().getUser(user.uid);
-    logger.info(`✅ CLAIMS ATUAIS NO AUTH: ${JSON.stringify(updatedUser.customClaims)}`);
-    logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    logger.info(`✅ Claims sincronizados com sucesso para ${email}`);
   } catch (error) {
     logger.error(`❌ ERRO CLAIMS (${email}):`, error);
   }

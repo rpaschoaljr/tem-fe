@@ -12,8 +12,10 @@ export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
   // O módulo e a ação (read/write) virão da configuração da rota
   const module = route.data['module'] as string;
   const action = (route.data['action'] as 'read' | 'write') || 'read';
-
+  console.log("PermissionGuard: Verificando permissão");
+  console.log({module, action});
   if (!module) {
+    
     console.error('PermissionGuard: Módulo não definido na rota.');
     return true; // Deixa passar se esqueceu de configurar, mas loga erro
   }

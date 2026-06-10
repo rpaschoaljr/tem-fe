@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { Observable, of, from, combineLatest } from 'rxjs';
 import { switchMap, map, shareReplay, catchError } from 'rxjs/operators';
@@ -13,6 +14,7 @@ import { PermissionConfig } from '../models/system-config.model';
 export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
+  private functions = inject(Functions);
 
   user$ = authState(this.auth);
 
@@ -33,31 +35,6 @@ export class AuthService {
     shareReplay(1)
   );
 
-  permissions$ = this.user$.pipe(
-    switchMap(async user => {
-      if (!user) {
-        console.log('🚪 [AuthService] Sem usuário para carregar claims.');
-        return null;
-      }
-      
-      console.log('🔑 [AuthService] Buscando Claims do Token...');
-      let tokenResult = await user.getIdTokenResult();
-      let claims = tokenResult.claims as any;
-
-      console.log('📊 [AuthService] Claims atuais no Token:', JSON.stringify(claims, null, 2));
-
-      if (!claims.perms && claims.hierarchyLevel === undefined) {
-        console.warn('⚠️ [AuthService] Claims NÃO encontrados no token atual. Forçando Refresh (pode demorar 1-2s)...');
-        tokenResult = await user.getIdTokenResult(true);
-        claims = tokenResult.claims as any;
-        console.log('🔄 [AuthService] Claims após Refresh:', JSON.stringify(claims, null, 2));
-      }
-
-      return claims;
-    }),
-    shareReplay(1)
-  );
-
   private getMemberByEmail(email: string): Observable<Member | null> {
     const colRef = collection(this.firestore, 'members');
     const q = query(colRef, where('email', '==', email), limit(1));
@@ -74,13 +51,43 @@ export class AuthService {
     );
   }
 
+  permissions$ = this.user$.pipe(
+    switchMap(async user => {
+      if (!user) {
+        return null;
+      }
+      
+      let tokenResult = await user.getIdTokenResult();
+      let claims = tokenResult.claims as any;
+
+      if (!claims.perms && claims.hierarchyLevel === undefined) {
+        try {
+          const syncFn = httpsCallable(this.functions, 'syncUserClaims');
+          await syncFn();
+        } catch (e) {
+          console.error('❌ Erro ao chamar syncUserClaims:', e);
+        }
+        
+        await new Promise(r => setTimeout(r, 1000));
+        tokenResult = await user.getIdTokenResult(true);
+        claims = tokenResult.claims as any;
+      }
+
+      return claims;
+    }),
+    shareReplay(1)
+  );
+
   hasPermission(module: string, action: 'read' | 'write'): Observable<boolean> {
     return this.permissions$.pipe(
       map(claims => {
         if (!claims) return false;
 
         const hierarchyLevel = claims.hierarchyLevel ?? 0;
-        if (hierarchyLevel >= 10) return true;
+
+        if (hierarchyLevel >= 10) {
+          return true;
+        }
 
         const perms = claims.perms || {};
         return !!perms[module]?.[action];
