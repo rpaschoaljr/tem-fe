@@ -6,9 +6,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { ScheduledTransactionsService } from '../../../core/services/scheduled-transactions.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { ScheduledTransaction, RECURRENCE_LABELS } from '../../../core/models/scheduled-transaction.model';
 import { GenericListComponent, ColumnDef } from '../../../shared/components/generic-list/generic-list';
 import { ScheduledTransactionFormComponent } from '../scheduled-transaction-form/scheduled-transaction-form';
+
+interface ScheduleViewModel extends ScheduledTransaction {
+    recurrenceLabel: string;
+}
 
 @Component({
     selector: 'app-scheduled-transactions-dialog',
@@ -86,8 +91,9 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
     private notify = inject(NotificationService);
     private dialog = inject(MatDialog);
     private dialogRef = inject(MatDialogRef<ScheduledTransactionsDialogComponent>);
+    private logger = inject(LoggerService);
 
-    schedules: ScheduledTransaction[] = [];
+    schedules: ScheduleViewModel[] = [];
 
     columns: ColumnDef[] = [
         { def: 'description', label: 'Descrição' },
@@ -106,9 +112,12 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
                     ...s,
                     value: s.type === 'Saída' ? -Math.abs(s.value) : Math.abs(s.value),
                     recurrenceLabel: RECURRENCE_LABELS[s.recurrence]
-                } as any));
+                }));
             },
-            error: () => this.notify.showError('Erro ao carregar agendamentos.')
+            error: (e: unknown) => {
+                this.logger.error('Erro ao carregar agendamentos', e);
+                this.notify.showError('Erro ao carregar agendamentos.');
+            }
         });
     }
 
@@ -123,12 +132,15 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
             if (!result) return;
             this.service.save(result as ScheduledTransaction).subscribe({
                 next: () => { this.notify.showSuccess('Agendamento criado!'); this.loadData(); },
-                error: (e: any) => this.notify.showError('Erro: ' + e.message)
+                error: (e: unknown) => {
+                    this.logger.error('Erro ao salvar agendamento', e);
+                    this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
+                }
             });
         });
     }
 
-    onEdit(s: ScheduledTransaction) {
+    onEdit(s: ScheduleViewModel) {
         const original: ScheduledTransaction = {
             ...s,
             value: Math.abs(s.value),
@@ -143,22 +155,31 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
             if (!result) return;
             this.service.save(result as ScheduledTransaction).subscribe({
                 next: () => { this.notify.showSuccess('Agendamento atualizado!'); this.loadData(); },
-                error: (e: any) => this.notify.showError('Erro: ' + e.message)
+                error: (e: unknown) => {
+                    this.logger.error('Erro ao salvar agendamento', e);
+                    this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
+                }
             });
         });
     }
 
-    onDelete(s: ScheduledTransaction) {
+    onDelete(s: ScheduleViewModel) {
         this.service.softDelete(s.id).subscribe({
             next: () => { this.notify.showSuccess('Agendamento removido.'); this.loadData(); },
-            error: (e: any) => this.notify.showError('Erro: ' + e.message)
+            error: (e: unknown) => {
+                this.logger.error('Erro ao excluir agendamento', e);
+                this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
+            }
         });
     }
 
-    onRestore(s: ScheduledTransaction) {
+    onRestore(s: ScheduleViewModel) {
         this.service.restore(s.id).subscribe({
             next: () => { this.notify.showSuccess('Agendamento restaurado!'); this.loadData(); },
-            error: (e: any) => this.notify.showError('Erro: ' + e.message)
+            error: (e: unknown) => {
+                this.logger.error('Erro ao restaurar agendamento', e);
+                this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
+            }
         });
     }
 

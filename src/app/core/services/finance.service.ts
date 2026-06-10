@@ -5,10 +5,12 @@ import { Transaction } from '../models/transaction.model';
 import { Firestore } from '@angular/fire/firestore';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { Normalizer } from '../../shared/utils/normalizer';
+import { LoggerService } from './logger.service';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
     private firestore = inject(Firestore);
+    private logger = inject(LoggerService);
     private COL = 'transactions';
 
     private CACHE_KEY = 'finance_data';
@@ -23,7 +25,7 @@ export class FinanceService {
         const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
 
         if (!forceRefresh && hasCache && isCacheFresh) {
-            return of(JSON.parse(hasCache).map((t: any) => ({ ...t, date: new Date(t.date) })));
+            return of(JSON.parse(hasCache).map((t: Record<string, unknown>) => ({ ...t, date: new Date(t['date'] as string) })));
         }
 
         const colRef = collection(this.firestore, this.COL);
@@ -32,7 +34,7 @@ export class FinanceService {
             tap(data => this.updateCache(data)),
             catchError(() => {
                 if (hasCache) {
-                    return of(JSON.parse(hasCache).map((t: any) => ({ ...t, date: new Date(t.date) })));
+                    return of(JSON.parse(hasCache).map((t: Record<string, unknown>) => ({ ...t, date: new Date(t['date'] as string) })));
                 }
                 return throwError(() => new Error('Não foi possível conectar ao servidor financeiro.'));
             })
@@ -44,11 +46,10 @@ export class FinanceService {
         const colRef = collection(this.firestore, this.COL);
         const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, transaction.id);
 
-        // CRIANDO CAMPOS DE BUSCA
         const description_search = Normalizer.search(transaction.description);
         const category_search = Normalizer.search(transaction.category);
 
-        const firestoreData: any = { 
+        const firestoreData: Record<string, unknown> = { 
             ...JSON.parse(JSON.stringify(transaction)), 
             id: docRef.id, 
             description_search,
@@ -87,11 +88,11 @@ export class FinanceService {
         localStorage.setItem(this.TIME_KEY, Date.now().toString());
     }
 
-    private fromFirestore(id: string, data: any): Transaction {
+    private fromFirestore(id: string, data: Record<string, unknown>): Transaction {
         return {
             ...data,
             id,
-            date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
+            date: (data['date'] as { toDate?: () => Date })?.toDate ? (data['date'] as { toDate: () => Date }).toDate() : new Date(data['date'] as string),
         } as Transaction;
     }
 }

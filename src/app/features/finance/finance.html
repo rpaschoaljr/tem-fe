@@ -68,11 +68,6 @@
             </mat-select>
         </mat-form-field>
 
-        <button mat-stroked-button color="primary" (click)="exportFinance()" [disabled]="exportData.length === 0">
-            <mat-icon>download</mat-icon>
-            Exportar CSV
-        </button>
-
         <button mat-icon-button (click)="clearFilter()" matTooltip="Limpar filtro" *ngIf="selectedMonth !== null || selectedYear !== null">
             <mat-icon>filter_alt_off</mat-icon>
         </button>
@@ -81,7 +76,17 @@
     <!-- LISTA DE LANÇAMENTOS -->
     <mat-card>
         <mat-card-content>
-            <h3>Extrato Financeiro</h3>
+            <div class="header-with-actions">
+                <div class="title-group">
+                    <h3>Extrato Financeiro</h3>
+                </div>
+                <div class="actions-group">
+                    <button mat-stroked-button color="primary" (click)="exportFinance()" [disabled]="exportData.length === 0">
+                        <mat-icon>download</mat-icon>
+                        Exportar CSV
+                    </button>
+                </div>
+            </div>
 
             <app-generic-list [data]="transactions" [columns]="tableColumns" 
                 [hideActions]="!(canWrite$ | async)"

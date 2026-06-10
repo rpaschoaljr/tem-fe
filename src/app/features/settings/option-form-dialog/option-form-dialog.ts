@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FieldOption } from '../../../core/models/system-config.model';
 
 @Component({
   selector: 'app-option-form-dialog',
@@ -66,7 +67,7 @@ export class OptionFormDialogComponent {
   
   form: FormGroup;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { label: string, showMeta: boolean, value?: any, edit?: boolean }) {
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { label: string, showMeta: boolean, value?: FieldOption, edit?: boolean }) {
     this.form = this.fb.group({
       label: [this.data.value?.label || '', [Validators.required, Validators.minLength(2)]],
       meta: [this.data.value?.meta || (this.data.showMeta ? 'Entrada' : ''), this.data.showMeta ? Validators.required : []],
@@ -74,8 +75,8 @@ export class OptionFormDialogComponent {
     });
   }
 
-  onInputName(event: any) {
-    const val = event.target.value.toUpperCase();
+  onInputName(event: Event) {
+    const val = (event.target as HTMLInputElement).value.toUpperCase();
     this.form.get('label')?.setValue(val, { emitEvent: false });
   }
 

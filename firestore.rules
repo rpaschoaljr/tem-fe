@@ -11,12 +11,12 @@ service cloud.firestore {
 
     // Admin Mestre (Acesso total para desenvolvimento)
     function isMasterAdmin() {
-      return isLoggedIn() && (request.auth.token.email == 'admin@tem.local' || request.auth.token.hierarchyLevel >= 10);
+      return isLoggedIn() && (request.auth.token.email == 'admin@tem.local' || (request.auth.token.hierarchyLevel != null && request.auth.token.hierarchyLevel >= 10));
     }
 
     function hasPerm(module, action) {
       return isLoggedIn() && (
-        request.auth.token.hierarchyLevel >= 10 || 
+        (request.auth.token.hierarchyLevel != null && request.auth.token.hierarchyLevel >= 10) || 
         (request.auth.token.perms != null && 
          request.auth.token.perms.get(module, {}).get(action, false) == true)
       );
@@ -73,7 +73,9 @@ service cloud.firestore {
     }
 
     match /permissions/{permId} {
-      allow read, write: if isMasterAdmin();
+      // Usuário pode ler seu próprio documento de permissão (necessário para fallback)
+      allow read: if isMasterAdmin() || (isLoggedIn() && permId == request.auth.token.email);
+      allow write: if isMasterAdmin();
     }
   }
 }

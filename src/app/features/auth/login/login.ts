@@ -10,6 +10,7 @@ import { Auth, signInWithEmailAndPassword } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog';
 import { take, filter } from 'rxjs';
 
@@ -30,6 +31,7 @@ export class LoginComponent {
   private router = inject(Router);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
+  private logger = inject(LoggerService);
 
 
   loginForm = this.fb.group({
@@ -50,14 +52,7 @@ export class LoginComponent {
 
       try {
         await signInWithEmailAndPassword(this.auth, email!, password!);
-        
-        // TESTE DE CONECTIVIDADE COM FUNCTIONS
-        fetch('http://localhost:5001/demo-sistematemfe/southamerica-east1/helloWorld')
-          .then(response => response.json())
-          .then(data => console.log('🔌 [TESTE BACKEND] Resposta das Functions:', data))
-          .catch(err => console.error('🔌 [TESTE BACKEND] Erro ao falar com Functions:', err));
 
-        // Aguarda carregar o membro para decidir a rota
         this.authService.member$.pipe(
           filter(m => !!m),
           take(1)
@@ -71,11 +66,13 @@ export class LoginComponent {
           }
         });
 
-      } catch (error: any) {
-        // Erro visual tratado
+      } catch (error: unknown) {
+        this.logger.error('Erro ao realizar login', error);
         let msg = 'Erro ao acessar.';
-        if (error.code === 'auth/invalid-credential') msg = 'E-mail ou senha incorretos.';
-        if (error.code === 'auth/user-not-found') msg = 'Usuário não cadastrado.';
+        if (error && typeof error === 'object' && 'code' in error) {
+          if (error.code === 'auth/invalid-credential') msg = 'E-mail ou senha incorretos.';
+          if (error.code === 'auth/user-not-found') msg = 'Usuário não cadastrado.';
+        }
 
         this.notify.showError(msg);
       }

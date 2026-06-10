@@ -8,11 +8,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { Transaction } from '../../../core/models/transaction.model';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ConfigService } from '../../../core/services/config.service';
 import { MembersService } from '../../../core/services/members.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { Member } from '../../../core/models/member.model';
 import { FieldOption } from '../../../core/models/system-config.model';
 
@@ -47,6 +48,7 @@ export class TransactionFormComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<TransactionFormComponent>);
   private configService = inject(ConfigService);
   private membersService = inject(MembersService);
+  private logger = inject(LoggerService);
 
   transaction: Transaction | null = inject(MAT_DIALOG_DATA);
   categoryOptions = signal<FieldOption[]>([]);
@@ -81,17 +83,14 @@ export class TransactionFormComponent implements OnInit {
     return (Math.abs(val)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  onValueInput(event: any) {
-    let value = event.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+  onValueInput(event: Event) {
+    let value = (event.target as HTMLInputElement).value.replace(/\D/g, '');
     if (value === '') value = '0';
     
-    // Converte para decimal (ex: "123" -> 1.23)
     const floatValue = parseFloat(value) / 100;
     
-    // Atualiza o valor numérico real no formulário
     this.form.patchValue({ value: floatValue });
 
-    // Formata a exibição (ex: 1.23 -> "1,23")
     const formatted = floatValue.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -105,7 +104,6 @@ export class TransactionFormComponent implements OnInit {
       const catField = config.fields.find(f => f.key === 'category');
       if (catField?.options) {
         this.categoryOptions.set(catField.options.filter(o => !o.deleted));
-        // Se estiver editando, já checa se precisa exibir o campo de membro
         if (this.transaction) {
            this.checkMemberRequirement(this.transaction.category);
         }
@@ -114,7 +112,7 @@ export class TransactionFormComponent implements OnInit {
   }
 
   loadMembers() {
-    this.membersService.getMembers().subscribe(m => this.allMembers.set(m.filter(x => !x.deleted)));
+    this.membersService.getMembers().subscribe(m => this.allMembers.set(m.filter(x => !x.deleted) as Member[]));
   }
 
   setupAutoType() {
@@ -122,7 +120,7 @@ export class TransactionFormComponent implements OnInit {
       const option = this.categoryOptions().find(o => o.label === catLabel);
       if (option) {
         if (option.meta) {
-          this.form.patchValue({ type: option.meta as any }, { emitEvent: false });
+          this.form.patchValue({ type: option.meta as 'Entrada' | 'Saída' }, { emitEvent: false });
           this.form.get('type')?.disable();
         } else {
           this.form.get('type')?.enable();
@@ -153,7 +151,6 @@ export class TransactionFormComponent implements OnInit {
         return;
       }
       
-      // Normaliza termo de busca (tira acentos e deixa minusculo)
       const search = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const searchOnlyNumbers = val.replace(/\D/g, '');
 
@@ -176,12 +173,12 @@ export class TransactionFormComponent implements OnInit {
     });
   }
 
-  displayMember(member: any): string {
+  displayMember(member: Member | string): string {
     if (typeof member === 'string') return member;
     return member?.name || '';
   }
 
-  onMemberSelected(event: any) {
+  onMemberSelected(event: MatAutocompleteSelectedEvent) {
     const member: Member = event.option.value;
     const category = this.form.get('category')?.value;
     

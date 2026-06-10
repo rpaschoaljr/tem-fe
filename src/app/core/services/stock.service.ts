@@ -7,10 +7,12 @@ import {
 } from '@angular/fire/firestore';
 import { switchMap } from 'rxjs/operators';
 import { Normalizer } from '../../shared/utils/normalizer';
+import { LoggerService } from './logger.service';
 
 @Injectable({ providedIn: 'root' })
 export class StockService {
     private firestore = inject(Firestore);
+    private logger = inject(LoggerService);
     private COL = 'stock';
 
     private CACHE_KEY = 'stock_data';
@@ -25,7 +27,7 @@ export class StockService {
         const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
 
         if (!forceRefresh && hasCache && isCacheFresh) {
-            return of(JSON.parse(hasCache).map((i: any) => ({ ...i, updatedAt: new Date(i.updatedAt) })));
+            return of(JSON.parse(hasCache).map((i: Record<string, unknown>) => ({ ...i, updatedAt: new Date(i['updatedAt'] as string) })));
         }
 
         const colRef = collection(this.firestore, this.COL);
@@ -34,7 +36,7 @@ export class StockService {
             tap(data => this.updateCache(data)),
             catchError(() => {
                 if (hasCache) {
-                    return of(JSON.parse(hasCache).map((i: any) => ({ ...i, updatedAt: new Date(i.updatedAt) })));
+                    return of(JSON.parse(hasCache).map((i: Record<string, unknown>) => ({ ...i, updatedAt: new Date(i['updatedAt'] as string) })));
                 }
                 return throwError(() => new Error('Não foi possível carregar o estoque. Sem conexão.'));
             })
@@ -45,11 +47,10 @@ export class StockService {
         const isNew = !item.id;
         const colRef = collection(this.firestore, this.COL);
 
-        // CRIANDO CAMPOS DE BUSCA
         const name_search = Normalizer.search(item.name);
         const category_search = Normalizer.search(item.category);
 
-        const firestoreData: any = {
+        const firestoreData: Record<string, unknown> = {
             ...JSON.parse(JSON.stringify(item)),
             name_search,
             category_search,
@@ -57,7 +58,6 @@ export class StockService {
         };
 
         if (isNew) {
-            // Verificação de duplicidade usando o campo de busca
             const q = query(colRef, where('name_search', '==', name_search), where('deleted', '==', false));
             return from(getDocs(q)).pipe(
                 switchMap(snap => {
@@ -65,9 +65,9 @@ export class StockService {
                         return throwError(() => new Error('JA EXISTE UM ITEM ATIVO COM ESTE NOME NO CATALOGO.'));
                     }
                     const docRef = doc(colRef);
-                    firestoreData.id = docRef.id;
-                    firestoreData.deleted = false;
-                    firestoreData.quantity = item.quantity || 0;
+                    firestoreData['id'] = docRef.id;
+                    firestoreData['deleted'] = false;
+                    firestoreData['quantity'] = item.quantity || 0;
                     
                     return from(setDoc(docRef, firestoreData));
                 }),
@@ -85,7 +85,6 @@ export class StockService {
         );
     }
 
-    // LÓGICA DE MESCLAGEM DE ESTOQUE
     mergeItems(sourceId: string, targetId: string): Observable<void> {
         const sourceRef = doc(this.firestore, this.COL, sourceId);
         const targetRef = doc(this.firestore, this.COL, targetId);
@@ -101,13 +100,11 @@ export class StockService {
             const sourceQty = sourceDoc.data()?.['quantity'] || 0;
             const targetQty = targetDoc.data()?.['quantity'] || 0;
 
-            // 1. Soma a quantidade no destino
             transaction.update(targetRef, { 
                 quantity: targetQty + sourceQty,
                 updatedAt: new Date()
             });
 
-            // 2. Remove o item de origem (ou marca como deletado permanentemente)
             transaction.delete(sourceRef);
         })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY))
@@ -135,11 +132,11 @@ export class StockService {
         localStorage.setItem(this.TIME_KEY, Date.now().toString());
     }
 
-    private fromFirestore(id: string, data: any): StockItem {
+    private fromFirestore(id: string, data: Record<string, unknown>): StockItem {
         return {
             ...data,
             id,
-            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
+            updatedAt: (data['updatedAt'] as { toDate?: () => Date })?.toDate ? (data['updatedAt'] as { toDate: () => Date }).toDate() : new Date(data['updatedAt'] as string),
         } as StockItem;
     }
 }

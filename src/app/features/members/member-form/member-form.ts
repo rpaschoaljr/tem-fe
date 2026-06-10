@@ -3,7 +3,6 @@ import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-// Imports Visuais (Angular Material)
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,12 +14,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 
-// Imports do Projeto
 import { MembersService } from '../../../core/services/members.service';
 import { ConfigService } from '../../../core/services/config.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { Member } from '../../../core/models/member.model';
 import { DynamicField } from '../../../core/models/system-config.model';
+import { CepResponse } from '../../../core/models/common';
 import { CustomValidators } from '../../../shared/utils/validators';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ComponentCanDeactivate } from '../../../core/guards/pending-changes.guard';
@@ -56,6 +56,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   private notify = inject(NotificationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private logger = inject(LoggerService);
 
   form!: FormGroup;
   isEditMode = false;
@@ -71,9 +72,8 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
     return true;
   }
 
-  // Listas
   roles: string[] = [];
-  customFieldsConfig: any[] = [];
+  customFieldsConfig: DynamicField[] = [];
 
   ngOnInit() {
     this.initForm();
@@ -106,7 +106,6 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
         let group: FormGroup | null = null;
         let validators = field.required ? [Validators.required] : [];
 
-        // Lógica de agrupamento baseada no modelo Member
         if (field.section === 'Endereço') {
           group = addressGroup;
           if (field.key === 'state') validators.push(Validators.maxLength(2));
@@ -148,7 +147,6 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
 
       this.totalTabs = this.getFieldsBySection('Informações Adicionais').length > 0 ? 5 : 4;
       
-      // Re-executa as validações cruzadas agora que os campos existem
       this.setupDateCrossValidation();
     });
   }
@@ -162,7 +160,6 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
         this.form.get('exitDate')?.updateValueAndValidity({ emitEvent: false });
         ritualKeys.forEach(k => this.form.get(`rituals.${k}`)?.updateValueAndValidity({ emitEvent: false }));
         
-        // Valida todos os campos de data dinâmicos das consagrações
         const consecrationsGroup = this.form.get('consecrations') as FormGroup;
         if (consecrationsGroup) {
           Object.keys(consecrationsGroup.controls).forEach(key => {
@@ -191,7 +188,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   }
 
   checkEditMode() {
-    this.route.params.subscribe((params: any) => {
+    this.route.params.subscribe((params: { id?: string }) => {
       if (params['id']) {
         this.isEditMode = true;
         this.memberId = params['id'];
@@ -219,15 +216,13 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
     const cepControl = this.form.get('address.cep');
     const cep = cepControl?.value;
 
-    // Só busca se tiver 8 dígitos (considerando que a máscara pode ter colocado traço, mas o length ajuda)
     if (cep && cep.replace(/\D/g, '').length === 8) {
       this.membersService.getAddressByCep(cep).subscribe({
-        next: (data: any) => {
+        next: (data: CepResponse) => {
           if (!data || data.erro) {
             this.notify.showError('CEP não encontrado.');
             return;
           }
-          // PatchValue para preencher automático
           this.form.get('address')?.patchValue({
             street: data.logradouro,
             neighborhood: data.bairro,
@@ -294,23 +289,38 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
 
   onSubmit() {
     if (this.form.valid) {
-      const memberData: Member = {
+      const memberData: Partial<Member> & { id?: string } = {
         ...this.form.value,
         ...(this.isEditMode ? {} : { isFirstAccess: true })
       };
 
-      // Se for novo cadastro, remove o ID vazio para o serviço gerar um novo
-      if (!this.isEditMode) delete (memberData as any).id;
+      if (!this.isEditMode) {
+        const { id, ...dataWithoutId } = memberData;
+        this.formSubmitted = true;
+        this.membersService.save(dataWithoutId as Member).subscribe({
+          next: () => {
+            this.notify.showSuccess(this.isEditMode ? 'Membro atualizado!' : 'Membro cadastrado!');
+            this.router.navigate(['/members']);
+          },
+          error: (e: unknown) => {
+            this.formSubmitted = false;
+            this.logger.error('Erro ao salvar membro', e);
+            this.notify.showError('Erro ao salvar: ' + (e instanceof Error ? e.message : ''));
+          }
+        });
+        return;
+      }
 
       this.formSubmitted = true;
-      this.membersService.save(memberData).subscribe({
+      this.membersService.save(memberData as Member).subscribe({
         next: () => {
           this.notify.showSuccess(this.isEditMode ? 'Membro atualizado!' : 'Membro cadastrado!');
           this.router.navigate(['/members']);
         },
-        error: (e: any) => {
+        error: (e: unknown) => {
           this.formSubmitted = false;
-          this.notify.showError('Erro ao salvar: ' + e.message);
+          this.logger.error('Erro ao salvar membro', e);
+          this.notify.showError('Erro ao salvar: ' + (e instanceof Error ? e.message : ''));
         }
       });
     } else {

@@ -12,6 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { combineLatest } from 'rxjs';
+import { LoggerService } from '../../core/services/logger.service';
 
 import { MembersService } from '../../core/services/members.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -42,10 +43,11 @@ export class MembersComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private exportService = inject(ExportService);
+  private logger = inject(LoggerService);
 
-  allMembers: Member[] = [];
-  members: any[] = []; // Usamos any para incluir o campo virtual financeiro
-  exportData: any[] = []; 
+  allMembers: (Member & { financeStatus?: string; financeClass?: string })[] = [];
+  members: (Member & { financeStatus?: string; financeClass?: string })[] = [];
+  exportData: (Member & { financeStatus?: string; financeClass?: string })[] = []; 
   totalActive = 0;
   canWrite$ = this.authService.hasPermission('members', 'write');
 
@@ -74,8 +76,8 @@ export class MembersComponent implements OnInit {
       transactions: this.financeService.getTransactions()
     }).subscribe({
       next: (res) => {
-        console.log('📦 MembersComponent: Dados brutos recebidos:', res);
-        // Filtra transações de mensalidade do mês atual (que não estejam deletadas)
+        this.logger.debug('Dados de membros carregados', { membersCount: res.members.length, transactionsCount: res.transactions.length });
+
         const currentMensalidades = res.transactions.filter(t => 
           !t.deleted && 
           t.category === 'MENSALIDADE' && 
@@ -83,18 +85,16 @@ export class MembersComponent implements OnInit {
           t.refYear === curYear
         );
 
-        this.allMembers = res.members;
-        this.roles = [...new Set(res.members.map(m => m.role))].sort();
+        this.roles = [...new Set(res.members.map(m => m.role).filter((role): role is string => !!role))].sort();
         this.totalActive = res.members.filter(m => !m.deleted && m.status === 'Ativo').length;
 
-        // Processa cada membro para injetar o status financeiro
         this.allMembers = res.members.map(m => {
           let financeStatus = '-';
           let financeClass = '';
 
           if (m.status === 'Ativo' && !m.deleted) {
             const isPaid = currentMensalidades.some(t => t.memberId === m.id);
-            const isExempt = (m as any).isExempt === true;
+            const isExempt = m.isExempt ?? false;
 
             if (isExempt) {
               financeStatus = 'Isento';
@@ -108,12 +108,15 @@ export class MembersComponent implements OnInit {
             }
           }
 
-          return { ...m, financeStatus, financeClass };
+          return { ...m, financeStatus, financeClass } as Member & { financeStatus?: string; financeClass?: string };
         });
 
         this.applyFilter();
       },
-      error: (e: any) => this.notify.showError('Erro ao carregar dados.')
+      error: (e: unknown) => {
+        this.logger.error('Erro ao carregar dados de membros', e);
+        this.notify.showError('Erro ao carregar dados.');
+      }
     });
   }
 
@@ -146,14 +149,12 @@ export class MembersComponent implements OnInit {
     this.exportService.exportToCsv(this.exportData, 'membros_temfe', columns);
   }
 
-
-  // --- AÇÕES COM TRY/CATCH E NAVEGAÇÃO ---
-
   openRegisterDialog() {
     try {
       this.router.navigate(['/members/new']);
-    } catch (e: any) {
-      this.notify.showError('Erro ao abrir formulário: ' + e.message);
+    } catch (e: unknown) {
+      this.logger.error('Erro ao abrir formulário de membro', e);
+      this.notify.showError('Erro ao abrir formulário: ' + (e instanceof Error ? e.message : ''));
     }
   }
 
@@ -161,8 +162,9 @@ export class MembersComponent implements OnInit {
     try {
       if (!member.id) throw new Error('Membro sem ID inválido.');
       this.router.navigate(['/members/edit', member.id]);
-    } catch (e: any) {
-      this.notify.showError('Erro ao abrir edição: ' + e.message);
+    } catch (e: unknown) {
+      this.logger.error('Erro ao abrir edição de membro', e);
+      this.notify.showError('Erro ao abrir edição: ' + (e instanceof Error ? e.message : ''));
     }
   }
 
@@ -172,7 +174,10 @@ export class MembersComponent implements OnInit {
         this.notify.showSuccess('Membro movido para a lixeira.');
         this.loadData();
       },
-      error: (e: any) => this.notify.showError('Erro ao excluir: ' + e.message)
+      error: (e: unknown) => {
+        this.logger.error('Erro ao excluir membro', e);
+        this.notify.showError('Erro ao excluir: ' + (e instanceof Error ? e.message : ''));
+      }
     });
   }
 
@@ -182,7 +187,10 @@ export class MembersComponent implements OnInit {
         this.notify.showSuccess('Membro restaurado!');
         this.loadData();
       },
-      error: (e: any) => this.notify.showError('Erro ao restaurar: ' + e.message)
+      error: (e: unknown) => {
+        this.logger.error('Erro ao restaurar membro', e);
+        this.notify.showError('Erro ao restaurar: ' + (e instanceof Error ? e.message : ''));
+      }
     });
   }
 }

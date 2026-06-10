@@ -7,13 +7,39 @@
 
 import { spawn, execSync } from 'child_process';
 import http from 'http';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const EMULATOR_URL = 'http://localhost:9099';
-const PROJECT_ID = 'demo-sistematemfe';
+// Carrega variáveis do .env
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const envPath = resolve(__dirname, '..', '.env');
+try {
+  const envFile = readFileSync(envPath, 'utf-8');
+  for (const line of envFile.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const val = trimmed.slice(eqIndex + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  }
+} catch { /* .env opcional */ }
+
+const EMULATOR_URL = `http://localhost:${process.env.FIREBASE_AUTH_PORT || '9099'}`;
+const PROJECT_ID = process.env.FIREBASE_PROJECT || 'demo-sistematemfe';
 const MAX_RETRIES = 60;
 const RETRY_INTERVAL_MS = 2000;
 
-// ── 1. Sobe os emuladores via Docker ──────────────────────────────────────────
+// ── 1. Instala dependências e compila Cloud Functions ──────────────────────────
+console.log('\n📦  Instalando dependências das Cloud Functions...');
+try {
+  execSync('npm install --prefix functions', { stdio: 'inherit' });
+} catch (e) {
+  console.warn('⚠️  Aviso: Falha ao instalar dependências das funções.');
+}
+
 console.log('\n📦  Compilando Cloud Functions...');
 try {
   execSync('npm run build --prefix functions', { stdio: 'inherit' });

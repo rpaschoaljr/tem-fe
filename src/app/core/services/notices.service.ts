@@ -5,22 +5,22 @@ import { Notice } from '../models/notice.model';
 import {
     Firestore, collection, doc, getDoc, setDoc, updateDoc, getDocs, deleteDoc
 } from '@angular/fire/firestore';
+import { LoggerService } from './logger.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class NoticesService {
     private firestore = inject(Firestore);
+    private logger = inject(LoggerService);
     private COL = 'notices';
 
-    // --- localStorage fallback ---
     private CACHE_KEY = 'notices_data';
     private TIME_KEY = 'notices_last_fetch';
     private CACHE_DURATION = 15 * 60 * 1000;
 
     private initialMockData: Notice[] = [];
 
-    // --- LEITURA ---
     getNotices(forceRefresh = false): Observable<Notice[]> {
         const colRef = collection(this.firestore, this.COL);
         
@@ -33,7 +33,7 @@ export class NoticesService {
                 const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
                 const hasCache = localStorage.getItem(this.CACHE_KEY);
                 if (!forceRefresh && hasCache && (Date.now() - lastFetch < this.CACHE_DURATION)) {
-                    return of(JSON.parse(hasCache).map((n: any) => this.fixDates(n)));
+                    return of(JSON.parse(hasCache).map((n: Record<string, unknown>) => this.fixDates(n)));
                 }
                 return of(this.getMockOrStoredData()).pipe(
                     delay(500),
@@ -69,7 +69,6 @@ export class NoticesService {
         );
     }
 
-    // --- ESCRITA ---
     save(notice: Notice): Observable<boolean> {
         const isNew = !notice.id;
         const colRef = collection(this.firestore, this.COL);
@@ -154,7 +153,6 @@ export class NoticesService {
         );
     }
 
-    // --- HELPERS ---
     private updateCache(data: Notice[]) {
         localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
         localStorage.setItem(this.TIME_KEY, Date.now().toString());
@@ -163,34 +161,34 @@ export class NoticesService {
     private getMockOrStoredData(): Notice[] {
         const stored = localStorage.getItem(this.CACHE_KEY);
         if (stored) {
-            return JSON.parse(stored).map((n: any) => this.fixDates(n));
+            return JSON.parse(stored).map((n: Record<string, unknown>) => this.fixDates(n));
         }
         return this.initialMockData;
     }
 
-    private fixDates(n: any): Notice {
+    private fixDates(n: Record<string, unknown>): Notice {
         return {
             ...n,
-            date: n.date ? new Date(n.date) : new Date(),
-            expirationDate: n.expirationDate ? new Date(n.expirationDate) : null,
-            createdAt: n.createdAt ? new Date(n.createdAt) : new Date(),
-            updatedAt: n.updatedAt ? new Date(n.updatedAt) : new Date()
-        };
+            date: n['date'] ? new Date(n['date'] as string) : new Date(),
+            expirationDate: n['expirationDate'] ? new Date(n['expirationDate'] as string) : null,
+            createdAt: n['createdAt'] ? new Date(n['createdAt'] as string) : new Date(),
+            updatedAt: n['updatedAt'] ? new Date(n['updatedAt'] as string) : new Date()
+        } as unknown as Notice;
     }
 
-    private fromFirestore(id: string, data: any): Notice {
-        const toDate = (v: any) => v?.toDate ? v.toDate() : (v ? new Date(v) : null);
+    private fromFirestore(id: string, data: Record<string, unknown>): Notice {
+        const toDate = (v: unknown) => (v as { toDate?: () => Date })?.toDate ? (v as { toDate: () => Date }).toDate() : (v ? new Date(v as string) : null);
         return {
             ...data,
             id,
-            date: toDate(data.date) ?? new Date(),
-            expirationDate: toDate(data.expirationDate),
-            createdAt: toDate(data.createdAt) ?? new Date(),
-            updatedAt: toDate(data.updatedAt) ?? new Date(),
+            date: toDate(data['date']) ?? new Date(),
+            expirationDate: toDate(data['expirationDate']),
+            createdAt: toDate(data['createdAt']) ?? new Date(),
+            updatedAt: toDate(data['updatedAt']) ?? new Date(),
         } as Notice;
     }
 
-    private toFirestore(notice: Notice): any {
+    private toFirestore(notice: Notice): Record<string, unknown> {
         return JSON.parse(JSON.stringify(notice));
     }
 }

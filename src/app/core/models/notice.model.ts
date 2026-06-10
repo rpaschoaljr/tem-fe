@@ -1,3 +1,5 @@
+import { FirestoreTimestamp } from './common';
+
 export interface Notice {
   id: string;
   title: string;
@@ -11,3 +13,10 @@ export interface Notice {
   updatedAt: Date;
   createdBy?: string;
 }
+
+export type FirestoreNotice = Omit<Notice, 'date' | 'expirationDate' | 'createdAt' | 'updatedAt'> & {
+  date: FirestoreTimestamp;
+  expirationDate?: FirestoreTimestamp | null;
+  createdAt: FirestoreTimestamp;
+  updatedAt: FirestoreTimestamp;
+};

@@ -24,6 +24,27 @@
     letter-spacing: 1px;
     margin-right: 24px;
     font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .logo-full { display: inline; }
+
+    .logo-badge {
+        display: none;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 50%;
+        background: #673ab7;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
 }
 
 .spacer {
@@ -203,5 +224,29 @@
     mat-icon, span { 
         color: var(--mat-sys-primary) !important; 
         font-weight: 600; 
+    }
+}
+
+.nav-loader {
+    margin-left: 8px;
+    width: 120px;
+    height: 4px;
+    align-self: center;
+}
+
+// ── Responsive logo: badge < 1100px, full text >= 1100px ──
+@media (max-width: 1100px) {
+    .logo-text {
+        margin-right: 8px;
+        .logo-full { display: none; }
+        .logo-badge { display: flex; }
+    }
+}
+
+// Hamburger visible (<960px): full text, no badge
+@media (max-width: 960px) {
+    .logo-text {
+        .logo-full { display: inline; }
+        .logo-badge { display: none; }
     }
 }

@@ -16,8 +16,8 @@
                             <mat-tab label="Catálogo de Itens">
                                 <div class="tab-header" style="margin-top: 20px;">
                                     <div>
-                                        <h3 style="margin:0">Itens Registrados</h3>
-                                        <small style="opacity:0.7">Defina o catálogo oficial de produtos.</small>
+                                        <h3>Itens Registrados</h3>
+                                        <p class="subtitle">Defina o catálogo oficial de produtos.</p>
                                     </div>
                                     <div class="actions">
                                         <button mat-stroked-button color="accent" (click)="onMergeStock()" style="margin-right: 8px;">
@@ -88,8 +88,8 @@
                     <div class="tab-content">
                         <div class="tab-header">
                             <div>
-                                <h3 style="margin:0">Catálogo de Lançamentos</h3>
-                                <small style="opacity:0.7">Padronize as categorias e seus tipos vinculados.</small>
+                                <h3>Catálogo de Lançamentos</h3>
+                                <p class="subtitle">Padronize as categorias e seus tipos vinculados.</p>
                             </div>
                             <div class="actions">
                                 <button mat-flat-button color="primary" *ngIf="financeConfig() as conf" (click)="addOption(conf, conf.fields[0])">
@@ -116,8 +116,8 @@
                     <div class="tab-content" *ngIf="membersConfig() as config">
                         <div class="tab-header">
                             <div>
-                                <h3 style="margin:0">Configurações de Membros</h3>
-                                <small style="opacity:0.7">Gerencie as funções e campos personalizados do formulário.</small>
+                                <h3>Configurações de Membros</h3>
+                                <p class="subtitle">Gerencie as funções e campos personalizados do formulário.</p>
                             </div>
                             <div class="actions">
                                 <button mat-flat-button color="primary" (click)="addField('members')">
@@ -199,8 +199,8 @@
                             <div class="field-trash-section" *ngIf="getDeletedFields(config).length > 0">
                                 <mat-divider style="margin: 30px 0"></mat-divider>
                                 <div class="tab-header">
-                                    <h3 style="margin:0"><mat-icon>delete_outline</mat-icon> Lixeira de Campos</h3>
-                                    <small style="opacity:0.7">Campos removidos podem ser restaurados aqui.</small>
+                                    <h3><mat-icon>delete_outline</mat-icon> Lixeira de Campos</h3>
+                                    <p class="subtitle">Campos removidos podem ser restaurados aqui.</p>
                                 </div>
                                 <div class="chips-grid" style="margin-top: 15px;">
                                     <button mat-stroked-button class="deleted-chip" 
@@ -219,8 +219,8 @@
                     <div class="tab-content">
                         <div class="tab-header">
                             <div>
-                                <h3 style="margin:0">Permissões de Acesso</h3>
-                                <small style="opacity:0.7">Controle quais módulos cada cargo/usuário pode ver e editar. Cargos com nível 10 têm acesso total automático.</small>
+                                <h3>Permissões de Acesso</h3>
+                                <p class="subtitle">Controle quais módulos cada cargo/usuário pode ver e editar. Cargos com nível 10 têm acesso total automático.</p>
                             </div>
                         </div>
 

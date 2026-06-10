@@ -38,16 +38,22 @@
             </mat-select>
         </mat-form-field>
 
-        <button mat-stroked-button color="primary" (click)="exportMembers()" [disabled]="exportData.length === 0">
-            <mat-icon>download</mat-icon>
-            Exportar CSV
-        </button>
     </div>
 
     <!-- Lista Genérica (Tabela) -->
     <mat-card>
         <mat-card-content>
-            <h3>Gestão de Membros</h3>
+            <div class="header-with-actions">
+                <div class="title-group">
+                    <h3>Gestão de Membros</h3>
+                </div>
+                <div class="actions-group">
+                    <button mat-stroked-button color="primary" (click)="exportMembers()" [disabled]="exportData.length === 0">
+                        <mat-icon>download</mat-icon>
+                        Exportar CSV
+                    </button>
+                </div>
+            </div>
 
             <app-generic-list [data]="members" [columns]="tableColumns" 
                 [hideActions]="!(canWrite$ | async)"

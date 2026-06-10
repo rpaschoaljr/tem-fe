@@ -8,13 +8,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ScheduledTransaction, RecurrenceType, RECURRENCE_LABELS } from '../../../core/models/scheduled-transaction.model';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ConfigService } from '../../../core/services/config.service';
 import { MembersService } from '../../../core/services/members.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { Member } from '../../../core/models/member.model';
 import { FieldOption } from '../../../core/models/system-config.model';
 
@@ -44,6 +45,7 @@ export class ScheduledTransactionFormComponent implements OnInit {
     private configService = inject(ConfigService);
     private membersService = inject(MembersService);
     private notify = inject(NotificationService);
+    private logger = inject(LoggerService);
 
     scheduled: ScheduledTransaction | null = inject(MAT_DIALOG_DATA);
 
@@ -80,7 +82,6 @@ export class ScheduledTransactionFormComponent implements OnInit {
         this.setupDescriptionSearch();
         this.setupRecurrenceWatcher();
         
-        // Inicializa validadores baseados no valor atual
         this.applyRecurrenceValidation(this.form.get('recurrence')?.value as RecurrenceType);
     }
 
@@ -89,8 +90,8 @@ export class ScheduledTransactionFormComponent implements OnInit {
         return Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    onValueInput(event: any) {
-        let value = event.target.value.replace(/\D/g, '');
+    onValueInput(event: Event) {
+        let value = (event.target as HTMLInputElement).value.replace(/\D/g, '');
         if (value === '') value = '0';
         const floatValue = parseFloat(value) / 100;
         this.form.patchValue({ value: floatValue });
@@ -104,7 +105,6 @@ export class ScheduledTransactionFormComponent implements OnInit {
             if (catField?.options) {
                 this.categoryOptions.set(catField.options.filter(o => !o.deleted));
                 
-                // Sincroniza estado inicial baseado na categoria atual (importante para Edição)
                 const currentCat = this.form.get('category')?.value;
                 if (currentCat) {
                     this.syncCategoryState(currentCat);
@@ -114,7 +114,7 @@ export class ScheduledTransactionFormComponent implements OnInit {
     }
 
     loadMembers() {
-        this.membersService.getMembers().subscribe(m => this.allMembers.set(m.filter(x => !x.deleted)));
+        this.membersService.getMembers().subscribe(m => this.allMembers.set(m.filter(x => !x.deleted) as Member[]));
     }
 
     setupAutoType() {
@@ -128,8 +128,6 @@ export class ScheduledTransactionFormComponent implements OnInit {
     private syncCategoryState(catLabel: string) {
         const option = this.categoryOptions().find(o => o.label === catLabel);
         
-        // 1. Sincroniza o Tipo (Entrada/Saída)
-        // Se a opção tem meta definida ou se é uma categoria conhecida (fallback)
         let autoType = option?.meta;
         if (!autoType) {
             const upper = catLabel.toUpperCase();
@@ -138,20 +136,18 @@ export class ScheduledTransactionFormComponent implements OnInit {
         }
 
         if (autoType) {
-            this.form.patchValue({ type: autoType as any }, { emitEvent: false });
+            this.form.patchValue({ type: autoType as 'Entrada' | 'Saída' }, { emitEvent: false });
             this.form.get('type')?.disable();
         } else {
             this.form.get('type')?.enable();
         }
 
-        // 2. Sincroniza Requisito de Membro
         const requires = !!option?.requiresMember || ['MENSALIDADE'].includes(catLabel.toUpperCase());
         this.showMemberField.set(requires);
         if (requires) {
             this.form.get('memberId')?.setValidators(Validators.required);
         } else {
             this.form.get('memberId')?.clearValidators();
-            // Limpa os campos de membro se a categoria não os exigir
             this.form.patchValue({ memberId: '', memberName: '' }, { emitEvent: false });
         }
         this.form.get('memberId')?.updateValueAndValidity();
@@ -193,12 +189,12 @@ export class ScheduledTransactionFormComponent implements OnInit {
         dayCtrl?.updateValueAndValidity();
     }
 
-    displayMember(member: any): string {
+    displayMember(member: Member | string): string {
         if (typeof member === 'string') return member;
         return member?.name || '';
     }
 
-    onMemberSelected(event: any) {
+    onMemberSelected(event: MatAutocompleteSelectedEvent) {
         const member: Member = event.option.value;
         const category = this.form.get('category')?.value;
         this.form.patchValue({
@@ -216,7 +212,6 @@ export class ScheduledTransactionFormComponent implements OnInit {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             
-            // Tenta identificar o erro para avisar o usuário
             if (this.showMemberField() && !this.form.get('memberId')?.value) {
                 this.notify.showError('Por favor, selecione um membro da lista no campo Descrição.');
             } else if (this.form.get('value')?.value! <= 0) {

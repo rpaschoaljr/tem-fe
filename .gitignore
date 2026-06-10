@@ -8,6 +8,7 @@
 
 # Node
 /node_modules
+.nvmrc
 npm-debug.log
 yarn-error.log
 
@@ -46,4 +47,5 @@ Thumbs.db
 src/app/app.config.ts
 firebase-debug.log
 
-afazer.txt
+# Environment
+.env

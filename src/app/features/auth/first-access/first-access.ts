@@ -11,6 +11,7 @@ import { updatePassword, Auth } from '@angular/fire/auth';
 import { Firestore, doc, updateDoc } from '@angular/fire/firestore';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { take } from 'rxjs';
 
 @Component({
@@ -30,6 +31,7 @@ export class FirstAccessComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notify = inject(NotificationService);
+  private logger = inject(LoggerService);
 
   form!: FormGroup;
   loading = false;
@@ -76,10 +78,8 @@ export class FirstAccessComponent implements OnInit {
       try {
         const newPassword = this.form.get('password')?.value;
         
-        // 1. Atualiza senha no Firebase Auth
         await updatePassword(this.auth.currentUser, newPassword);
 
-        // 2. Atualiza flag no Firestore
         const memberRef = doc(this.firestore, 'members', this.memberId);
         await updateDoc(memberRef, { 
           isFirstAccess: false,
@@ -88,10 +88,10 @@ export class FirstAccessComponent implements OnInit {
 
         this.notify.showSuccess('Senha definida com sucesso! Bem-vindo.');
         this.router.navigate(['/dashboard']);
-      } catch (error: any) {
-        console.error(error);
+      } catch (error: unknown) {
+        this.logger.error('Erro no primeiro acesso', error);
         let msg = 'Erro ao definir senha.';
-        if (error.code === 'auth/requires-recent-login') {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/requires-recent-login') {
           msg = 'Por segurança, faça login novamente para trocar a senha.';
           this.auth.signOut();
           this.router.navigate(['/login']);

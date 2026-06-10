@@ -6,11 +6,13 @@ import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { ScheduledTransaction, RecurrenceType } from '../models/scheduled-transaction.model';
 import { Transaction } from '../models/transaction.model';
 import { FinanceService } from './finance.service';
+import { LoggerService } from './logger.service';
 
 @Injectable({ providedIn: 'root' })
 export class ScheduledTransactionsService {
     private firestore = inject(Firestore);
     private financeService = inject(FinanceService);
+    private logger = inject(LoggerService);
     private COL = 'scheduled_transactions';
 
     private CACHE_KEY = 'scheduled_transactions_data';
@@ -23,7 +25,7 @@ export class ScheduledTransactionsService {
         const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
 
         if (!forceRefresh && hasCache && isCacheFresh) {
-            return of(JSON.parse(hasCache).map((s: any) => this.fixDates(s)));
+            return of(JSON.parse(hasCache).map((s: Record<string, unknown>) => this.fixDates(s)));
         }
 
         const colRef = collection(this.firestore, this.COL);
@@ -32,7 +34,7 @@ export class ScheduledTransactionsService {
             tap(data => this.updateCache(data)),
             catchError(() => {
                 if (hasCache) {
-                    return of(JSON.parse(hasCache).map((s: any) => this.fixDates(s)));
+                    return of(JSON.parse(hasCache).map((s: Record<string, unknown>) => this.fixDates(s)));
                 }
                 return throwError(() => new Error('Não foi possível carregar agendamentos.'));
             })
@@ -159,15 +161,15 @@ export class ScheduledTransactionsService {
         localStorage.setItem(this.TIME_KEY, Date.now().toString());
     }
 
-    private fromFirestore(id: string, data: any): ScheduledTransaction {
+    private fromFirestore(id: string, data: Record<string, unknown>): ScheduledTransaction {
         return { ...this.fixDates({ ...data, id }) };
     }
 
-    private fixDates(s: any): ScheduledTransaction {
+    private fixDates(s: Record<string, unknown>): ScheduledTransaction {
         return {
             ...s,
-            nextDueDate: s.nextDueDate ? new Date(s.nextDueDate) : new Date(),
-            lastAppliedDate: s.lastAppliedDate ? new Date(s.lastAppliedDate) : undefined
-        };
+            nextDueDate: s['nextDueDate'] ? new Date(s['nextDueDate'] as string) : new Date(),
+            lastAppliedDate: s['lastAppliedDate'] ? new Date(s['lastAppliedDate'] as string) : undefined
+        } as unknown as ScheduledTransaction;
     }
 }

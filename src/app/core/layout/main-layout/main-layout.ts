@@ -8,7 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, shareReplay, tap } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
@@ -31,6 +32,7 @@ import { AuthService } from '../../services/auth.service';
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
+    MatProgressBarModule,
     AsyncPipe
   ],
   templateUrl: './main-layout.html',
@@ -50,12 +52,12 @@ export class MainLayoutComponent implements OnInit {
   isAdmin$ = this.authService.isAdmin$();
   isSidebarOpened = true;
 
-  // Detecta se é celular (Handset)
-  isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
+  // Detecta se é tela pequena (<960px) — mostra hamburger
+  isSmallScreen$: Observable<boolean> = this.breakpointObserver.observe('(max-width: 959px)')
     .pipe(
       map(result => result.matches),
-      tap(isHandset => {
-        this.isSidebarOpened = !isHandset;
+      tap(isSmall => {
+        this.isSidebarOpened = !isSmall;
       }),
       shareReplay()
     );
@@ -70,31 +72,44 @@ export class MainLayoutComponent implements OnInit {
     { label: 'Configurações', icon: 'settings', route: '/settings', module: 'settings' },
   ];
 
-  menuItems = signal<any[]>([]);
+  menuItems = signal(this.allMenuItems.filter(m => m.module === 'dashboard'));
+  menuLoading = signal(true);
 
   ngOnInit() {
-    // Recarrega o menu sempre que o membro (e suas permissões) mudar
-    this.authService.member$.subscribe(() => {
-      this.loadMenu();
-    });
+    this.loadMenu();
   }
 
   loadMenu() {
-    combineLatest(
-      this.allMenuItems.map(item => 
-        item.module === 'dashboard' 
-          ? of(true) 
-          : this.authService.hasPermission(item.module, 'read')
-      )
-    ).subscribe((results: boolean[]) => {
-      const allowed = this.allMenuItems.filter((_, index) => results[index]);
-      this.menuItems.set(allowed);
+    const restrictedItems = this.allMenuItems.filter(m => m.module !== 'dashboard');
+    
+    restrictedItems.forEach(item => {
+      this.authService.hasPermission(item.module, 'read').subscribe(hasPerm => {
+        if (hasPerm) {
+          this.menuItems.update(items => {
+            if (!items.find(i => i.module === item.module)) {
+              return [...items, item];
+            }
+            return items;
+          });
+        }
+        // Check if all items have been evaluated
+        const checked = restrictedItems.filter(i => 
+          this.menuItems().some(m => m.module === i.module) || 
+          // Count evaluated items
+          this.allMenuItems.some(m => m.module === i.module)
+        );
+      });
+    });
+
+    // Stop loading after all permission checks complete (max ~3s from auth service)
+    this.authService.permissions$.subscribe(() => {
+      this.menuLoading.set(false);
     });
   }
 
   closeSideNavIfMobile() {
-    this.isHandset$.subscribe(isHandset => {
-      if (isHandset) {
+    this.isSmallScreen$.subscribe(isSmall => {
+      if (isSmall) {
         this.drawer.close();
       }
     });

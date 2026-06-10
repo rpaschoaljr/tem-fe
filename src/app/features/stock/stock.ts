@@ -11,6 +11,7 @@ import { StockService } from '../../core/services/stock.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
+import { LoggerService } from '../../core/services/logger.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
 import { StockFormComponent } from './stock-form/stock-form';
@@ -39,10 +40,11 @@ export class StockComponent implements OnInit {
   private dialog = inject(MatDialog);
   private authService = inject(AuthService);
   private exportService = inject(ExportService);
+  private logger = inject(LoggerService);
 
   allItems: StockItem[] = [];
   items: StockItem[] = [];
-  exportData: StockItem[] = []; // Dados filtrados prontos para exportar
+  exportData: StockItem[] = [];
   stockFilter: 'all' | 'low' | 'out' = 'all';
   canWrite$ = this.authService.hasPermission('stock', 'write');
 
@@ -69,8 +71,9 @@ export class StockComponent implements OnInit {
         this.calculateKPIs();
         this.applyFilter();
       },
-      error: (err) => {
-        this.notify.showError('Erro ao carregar estoque: ' + err.message);
+      error: (err: unknown) => {
+        this.logger.error('Erro ao carregar estoque', err);
+        this.notify.showError('Erro ao carregar estoque: ' + (err instanceof Error ? err.message : ''));
       }
     });
   }
@@ -85,7 +88,6 @@ export class StockComponent implements OnInit {
   applyFilter() {
     let filtered = this.allItems;
 
-    // Filtro de Categoria/Status (KPIs)
     if (this.stockFilter === 'low') {
       filtered = filtered.filter(i => i.quantity > 0 && i.minStock && i.quantity <= i.minStock);
     } else if (this.stockFilter === 'out') {
@@ -123,7 +125,6 @@ export class StockComponent implements OnInit {
     ref.afterClosed().subscribe((result: AdjustResult | undefined) => {
       if (!result) return;
       
-      // Se o botão for 'remove', forçamos o delta a ser negativo
       let delta = Math.abs(result.delta);
       if (event.type === 'remove') delta = -delta;
 
@@ -134,12 +135,15 @@ export class StockComponent implements OnInit {
           this.notify.showSuccess(`Estoque ajustado! ${Math.abs(delta)} ${updated.unit} ${action} saldo.`);
           this.loadData();
         },
-        error: (e: any) => this.notify.showError('Erro ao ajustar: ' + e.message),
+        error: (e: unknown) => {
+          this.logger.error('Erro ao ajustar estoque', e);
+          this.notify.showError('Erro ao ajustar: ' + (e instanceof Error ? e.message : ''));
+        },
       });
     });
   }
 
-  public getRowClass(item: StockItem): any {
+  public getRowClass(item: StockItem): Record<string, boolean> | null {
     if (item.quantity <= 0) return { 'stock-out': true };
     if (item.quantity > 0 && item.minStock && item.quantity <= item.minStock) return { 'stock-warning': true };
     return null;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule, MatPaginatorIntl } from '@angular/material/paginator';
@@ -9,8 +9,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { LoggerService } from '../../../core/services/logger.service';
 
-// Função para traduzir e compactar o paginador
 export function getPtBrPaginatorIntl() {
   const intl = new MatPaginatorIntl();
   intl.itemsPerPageLabel = 'Itens:';
@@ -28,7 +28,6 @@ export function getPtBrPaginatorIntl() {
   return intl;
 }
 
-// Interface corrigida (sem duplicidade)
 export interface ColumnDef {
   def: string;
   label: string;
@@ -57,23 +56,25 @@ export interface ColumnDef {
   templateUrl: './generic-list.html',
   styleUrl: './generic-list.scss'
 })
-export class GenericListComponent implements OnChanges, AfterViewInit {
-  @Input() data: any[] = [];
+export class GenericListComponent<T> implements OnChanges, AfterViewInit {
+  private readonly logger = inject(LoggerService);
+
+  @Input() data: T[] = [];
   @Input() columns: ColumnDef[] = [];
   @Input() showAdjust = false;
   @Input() hideTrash = false;
   @Input() hideActions = false;
-  @Input() rowClassFn?: (row: any) => any;
+  @Input() rowClassFn?: (row: T) => Record<string, boolean | string> | null;
 
-  @Output() editAction = new EventEmitter<any>();
-  @Output() deleteAction = new EventEmitter<any>();
-  @Output() restoreAction = new EventEmitter<any>();
-  @Output() adjustAction = new EventEmitter<{ item: any, type: 'add' | 'remove' }>();
-  @Output() filteredDataChange = new EventEmitter<any[]>();
+  @Output() editAction = new EventEmitter<T>();
+  @Output() deleteAction = new EventEmitter<T>();
+  @Output() restoreAction = new EventEmitter<T>();
+  @Output() adjustAction = new EventEmitter<{ item: T, type: 'add' | 'remove' }>();
+  @Output() filteredDataChange = new EventEmitter<T[]>();
 
-  dataSource = new MatTableDataSource<any>([]);
+  dataSource = new MatTableDataSource<T>([]);
   displayedColumns: string[] = [];
-  expandedElement: any | null = null;
+  expandedElement: T | null = null;
   showDeleted = false;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -91,14 +92,13 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
     this.setupCustomFilter();
     this.setupNaturalSort();
     
-    // Notifica dados iniciais
     setTimeout(() => this.emitFilteredData(), 0);
   }
 
   setupNaturalSort() {
     const collator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
     
-    this.dataSource.sortData = (data: any[], sort: MatSort) => {
+    this.dataSource.sortData = (data: T[], sort: MatSort) => {
       const active = sort.active;
       const direction = sort.direction;
       
@@ -107,24 +107,20 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
       }
 
       return [...data].sort((a, b) => {
-        let valueA = a[active];
-        let valueB = b[active];
+        let valueA = (a as unknown as Record<string, unknown>)[active];
+        let valueB = (b as unknown as Record<string, unknown>)[active];
 
-        // Se os valores forem nulos/indefinidos, trata como string vazia para não quebrar a ordem
         if (valueA === null || valueA === undefined) valueA = '';
         if (valueB === null || valueB === undefined) valueB = '';
 
         let comparison = 0;
 
-        // 1. Comparação de Números Reais
         if (typeof valueA === 'number' && typeof valueB === 'number') {
           comparison = valueA - valueB;
         }
-        // 2. Comparação de Datas
         else if (valueA instanceof Date && valueB instanceof Date) {
           comparison = valueA.getTime() - valueB.getTime();
         }
-        // 3. Comparação de Strings (Natural Sort: "Item 2" antes de "Item 10")
         else {
           comparison = collator.compare(String(valueA), String(valueB));
         }
@@ -136,7 +132,7 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
 
   updateTable() {
     this.displayedColumns = [...this.columns.map(c => c.def), 'actions'];
-    const filteredData = this.data.filter(item => !!item.deleted === this.showDeleted);
+    const filteredData = this.data.filter(item => !!(item as unknown as Record<string, unknown>)['deleted'] === this.showDeleted);
     this.dataSource.data = filteredData;
     this.emitFilteredData();
   }
@@ -154,8 +150,6 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
   }
 
   emitFilteredData() {
-    // Retorna os dados que passaram pelo filtro interno do MatTableDataSource
-    // Usamos Promise.resolve() para emitir fora do ciclo de detecção atual (evita NG0100)
     Promise.resolve().then(() => {
       const filtered = this.dataSource.filteredData;
       this.filteredDataChange.emit(filtered);
@@ -163,9 +157,9 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
   }
 
   setupCustomFilter() {
-    this.dataSource.filterPredicate = (data: any, filter: string) => {
+    this.dataSource.filterPredicate = (data: T, filter: string) => {
       const dataStr = this.columns
-        .map(col => data[col.def])
+        .map(col => (data as unknown as Record<string, unknown>)[col.def])
         .join(' ')
         .toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -177,21 +171,21 @@ export class GenericListComponent implements OnChanges, AfterViewInit {
     };
   }
 
-  confirmDelete(item: any) {
+  confirmDelete(item: T) {
     if (confirm('Tem certeza que deseja mover para a lixeira?')) {
       this.deleteAction.emit(item);
     }
   }
 
-  getStockClass(item: any): string {
-    const q = item.quantity ?? 0;
-    const min = item.minStock ?? 0;
+  getStockClass(item: T): string {
+    const q = (item as unknown as Record<string, unknown>)['quantity'] as number ?? 0;
+    const min = (item as unknown as Record<string, unknown>)['minStock'] as number ?? 0;
     if (q <= 0) return 'critical';
     if (q <= min) return 'warning';
     return 'normal';
   }
 
-  toggleRow(element: any) {
+  toggleRow(element: T) {
     this.expandedElement = this.expandedElement === element ? null : element;
   }
 

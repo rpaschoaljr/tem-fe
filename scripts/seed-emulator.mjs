@@ -4,9 +4,9 @@
  * Inclui todos os campos obrigatórios dos formulários (entryDate, content, etc).
  */
 
-const PROJECT_ID = 'sistematemfe';
-const AUTH_EMULATOR = 'http://localhost:9099';
-const FIRESTORE_EMULATOR = 'http://localhost:8080';
+const PROJECT_ID = process.env.FIREBASE_PROJECT || 'demo-sistematemfe';
+const AUTH_EMULATOR = `http://localhost:${process.env.FIREBASE_AUTH_PORT || '9099'}`;
+const FIRESTORE_EMULATOR = `http://localhost:${process.env.FIREBASE_FIRESTORE_PORT || '8080'}`;
 const API_KEY = 'fake-api-key-emulator';
 
 const TEST_USERS = [

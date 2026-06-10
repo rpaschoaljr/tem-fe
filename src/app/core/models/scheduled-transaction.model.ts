@@ -1,3 +1,5 @@
+import { FirestoreTimestamp } from './common';
+
 export type RecurrenceType = 'once' | 'weekly' | 'monthly' | 'yearly';
 
 export const RECURRENCE_LABELS: Record<RecurrenceType, string> = {
@@ -12,9 +14,9 @@ export interface ScheduledTransaction {
     description: string;
     type: 'Entrada' | 'Saída';
     category: string;
-    value: number; // sempre positivo; sinal aplicado pelo type
+    value: number;
     recurrence: RecurrenceType;
-    dayOfMonth?: number; // 1–31, se o dia não existir no mês o sistema usa o último dia (ex: 31/jan -> 28/fev)
+    dayOfMonth?: number;
     nextDueDate: Date;
     active: boolean;
     deleted: boolean;
@@ -22,3 +24,8 @@ export interface ScheduledTransaction {
     memberName?: string;
     lastAppliedDate?: Date;
 }
+
+export type FirestoreScheduledTransaction = Omit<ScheduledTransaction, 'nextDueDate' | 'lastAppliedDate'> & {
+    nextDueDate: FirestoreTimestamp;
+    lastAppliedDate?: FirestoreTimestamp;
+};

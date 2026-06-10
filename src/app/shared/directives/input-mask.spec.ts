@@ -1,8 +1,10 @@
-import { InputMask } from './input-mask';
+import { ElementRef } from '@angular/core';
+import { NgControl } from '@angular/forms';
+import { InputMaskDirective } from './input-mask';
 
-describe('InputMask', () => {
+describe('InputMaskDirective', () => {
   it('should create an instance', () => {
-    const directive = new InputMask();
+    const directive = new InputMaskDirective(new ElementRef(null), {} as NgControl);
     expect(directive).toBeTruthy();
   });
 });

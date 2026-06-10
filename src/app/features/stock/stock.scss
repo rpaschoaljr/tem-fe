@@ -1,5 +1,4 @@
 .page-container {
-    padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -87,10 +86,6 @@
     &.danger .value {
         color: #f44336;
     }
-}
-
-.actions-row {
-    margin-bottom: 20px;
 }
 
 .header-with-actions {
