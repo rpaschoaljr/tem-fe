@@ -299,7 +299,12 @@
                             <!-- SUB-ABA: POR USUÁRIO -->
                             <mat-tab label="Por Usuário">
                                 <div class="tab-content" style="padding-top: 16px;">
-                                    <p style="opacity:0.7; margin-bottom: 12px; font-size: 0.9rem;">Permissões individuais sobrepõem as do cargo. Útil para dar/revogar acesso pontual.</p>
+                                    <p style="opacity:0.7; margin-bottom: 12px; font-size: 0.9rem;">
+                                        Permissões individuais sobrepõem as do cargo. Útil para dar/revogar acesso pontual.<br>
+                                        <strong>Legenda:</strong> 
+                                        <mat-icon style="font-size: 14px; width: 14px; height: 14px; vertical-align: baseline;" color="primary">check_circle</mat-icon> Permitido &nbsp;|&nbsp; 
+                                        <mat-icon style="font-size: 14px; width: 14px; height: 14px; vertical-align: baseline;" color="warn">cancel</mat-icon> Bloqueado
+                                    </p>
 
                                     <mat-form-field appearance="outline" style="width: 100%; max-width: 400px;">
                                         <mat-label>Buscar Membro</mat-label>
@@ -337,14 +342,20 @@
                                                     <div class="perm-toggles">
                                                         <div class="perm-row">
                                                             <span>Leitura</span>
-                                                            <button mat-icon-button [color]="perm.modules[mod.id].read ? 'primary' : ''" (click)="toggleUserPermission(mod.id, 'read')">
-                                                                <mat-icon>{{ perm.modules[mod.id].read ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            <button mat-icon-button 
+                                                                    [color]="getUserPermValue(mod.id, 'read') ? 'primary' : 'warn'" 
+                                                                    (click)="toggleUserPermission(mod.id, 'read')"
+                                                                    [matTooltip]="getUserPermValue(mod.id, 'read') ? 'Permitido' : 'Bloqueado'">
+                                                                <mat-icon>{{ getUserPermValue(mod.id, 'read') ? 'check_circle' : 'cancel' }}</mat-icon>
                                                             </button>
                                                         </div>
                                                         <div class="perm-row">
                                                             <span>Escrita</span>
-                                                            <button mat-icon-button [color]="perm.modules[mod.id].write ? 'primary' : ''" (click)="toggleUserPermission(mod.id, 'write')">
-                                                                <mat-icon>{{ perm.modules[mod.id].write ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                                                            <button mat-icon-button 
+                                                                    [color]="getUserPermValue(mod.id, 'write') ? 'primary' : 'warn'" 
+                                                                    (click)="toggleUserPermission(mod.id, 'write')"
+                                                                    [matTooltip]="getUserPermValue(mod.id, 'write') ? 'Permitido' : 'Bloqueado'">
+                                                                <mat-icon>{{ getUserPermValue(mod.id, 'write') ? 'check_circle' : 'cancel' }}</mat-icon>
                                                             </button>
                                                         </div>
                                                     </div>

@@ -26,8 +26,8 @@ export interface ModuleConfig {
 }
 
 export interface ModulePermissions {
-    read: boolean;
-    write: boolean;
+    read?: boolean;
+    write?: boolean;
 }
 
 export interface PermissionConfig {
@@ -35,13 +35,13 @@ export interface PermissionConfig {
     type: 'role' | 'user';
     target: string; // Nome da role ou email do usuário
     hierarchyLevel: number; // 1 = menor autoridade, 10 = máxima (admin total)
-    modules: {
-        members: ModulePermissions;
-        finance: ModulePermissions;
-        stock: ModulePermissions;
-        settings: ModulePermissions;
-        notices: ModulePermissions;
-        [key: string]: ModulePermissions;
+    modules?: {
+        members?: ModulePermissions;
+        finance?: ModulePermissions;
+        stock?: ModulePermissions;
+        settings?: ModulePermissions;
+        notices?: ModulePermissions;
+        [key: string]: ModulePermissions | undefined;
     };
     updatedAt: Date;
 }

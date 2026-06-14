@@ -9,9 +9,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin Mestre (Acesso total para desenvolvimento)
+    // Admin Mestre (Verifica Claim injetada ou HierarchyLevel)
     function isMasterAdmin() {
-      return isLoggedIn() && (request.auth.token.email == 'admin@tem.local' || (request.auth.token.hierarchyLevel != null && request.auth.token.hierarchyLevel >= 10));
+      return isLoggedIn() && (request.auth.token.admin == true || (request.auth.token.hierarchyLevel != null && request.auth.token.hierarchyLevel >= 10));
     }
 
     function hasPerm(module, action) {
@@ -38,7 +38,7 @@ service cloud.firestore {
     // 2. MEMBROS - FATIA PRIVADA (CPF, Endereço, Telefone)
     match /members_private/{memberId} {
       // Lê se for Admin OU se for o dono do próprio dado
-      allow read: if hasPerm('members', 'read') || (resource != null && resource.data.email == request.auth.token.email);
+      allow read: if hasPerm('members', 'read') || (request.auth.uid == memberId) || (resource != null && resource.data.uid == request.auth.uid);
       allow write: if hasPerm('members', 'write');
     }
 
@@ -46,7 +46,7 @@ service cloud.firestore {
     match /members_spiritual/{memberId} {
       // Lê se for Admin OU se for o próprio dono E tiver a flag liberada
       allow read: if hasPerm('members', 'read') || 
-                  (resource != null && resource.data.email == request.auth.token.email && resource.data.showSpiritualData == true);
+                  (((request.auth.uid == memberId) || (resource != null && resource.data.uid == request.auth.uid)) && resource.data.showSpiritualData == true);
       allow write: if hasPerm('members', 'write');
     }
 
@@ -74,7 +74,7 @@ service cloud.firestore {
 
     match /permissions/{permId} {
       // Usuário pode ler seu próprio documento de permissão (necessário para fallback)
-      allow read: if isMasterAdmin() || (isLoggedIn() && permId == request.auth.token.email);
+      allow read: if isMasterAdmin() || (isLoggedIn() && permId == request.auth.uid);
       allow write: if isMasterAdmin();
     }
   }

@@ -176,17 +176,20 @@ export class SettingsComponent implements OnInit {
     const perm = this.rolePermission();
     if (!perm) return;
 
-    const currentVal = perm.modules[moduleId][action];
+    if (!perm.modules) perm.modules = {};
+    if (!perm.modules[moduleId]) perm.modules[moduleId] = {};
+
+    const currentVal = perm.modules[moduleId]![action];
     
     if (action === 'read' && currentVal === true) {
-      perm.modules[moduleId].read = false;
-      perm.modules[moduleId].write = false;
+      perm.modules![moduleId]!.read = false;
+      perm.modules![moduleId]!.write = false;
     } 
     else if (action === 'write' && currentVal === false) {
-      perm.modules[moduleId].write = true;
-      perm.modules[moduleId].read = true;
+      perm.modules![moduleId]!.write = true;
+      perm.modules![moduleId]!.read = true;
     } else {
-      perm.modules[moduleId][action] = !currentVal;
+      perm.modules![moduleId]![action] = !currentVal;
     }
 
     this.rolePermission.set({ ...perm });
@@ -242,16 +245,25 @@ export class SettingsComponent implements OnInit {
   toggleUserPermission(moduleId: string, action: 'read' | 'write') {
     const perm = this.userPermission();
     if (!perm) return;
-    const currentVal = perm.modules[moduleId][action];
-    if (action === 'read' && currentVal === true) {
-      perm.modules[moduleId].read = false;
-      perm.modules[moduleId].write = false;
-    } else if (action === 'write' && currentVal === false) {
-      perm.modules[moduleId].write = true;
-      perm.modules[moduleId].read = true;
-    } else {
-      perm.modules[moduleId][action] = !currentVal;
+    
+    if (!perm.modules) perm.modules = {};
+    if (!perm.modules[moduleId]) perm.modules[moduleId] = {};
+    
+    const currentEffective = this.getUserPermValue(moduleId, action);
+    const newValue = !currentEffective;
+    
+    if (action === 'read' && newValue === true) {
+      perm.modules![moduleId]!.read = true;
+    } else if (action === 'read' && newValue === false) {
+      perm.modules![moduleId]!.read = false;
+      perm.modules![moduleId]!.write = false; // perde write se perder read
+    } else if (action === 'write' && newValue === true) {
+      perm.modules![moduleId]!.write = true;
+      perm.modules![moduleId]!.read = true; // ganha read se ganhar write
+    } else if (action === 'write' && newValue === false) {
+      perm.modules![moduleId]!.write = false;
     }
+    
     this.userPermission.set({ ...perm });
   }
 
@@ -299,6 +311,27 @@ export class SettingsComponent implements OnInit {
   getMatrixValue(perm: PermissionConfig, moduleId: string, action: 'read' | 'write'): boolean {
     if (perm.hierarchyLevel >= 10) return true;
     return perm.modules?.[moduleId]?.[action] ?? false;
+  }
+
+  getUserPermValue(moduleId: string, action: 'read' | 'write'): boolean {
+    const perm = this.userPermission();
+    if (!perm) return false;
+    
+    // 1. Tenta a sobrescrita do usuário
+    if (perm.modules && perm.modules[moduleId] && perm.modules[moduleId]![action] !== undefined) {
+      return perm.modules[moduleId]![action] === true;
+    }
+    
+    // 2. Fallback para a permissão do cargo
+    const member = this.selectedUserForPerm();
+    if (!member || !member.role) return false;
+    
+    const roleId = `role_${member.role.toUpperCase().normalize('NFD').replace(/[^A-Z0-9]/g, "")}`;
+    const rolePerm = this.allRolePermissions().find(rp => rp.id === roleId);
+    if (!rolePerm) return false;
+    
+    if (rolePerm.hierarchyLevel >= 10) return true;
+    return rolePerm.modules?.[moduleId]?.[action] === true;
   }
 
   private checkLoading() {

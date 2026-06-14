@@ -31,7 +31,8 @@ export class ConfigService {
     // --- PERMISSÕES ---
 
     getRolePermission(roleName: string): Observable<PermissionConfig> {
-        const safeId = `role_${roleName.replace(/\//g, '_')}`;
+        const normalized = roleName.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+        const safeId = `role_${normalized.replace(/[^A-Z0-9]/g, '')}`;
         const docRef = doc(this.firestore, this.PERM_COL, safeId);
         
         return from(getDoc(docRef)).pipe(
@@ -75,19 +76,18 @@ export class ConfigService {
     }
 
     private getDefaultUserPermission(email: string): PermissionConfig {
-        const defaultModulePerm: ModulePermissions = { read: false, write: false };
         return {
             id: email,
             type: 'user',
             target: email,
-            hierarchyLevel: 1,
+            hierarchyLevel: 0,
             modules: {
-                dashboard: { ...defaultModulePerm },
-                members: { ...defaultModulePerm },
-                finance: { ...defaultModulePerm },
-                stock: { ...defaultModulePerm },
-                notices: { ...defaultModulePerm },
-                settings: { ...defaultModulePerm }
+                dashboard: {},
+                members: {},
+                finance: {},
+                stock: {},
+                notices: {},
+                settings: {}
             },
             updatedAt: new Date()
         };
