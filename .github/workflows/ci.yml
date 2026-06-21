@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -74,33 +74,3 @@ jobs:
       - name: OWASP ZAP (Baseline Scan)
         run: npm run scan:owasp || true
 
-  deploy:
-    name: Deploy to Firebase Hosting
-    needs: [build-and-test, security-scans]
-    # Executa o deploy automaticamente APENAS se o push for na branch master/main
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Build App
-        run: npm run build
-
-      - name: Deploy to Firebase
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy
-        env:
-          # É necessário gerar este token executando 'firebase login:ci' na sua máquina
-          # E então cadastrar como Secret no repositório GitHub (Settings > Secrets > Actions)
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
