@@ -86,28 +86,76 @@
                 <!-- ABA FINANCEIRO -->
                 <mat-tab label="Financeiro">
                     <div class="tab-content">
-                        <div class="tab-header">
-                            <div>
-                                <h3>Catálogo de Lançamentos</h3>
-                                <p class="subtitle">Padronize as categorias e seus tipos vinculados.</p>
-                            </div>
-                            <div class="actions">
-                                <button mat-flat-button color="primary" *ngIf="financeConfig() as conf" (click)="addOption(conf, conf.fields[0])">
-                                    <mat-icon>add</mat-icon> Novo Tipo de Lançamento
-                                </button>
-                            </div>
-                        </div>
+                        
+                        <mat-tab-group>
+                            <!-- SUB-ABA CATÁLOGO -->
+                            <mat-tab label="Catálogo de Lançamentos">
+                                <div class="tab-header" style="margin-top: 20px;">
+                                    <div>
+                                        <h3>Catálogo de Lançamentos</h3>
+                                        <p class="subtitle">Padronize as categorias e seus tipos vinculados.</p>
+                                    </div>
+                                    <div class="actions">
+                                        <button mat-flat-button color="primary" *ngIf="financeConfig() as conf" (click)="addOption(conf, conf.fields[0])">
+                                            <mat-icon>add</mat-icon> Novo Tipo de Lançamento
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <div *ngIf="financeConfig() as config">
-                            <!-- Usando o GenericList para as opções do primeiro campo (categoria) -->
-                            <app-generic-list
-                                [data]="config.fields[0].options || []"
-                                [columns]="financeColumns"
-                                (editAction)="addOption(config, config.fields[0], $event)"
-                                (deleteAction)="removeOptionGeneric($event, config, config.fields[0])"
-                                (restoreAction)="restoreOptionGeneric($event, config, config.fields[0])">
-                            </app-generic-list>
-                        </div>
+                                <div *ngIf="financeConfig() as config">
+                                    <app-generic-list
+                                        [data]="config.fields[0].options || []"
+                                        [columns]="financeColumns"
+                                        (editAction)="addOption(config, config.fields[0], $event)"
+                                        (deleteAction)="removeOptionGeneric($event, config, config.fields[0])"
+                                        (restoreAction)="restoreOptionGeneric($event, config, config.fields[0])">
+                                    </app-generic-list>
+                                </div>
+                            </mat-tab>
+
+                            <!-- SUB-ABA OPÇÕES FINANCEIRAS -->
+                            <mat-tab label="Opções Adicionais (DRE)">
+                                <div class="options-container" *ngIf="financeConfig() as config" style="margin-top: 20px;">
+                                    <!-- Pula o primeiro field que é a categoria -->
+                                    <div class="option-section" *ngFor="let field of config.fields.slice(1)">
+                                        <div class="section-header">
+                                            <h4>{{ field.label }}</h4>
+                                            <button mat-icon-button 
+                                                    [color]="isTrashVisible(field.key) ? 'warn' : ''" 
+                                                    (click)="toggleOptionsTrash(field.key)"
+                                                    *ngIf="getDeletedOptions(field).length > 0"
+                                                    matTooltip="Ver itens removidos">
+                                                <mat-icon>{{ isTrashVisible(field.key) ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="chips-grid">
+                                            <div class="option-chip" *ngFor="let opt of getActiveOptions(field)">
+                                                <span>{{ opt.label }}</span>
+                                                <button mat-icon-button (click)="removeOption(config, field, opt)">
+                                                    <mat-icon>close</mat-icon>
+                                                </button>
+                                            </div>
+                                            <button mat-stroked-button class="add-opt-btn" (click)="addOption(config, field)">
+                                                <mat-icon>add</mat-icon> Adicionar {{ field.label }}
+                                            </button>
+                                        </div>
+
+                                        <div class="deleted-options" *ngIf="isTrashVisible(field.key) && getDeletedOptions(field).length > 0">
+                                            <p><mat-icon>delete_outline</mat-icon> Itens removidos (clique para restaurar):</p>
+                                            <div class="chips-grid">
+                                                <button mat-stroked-button class="deleted-chip" 
+                                                        *ngFor="let opt of getDeletedOptions(field)"
+                                                        (click)="restoreOption(config, opt)">
+                                                    {{ opt.label }} <mat-icon>restore</mat-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                        </mat-tab-group>
+
                     </div>
                 </mat-tab>
 

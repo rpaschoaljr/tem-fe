@@ -4,7 +4,7 @@ import { Injectable, isDevMode } from '@angular/core';
   providedIn: 'root'
 })
 export class LoggerService {
-  private readonly dev = isDevMode();
+  private readonly dev = false; // Desligado a pedido para limpar o console
 
   debug(message: string, ...data: unknown[]): void {
     if (this.dev) {

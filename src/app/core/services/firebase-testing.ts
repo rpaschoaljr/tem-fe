@@ -1,10 +1,15 @@
-import { Provider } from '@angular/core';
+import { Provider, EnvironmentProviders } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Auth } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Functions } from '@angular/fire/functions';
+import { Storage } from '@angular/fire/storage';
 
-export function provideFirebaseMocks(): Provider[] {
+export function provideFirebaseMocks(): (Provider | EnvironmentProviders)[] {
   return [
+    provideHttpClient(),
+    provideHttpClientTesting(),
     {
       provide: Auth,
       useValue: {
@@ -15,5 +20,6 @@ export function provideFirebaseMocks(): Provider[] {
     },
     { provide: Firestore, useValue: {} },
     { provide: Functions, useValue: {} },
+    { provide: Storage, useValue: {} },
   ];
 }

@@ -2,9 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { of, Observable, from, throwError } from 'rxjs';
 import { delay, tap, catchError, map } from 'rxjs/operators';
 import { Notice } from '../models/notice.model';
-import {
-    Firestore, collection, doc, getDoc, setDoc, updateDoc, getDocs, deleteDoc
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { LoggerService } from './logger.service';
 
 @Injectable({
@@ -22,9 +21,9 @@ export class NoticesService {
     private initialMockData: Notice[] = [];
 
     getNotices(forceRefresh = false): Observable<Notice[]> {
-        const colRef = collection(this.firestore, this.COL);
+        const colRef = FbUtils.collection(this.firestore, this.COL);
         
-        return from(getDocs(colRef)).pipe(
+        return from(FbUtils.getDocs(colRef)).pipe(
             map(snap => {
                 const list = snap.docs.map(d => this.fromFirestore(d.id, d.data()));
                 return list.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -71,8 +70,8 @@ export class NoticesService {
 
     save(notice: Notice): Observable<boolean> {
         const isNew = !notice.id;
-        const colRef = collection(this.firestore, this.COL);
-        const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, notice.id);
+        const colRef = FbUtils.collection(this.firestore, this.COL);
+        const docRef = isNew ? FbUtils.doc(colRef) : FbUtils.doc(this.firestore, this.COL, notice.id);
 
         const data = {
             ...this.toFirestore(notice),
@@ -81,7 +80,7 @@ export class NoticesService {
             ...(isNew ? { createdAt: new Date(), deleted: false } : {})
         };
 
-        return from(setDoc(docRef, data, { merge: true })).pipe(
+        return from(FbUtils.setDoc(docRef, data, { merge: true })).pipe(
             map(() => true),
             catchError(() => {
                 const currentData = this.getMockOrStoredData();
@@ -103,8 +102,8 @@ export class NoticesService {
     }
 
     softDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             map(() => true),
             catchError(() => {
                 const currentData = this.getMockOrStoredData();
@@ -120,8 +119,8 @@ export class NoticesService {
     }
 
     restore(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             map(() => true),
             catchError(() => {
                 const currentData = this.getMockOrStoredData();
@@ -137,8 +136,8 @@ export class NoticesService {
     }
 
     hardDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(deleteDoc(docRef)).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.deleteDoc(docRef)).pipe(
             map(() => true),
             catchError(() => {
                 const currentData = this.getMockOrStoredData();

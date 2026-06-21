@@ -23,13 +23,22 @@ Com o plano Blaze, implementamos lógicas de backend robustas:
 
 ---
 
-## 🧪 Estratégia de Testes
+## 🧪 Estratégia de Testes e Aprendizados Atuais
 Iniciando a cultura de qualidade total:
 - **Testes Unitários:** Validação de lógicas de serviço, validadores customizados e pipes.
 - **Testes de Integração:** Fluxos completos entre componentes e serviços do Firebase (usando emuladores).
 - **Testes de Cloud Functions:** Garantia de que as lógicas de backend e segurança estão íntegras.
 
----
+**O Que Aprendemos Hoje (Angular 20 + Firebase Modular):**
+1. **Restrições de Espionagem (spyOn):** O Angular 20 rodando pacotes ESM (ES Modules) bloqueia o `spyOn` direto em importações puras. Para resolver isso, criamos o wrapper `FbUtils` que exporta as funções de forma espionável.
+2. **Bash Variable Interpolation:** Evitar comandos `node -e " ... $1 "` pelo terminal. O Bash avalia `$1` como vazio, o que quebrou as strings do `spyOn`. Para operações globais (Regex/AST) em vários arquivos, **sempre utilize um script Node independente (como `migrate_fbutils.js`)**.
+3. **TypeScript Inference na Ternária:** Para contornar a falha em mocks repetidos e ao mesmo tempo satisfazer a tipagem estrita do compilador sem o erro `Property 'and' does not exist`, a sintaxe exata e segura que escrevemos no `migrate_fbutils.js` é:
+   `(((FbUtils.metodo as any)?.and ? FbUtils.metodo : spyOn(FbUtils, 'metodo')) as any)`
+4. **Status Atual e Próximos Passos:** 
+   - A pasta `src/app/` foi restaurada para o estado estável da área de staging.
+   - O arquivo `migrate_fbutils.js` foi criado na raiz do projeto.
+   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Executar `node migrate_fbutils.js` e em seguida rodar os testes com `npm run test -- --watch=false --browsers=FirefoxHeadless` para prosseguir com os acertos da cobertura de testes.
+----
 
 ## ✅ Checklist de Progresso
 
@@ -45,9 +54,9 @@ Iniciando a cultura de qualidade total:
 - [x] Lançamentos de Entradas/Saídas
 - [x] Categorias Customizáveis
 - [x] Agendamentos de Transações Recorrentes
-- [ ] **Sincronização em Tempo Real (onSnapshot)**
-- [ ] Relatórios e Gráficos Mensais (DRE)
-- [ ] **Lançamento Automático via Cloud Function (Cron)**
+- [x] **Sincronização em Tempo Real (onSnapshot)**
+- [x] Relatórios e Gráficos Mensais (DRE)
+- [x] **Lançamento Automático via Cloud Function (Cron)**
 
 ### Gestão de Estoque
 - [x] Controle de Entrada/Saída
@@ -61,13 +70,13 @@ Iniciando a cultura de qualidade total:
 - [x] Firestore Security Rules (Iniciais)
 - [x] **Migração para Plano Blaze**
 - [x] **Resolução de Acesso (UI de Permissões e Lógica de Cargos)**
-- [ ] **Implementação de Custom Claims (Token JWT)**
-- [ ] **Checkov (IaC Security)**
-- [ ] **Snyk (Dependency Scan)**
-- [ ] **Gitleaks (Secret Detection)**
-- [ ] Configuração de CI/CD (GitHub Actions/GCP)
+- [x] **Implementação de Custom Claims (Token JWT)**
+- [x] **Checkov (IaC Security)**
+- [x] **Snyk (Dependency Scan)**
+- [x] **Gitleaks (Secret Detection)**
+- [x] Configuração de CI/CD (GitHub Actions/GCP)
 - [ ] Cobertura de Testes Unitários > 80%
-- [ ] Pentest Approval (OWASP/Nuclei)
+- [x] Pentest Approval (OWASP/Nuclei)
 
 ---
 

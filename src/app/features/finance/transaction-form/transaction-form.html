@@ -75,6 +75,67 @@
       </mat-form-field>
     </div>
 
+    <!-- PAINEL AVANÇADO DRE -->
+    <mat-accordion style="margin-bottom: 20px;">
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Opções Avançadas (DRE & Taxas)</mat-panel-title>
+          <mat-panel-description>Centro de Custo, Contas, Taxas</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Centro de Custo (DRE)</mat-label>
+            <mat-select formControlName="costCenter">
+              <mat-option *ngFor="let opt of costCenterOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
+            </mat-select>
+            <mat-error>Obrigatório</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Forma de Pagamento</mat-label>
+            <mat-select formControlName="paymentMethod">
+              <mat-option *ngFor="let opt of paymentMethodOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
+            </mat-select>
+            <mat-error>Obrigatório</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Conta Bancária / Caixa</mat-label>
+            <mat-select formControlName="bankAccount">
+              <mat-option *ngFor="let opt of bankAccountOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
+            </mat-select>
+            <mat-error>Obrigatório</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Taxa / Desconto (R$)</mat-label>
+            <input matInput 
+                   type="text" 
+                   formControlName="feeDisplay" 
+                   (input)="onFeeInput($event)"
+                   placeholder="0,00" 
+                   style="text-align: right;">
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    <div class="row">
+    <!-- MANTIVE ESTE CÓDIGO FORA DO REPLACE -->
+
+      <div class="net-value-box">
+        <span class="label">Valor Líquido:</span>
+        <span class="value" [class.negative]="form.get('type')?.value === 'Saída'">
+          {{ netValueCalculated | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+        </span>
+      </div>
+    </div>
+
   </form>
 </mat-dialog-content>
 

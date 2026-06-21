@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { Transaction } from '../../../core/models/transaction.model';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ConfigService } from '../../../core/services/config.service';
@@ -38,10 +39,35 @@ const MONTHS = [
     MatDatepickerModule,
     MatNativeDateModule,
     MatAutocompleteModule,
+    MatExpansionModule,
     InputMaskDirective,
   ],
   providers: [],
   templateUrl: './transaction-form.html',
+  styles: [`
+    .net-value-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8px 16px;
+      background: var(--mat-sys-surface-container-low);
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .net-value-box .label {
+      font-size: 12px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .net-value-box .value {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--mat-sys-primary);
+    }
+    .net-value-box .value.negative {
+      color: var(--mat-sys-error);
+    }
+  `]
 })
 export class TransactionFormComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -52,6 +78,10 @@ export class TransactionFormComponent implements OnInit {
 
   transaction: Transaction | null = inject(MAT_DIALOG_DATA);
   categoryOptions = signal<FieldOption[]>([]);
+  paymentMethodOptions = signal<FieldOption[]>([]);
+  bankAccountOptions = signal<FieldOption[]>([]);
+  costCenterOptions = signal<FieldOption[]>([]);
+
   allMembers = signal<Member[]>([]);
   filteredMembers = signal<Member[]>([]);
   showMemberField = signal(false);
@@ -65,6 +95,13 @@ export class TransactionFormComponent implements OnInit {
     date:        [this.transaction?.date ?? new Date(), Validators.required],
     value:       [Math.abs(this.transaction?.value ?? 0), [Validators.required, Validators.min(0.01)]],
     valueDisplay: [this.formatInitialValue(this.transaction?.value), Validators.required],
+    
+    paymentMethod: [this.transaction?.paymentMethod ?? '', Validators.required],
+    bankAccount: [this.transaction?.bankAccount ?? '', Validators.required],
+    costCenter: [this.transaction?.costCenter ?? '', Validators.required],
+    fee: [this.transaction?.fee ?? 0, Validators.min(0)],
+    feeDisplay: [this.formatInitialValue(this.transaction?.fee)],
+
     memberId:    [this.transaction?.memberId ?? ''],
     memberName:  [this.transaction?.memberName ?? ''],
     refMonth:    [this.transaction?.refMonth ?? new Date().getMonth()],
@@ -75,6 +112,7 @@ export class TransactionFormComponent implements OnInit {
     this.loadCategories();
     this.loadMembers();
     this.setupAutoType();
+    this.setupFeeCalculation();
     this.setupDescriptionSearch();
   }
 
@@ -99,14 +137,44 @@ export class TransactionFormComponent implements OnInit {
     this.form.patchValue({ valueDisplay: formatted }, { emitEvent: false });
   }
 
+  onFeeInput(event: Event) {
+    let value = (event.target as HTMLInputElement).value.replace(/\D/g, '');
+    if (value === '') value = '0';
+    
+    const floatValue = parseFloat(value) / 100;
+    
+    this.form.patchValue({ fee: floatValue });
+
+    const formatted = floatValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    this.form.patchValue({ feeDisplay: formatted }, { emitEvent: false });
+  }
+
+  get netValueCalculated(): number {
+    const v = this.form.get('value')?.value || 0;
+    const f = this.form.get('fee')?.value || 0;
+    return v - f;
+  }
+
   loadCategories() {
     this.configService.getConfig('finance').subscribe(config => {
       const catField = config.fields.find(f => f.key === 'category');
-      if (catField?.options) {
-        this.categoryOptions.set(catField.options.filter(o => !o.deleted));
-        if (this.transaction) {
-           this.checkMemberRequirement(this.transaction.category);
-        }
+      if (catField?.options) this.categoryOptions.set(catField.options.filter(o => !o.deleted));
+
+      const payField = config.fields.find(f => f.key === 'paymentMethod');
+      if (payField?.options) this.paymentMethodOptions.set(payField.options.filter(o => !o.deleted));
+
+      const bankField = config.fields.find(f => f.key === 'bankAccount');
+      if (bankField?.options) this.bankAccountOptions.set(bankField.options.filter(o => !o.deleted));
+
+      const costField = config.fields.find(f => f.key === 'costCenter');
+      if (costField?.options) this.costCenterOptions.set(costField.options.filter(o => !o.deleted));
+
+      if (this.transaction) {
+         this.checkMemberRequirement(this.transaction.category);
       }
     });
   }
@@ -126,9 +194,56 @@ export class TransactionFormComponent implements OnInit {
           this.form.get('type')?.enable();
         }
         
+        // Auto-preenchimento do DRE
+        if (option.costCenter) {
+          this.form.patchValue({ costCenter: option.costCenter });
+        }
+        if (option.defaultPaymentMethod) {
+          this.form.patchValue({ paymentMethod: option.defaultPaymentMethod });
+        }
+        if (option.defaultBankAccount) {
+          this.form.patchValue({ bankAccount: option.defaultBankAccount });
+        }
+
         this.checkMemberRequirement(catLabel!);
       }
     });
+  }
+
+  setupFeeCalculation() {
+    const recalcFee = () => {
+      // Evita sobrescrever se estivermos apenas carregando a transação inicial
+      // Mas para ser dinâmico, vamos calcular sempre
+      const payLabel = this.form.get('paymentMethod')?.value;
+      const bankLabel = this.form.get('bankAccount')?.value;
+      const val = this.form.get('value')?.value || 0;
+
+      const payOpt = this.paymentMethodOptions().find(o => o.label === payLabel);
+      const bankOpt = this.bankAccountOptions().find(o => o.label === bankLabel);
+
+      // Procura a primeira configuração que tenha taxa, dando prioridade para Forma de Pagamento, depois Conta.
+      const feeSource = [payOpt, bankOpt].find(o => o?.feeType && o.feeValue);
+
+      if (feeSource) {
+        let fee = 0;
+        if (feeSource.feeType === 'fixed') {
+          fee = feeSource.feeValue!;
+        } else if (feeSource.feeType === 'percentage') {
+          fee = val * (feeSource.feeValue! / 100);
+        }
+
+        this.form.patchValue({ fee }, { emitEvent: false });
+        const formatted = fee.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        this.form.patchValue({ feeDisplay: formatted }, { emitEvent: false });
+      } else {
+        // Se mudou pra uma forma que não tem taxa automática, podemos zerar ou manter a que o cara digitou.
+        // Vamos manter a atual (não faz nada) para que o usuário possa digitar na mão e não apagar do nada.
+      }
+    };
+
+    this.form.get('paymentMethod')?.valueChanges.subscribe(() => recalcFee());
+    this.form.get('bankAccount')?.valueChanges.subscribe(() => recalcFee());
+    this.form.get('value')?.valueChanges.subscribe(() => recalcFee());
   }
 
   private checkMemberRequirement(catLabel: string) {
@@ -198,7 +313,10 @@ export class TransactionFormComponent implements OnInit {
       return;
     }
     const raw = this.form.getRawValue();
-    const signedValue = raw.type === 'Saída' ? -Math.abs(raw.value!) : Math.abs(raw.value!);
+    const feeValue = raw.fee || 0;
+    const isIncome = raw.type === 'Entrada';
+    const signedValue = isIncome ? Math.abs(raw.value!) : -Math.abs(raw.value!);
+    const netValue = (Math.abs(raw.value!) - feeValue) * (isIncome ? 1 : -1);
 
     const result: Partial<Transaction> = {
       ...(this.transaction ?? {}),
@@ -207,6 +325,11 @@ export class TransactionFormComponent implements OnInit {
       category: raw.category!,
       date: raw.date as Date,
       value: signedValue,
+      fee: feeValue,
+      netValue: netValue,
+      paymentMethod: raw.paymentMethod!,
+      bankAccount: raw.bankAccount!,
+      costCenter: raw.costCenter!,
       memberId: raw.memberId || undefined,
       memberName: raw.memberName || undefined,
       refMonth: raw.refMonth ?? undefined,

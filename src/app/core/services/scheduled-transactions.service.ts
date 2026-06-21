@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, of, throwError, forkJoin } from 'rxjs';
+import { Observable, from, throwError, forkJoin } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { Firestore } from '@angular/fire/firestore';
-import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { ScheduledTransaction, RecurrenceType } from '../models/scheduled-transaction.model';
 import { Transaction } from '../models/transaction.model';
 import { FinanceService } from './finance.service';
@@ -15,27 +15,12 @@ export class ScheduledTransactionsService {
     private logger = inject(LoggerService);
     private COL = 'scheduled_transactions';
 
-    private CACHE_KEY = 'scheduled_transactions_data';
-    private TIME_KEY = 'scheduled_transactions_last_fetch';
-    private CACHE_DURATION = 15 * 60 * 1000;
-
-    getAll(forceRefresh = false): Observable<ScheduledTransaction[]> {
-        const lastFetch = parseInt(localStorage.getItem(this.TIME_KEY) || '0');
-        const hasCache = localStorage.getItem(this.CACHE_KEY);
-        const isCacheFresh = (Date.now() - lastFetch < this.CACHE_DURATION);
-
-        if (!forceRefresh && hasCache && isCacheFresh) {
-            return of(JSON.parse(hasCache).map((s: Record<string, unknown>) => this.fixDates(s)));
-        }
-
-        const colRef = collection(this.firestore, this.COL);
-        return from(getDocs(colRef)).pipe(
-            map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
-            tap(data => this.updateCache(data)),
-            catchError(() => {
-                if (hasCache) {
-                    return of(JSON.parse(hasCache).map((s: Record<string, unknown>) => this.fixDates(s)));
-                }
+    getAll(): Observable<ScheduledTransaction[]> {
+        const colRef = FbUtils.collection(this.firestore, this.COL);
+        return (FbUtils.collectionData(colRef, { idField: 'id' }) as Observable<Record<string, unknown>[]>).pipe(
+            map(snap => snap.map(d => this.fromFirestore(d['id'] as string, d))),
+            catchError(err => {
+                this.logger.error('Erro ao buscar agendamentos', err);
                 return throwError(() => new Error('Não foi possível carregar agendamentos.'));
             })
         );
@@ -57,8 +42,8 @@ export class ScheduledTransactionsService {
 
     save(scheduled: ScheduledTransaction): Observable<boolean> {
         const isNew = !scheduled.id;
-        const colRef = collection(this.firestore, this.COL);
-        const docRef = isNew ? doc(colRef) : doc(this.firestore, this.COL, scheduled.id);
+        const colRef = FbUtils.collection(this.firestore, this.COL);
+        const docRef = isNew ? FbUtils.doc(colRef) : FbUtils.doc(this.firestore, this.COL, scheduled.id);
         const data = {
             ...JSON.parse(JSON.stringify(scheduled)),
             id: docRef.id,
@@ -66,26 +51,23 @@ export class ScheduledTransactionsService {
             active: scheduled.active ?? true
         };
 
-        return from(setDoc(docRef, data, { merge: true })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
+        return from(FbUtils.setDoc(docRef, data, { merge: true })).pipe(
             map(() => true),
             catchError(() => throwError(() => new Error('Falha ao salvar agendamento.')))
         );
     }
 
     softDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: true })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: true })).pipe(
             map(() => true),
             catchError(() => throwError(() => new Error('Erro ao excluir agendamento.')))
         );
     }
 
     restore(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: false })).pipe(
-            tap(() => localStorage.removeItem(this.TIME_KEY)),
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: false })).pipe(
             map(() => true),
             catchError(() => throwError(() => new Error('Erro ao restaurar agendamento.')))
         );
@@ -112,13 +94,12 @@ export class ScheduledTransactionsService {
             switchMap(() => {
                 const nextDue = this.calculateNextDueDate(scheduled);
                 const isOnce = scheduled.recurrence === 'once';
-                const docRef = doc(this.firestore, this.COL, scheduled.id);
-                return from(updateDoc(docRef, {
+                const docRef = FbUtils.doc(this.firestore, this.COL, scheduled.id);
+                return from(FbUtils.updateDoc(docRef, {
                     lastAppliedDate: new Date().toISOString(),
                     nextDueDate: nextDue.toISOString(),
                     active: !isOnce
                 })).pipe(
-                    tap(() => localStorage.removeItem(this.TIME_KEY)),
                     map(() => true)
                 );
             }),
@@ -131,10 +112,10 @@ export class ScheduledTransactionsService {
         switch (scheduled.recurrence) {
             case 'monthly': {
                 const next = new Date(base);
-                next.setMonth(next.getMonth() + 1);
-                if (scheduled.dayOfMonth) {
-                    next.setDate(Math.min(scheduled.dayOfMonth, this.daysInMonth(next.getFullYear(), next.getMonth())));
-                }
+                next.setDate(1); // Prevent month overflow
+                next.setMonth(base.getMonth() + 1);
+                const targetDay = scheduled.dayOfMonth || base.getDate();
+                next.setDate(Math.min(targetDay, this.daysInMonth(next.getFullYear(), next.getMonth())));
                 return next;
             }
             case 'weekly': {
@@ -154,11 +135,6 @@ export class ScheduledTransactionsService {
 
     private daysInMonth(year: number, month: number): number {
         return new Date(year, month + 1, 0).getDate();
-    }
-
-    private updateCache(data: ScheduledTransaction[]) {
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
-        localStorage.setItem(this.TIME_KEY, Date.now().toString());
     }
 
     private fromFirestore(id: string, data: Record<string, unknown>): ScheduledTransaction {

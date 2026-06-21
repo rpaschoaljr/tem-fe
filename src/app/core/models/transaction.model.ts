@@ -14,6 +14,13 @@ export interface Transaction {
 
     refMonth?: number;
     refYear?: number;
+
+    fee?: number;
+    netValue?: number;
+    paymentMethod?: string;
+    bankAccount?: string;
+    costCenter?: string;
+    receiptUrl?: string;
 }
 
 export type FirestoreTransaction = Omit<Transaction, 'date'> & {

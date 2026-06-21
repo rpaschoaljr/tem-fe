@@ -2,9 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { of, Observable, from, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { StockItem } from '../models/stock-item.model';
-import {
-    Firestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction, query, where
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { switchMap } from 'rxjs/operators';
 import { Normalizer } from '../../shared/utils/normalizer';
 import { LoggerService } from './logger.service';
@@ -30,8 +29,8 @@ export class StockService {
             return of(JSON.parse(hasCache).map((i: Record<string, unknown>) => ({ ...i, updatedAt: new Date(i['updatedAt'] as string) })));
         }
 
-        const colRef = collection(this.firestore, this.COL);
-        return from(getDocs(colRef)).pipe(
+        const colRef = FbUtils.collection(this.firestore, this.COL);
+        return from(FbUtils.getDocs(colRef)).pipe(
             map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
             tap(data => this.updateCache(data)),
             catchError(() => {
@@ -45,7 +44,7 @@ export class StockService {
 
     save(item: StockItem): Observable<boolean> {
         const isNew = !item.id;
-        const colRef = collection(this.firestore, this.COL);
+        const colRef = FbUtils.collection(this.firestore, this.COL);
 
         const name_search = Normalizer.search(item.name);
         const category_search = Normalizer.search(item.category);
@@ -58,18 +57,18 @@ export class StockService {
         };
 
         if (isNew) {
-            const q = query(colRef, where('name_search', '==', name_search), where('deleted', '==', false));
-            return from(getDocs(q)).pipe(
+            const q = FbUtils.query(colRef, FbUtils.where('name_search', '==', name_search), FbUtils.where('deleted', '==', false));
+            return from(FbUtils.getDocs(q)).pipe(
                 switchMap(snap => {
                     if (!snap.empty) {
                         return throwError(() => new Error('JA EXISTE UM ITEM ATIVO COM ESTE NOME NO CATALOGO.'));
                     }
-                    const docRef = doc(colRef);
+                    const docRef = FbUtils.doc(colRef);
                     firestoreData['id'] = docRef.id;
                     firestoreData['deleted'] = false;
                     firestoreData['quantity'] = item.quantity || 0;
                     
-                    return from(setDoc(docRef, firestoreData));
+                    return from(FbUtils.setDoc(docRef, firestoreData));
                 }),
                 tap(() => localStorage.removeItem(this.TIME_KEY)),
                 map(() => true),
@@ -77,8 +76,8 @@ export class StockService {
             );
         }
 
-        const docRef = doc(this.firestore, this.COL, item.id);
-        return from(setDoc(docRef, firestoreData, { merge: true })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, item.id);
+        return from(FbUtils.setDoc(docRef, firestoreData, { merge: true })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true),
             catchError(() => throwError(() => new Error('FALHA AO ATUALIZAR ITEM NO SERVIDOR.')))
@@ -86,10 +85,10 @@ export class StockService {
     }
 
     mergeItems(sourceId: string, targetId: string): Observable<void> {
-        const sourceRef = doc(this.firestore, this.COL, sourceId);
-        const targetRef = doc(this.firestore, this.COL, targetId);
+        const sourceRef = FbUtils.doc(this.firestore, this.COL, sourceId);
+        const targetRef = FbUtils.doc(this.firestore, this.COL, targetId);
 
-        return from(runTransaction(this.firestore, async (transaction) => {
+        return from(FbUtils.runTransaction(this.firestore, async (transaction) => {
             const sourceDoc = await transaction.get(sourceRef);
             const targetDoc = await transaction.get(targetRef);
 
@@ -112,16 +111,16 @@ export class StockService {
     }
 
     softDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true)
         );
     }
 
     restore(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL, id);
-        return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
             map(() => true)
         );

@@ -287,19 +287,49 @@ async function seed() {
 
   // 2. Financeiro (50 operações)
   console.log('💰 Gerando 50 operações financeiras...');
-  const categories = ['DOAÇÃO', 'MENSALIDADE', 'CONTAS', 'MANUTENÇÃO'];
+  const incomeCats = [
+    { cat: 'MENSALIDADE', cost: 'RECEITAS OPERACIONAIS' },
+    { cat: 'DOAÇÃO', cost: 'RECEITAS OPERACIONAIS' },
+    { cat: 'EVENTO', cost: 'RECEITAS OPERACIONAIS' }
+  ];
+  const expenseCats = [
+    { cat: 'CONTAS', cost: 'DESPESAS ADMINISTRATIVAS' },
+    { cat: 'MANUTENÇÃO', cost: 'MANUTENÇÃO E OBRAS' },
+    { cat: 'VELAS E ERVAS', cost: 'DESPESAS RELIGIOSAS' }
+  ];
+  const paymentMethods = ['DINHEIRO', 'PIX', 'CARTÃO DE CRÉDITO', 'BOLETO'];
+  const bankAccounts = ['CAIXA FÍSICO', 'NUBANK', 'MERCADO PAGO'];
+
   for (let i = 1; i <= 50; i++) {
     const isIncome = Math.random() > 0.4;
     const value = (Math.random() * 200 + 20) * (isIncome ? 1 : -1);
     const date = new Date();
-    const cat = categories[Math.floor(Math.random() * categories.length)];
+    
+    const catObj = isIncome 
+      ? incomeCats[Math.floor(Math.random() * incomeCats.length)]
+      : expenseCats[Math.floor(Math.random() * expenseCats.length)];
+      
+    const payMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+    const bankAccount = bankAccounts[Math.floor(Math.random() * bankAccounts.length)];
+    
+    // Calcula taxa fictícia para cartão ou boleto
+    let fee = 0;
+    if (payMethod === 'CARTÃO DE CRÉDITO') fee = Math.abs(value) * 0.05; // 5%
+    if (payMethod === 'BOLETO') fee = 3.50;
+    
+    const netValue = (Math.abs(value) - fee) * (isIncome ? 1 : -1);
+
     const desc = `${isIncome ? 'Entrada' : 'Saída'} de teste ${i}`;
     date.setDate(date.getDate() - Math.floor(Math.random() * 60));
     await firestoreCreate('transactions', `t${i}`, {
       id: `t${i}`, description: desc,
       description_search: normalize(desc),
-      value, category: cat,
-      category_search: normalize(cat),
+      value, netValue, fee,
+      category: catObj.cat,
+      category_search: normalize(catObj.cat),
+      costCenter: catObj.cost,
+      paymentMethod: payMethod,
+      bankAccount: bankAccount,
       date, deleted: false, type: isIncome ? 'Entrada' : 'Saída',
       updatedAt: now
     });
@@ -392,11 +422,38 @@ async function seed() {
       { 
         key: 'category', label: 'Categoria Financeira', type: 'select', required: true, order: 1, isSystem: true,
         options: [
-          { label: 'DOAÇÃO', deleted: false, meta: 'Entrada', requiresMember: false },
-          { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true },
-          { label: 'CONTAS', deleted: false, meta: 'Saída', requiresMember: false },
-          { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída', requiresMember: false },
-          { label: 'EVENTO', deleted: false, meta: 'Entrada', requiresMember: false }
+          { label: 'DOAÇÃO', deleted: false, meta: 'Entrada', requiresMember: false, costCenter: 'RECEITAS OPERACIONAIS', defaultPaymentMethod: 'PIX', defaultBankAccount: 'CAIXA FÍSICO' },
+          { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true, costCenter: 'RECEITAS OPERACIONAIS', defaultPaymentMethod: 'PIX', defaultBankAccount: 'NUBANK' },
+          { label: 'CONTAS', deleted: false, meta: 'Saída', requiresMember: false, costCenter: 'DESPESAS ADMINISTRATIVAS', defaultPaymentMethod: 'BOLETO', defaultBankAccount: 'NUBANK' },
+          { label: 'MANUTENÇÃO', deleted: false, meta: 'Saída', requiresMember: false, costCenter: 'MANUTENÇÃO E OBRAS', defaultPaymentMethod: 'PIX', defaultBankAccount: 'CAIXA FÍSICO' },
+          { label: 'EVENTO', deleted: false, meta: 'Entrada', requiresMember: false, costCenter: 'RECEITAS OPERACIONAIS', defaultPaymentMethod: 'DINHEIRO', defaultBankAccount: 'CAIXA FÍSICO' },
+          { label: 'VELAS E ERVAS', deleted: false, meta: 'Saída', requiresMember: false, costCenter: 'DESPESAS RELIGIOSAS', defaultPaymentMethod: 'CARTÃO DE CRÉDITO', defaultBankAccount: 'NUBANK' }
+        ]
+      },
+      { 
+        key: 'paymentMethod', label: 'Forma de Pagamento', type: 'select', required: true, order: 2, isSystem: true,
+        options: [
+          { label: 'DINHEIRO', deleted: false }, { label: 'PIX', deleted: false },
+          { label: 'CARTÃO DE CRÉDITO', deleted: false }, { label: 'CARTÃO DE DÉBITO', deleted: false },
+          { label: 'BOLETO', deleted: false }, { label: 'TRANSFERÊNCIA', deleted: false }
+        ]
+      },
+      { 
+        key: 'bankAccount', label: 'Conta Bancária / Caixa', type: 'select', required: true, order: 3, isSystem: true,
+        options: [
+          { label: 'CAIXA FÍSICO', deleted: false }, { label: 'NUBANK', deleted: false },
+          { label: 'MERCADO PAGO', deleted: false }, { label: 'BRADESCO', deleted: false }
+        ]
+      },
+      { 
+        key: 'costCenter', label: 'Centro de Custo (DRE)', type: 'select', required: true, order: 4, isSystem: true,
+        options: [
+          { label: 'RECEITAS OPERACIONAIS', deleted: false, meta: 'Entrada' },
+          { label: 'DESPESAS ADMINISTRATIVAS', deleted: false, meta: 'Saída' },
+          { label: 'DESPESAS RELIGIOSAS', deleted: false, meta: 'Saída' },
+          { label: 'DESPESAS FINANCEIRAS', deleted: false, meta: 'Saída' },
+          { label: 'DESPESAS COM PESSOAL', deleted: false, meta: 'Saída' },
+          { label: 'MANUTENÇÃO E OBRAS', deleted: false, meta: 'Saída' }
         ]
       }
     ]

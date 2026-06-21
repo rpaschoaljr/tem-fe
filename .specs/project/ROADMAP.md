@@ -12,9 +12,9 @@
 - [x] Lançamentos de Entradas/Saídas
 - [x] Categorias Customizáveis
 - [x] Agendamentos de Transações Recorrentes
-- [ ] Sincronização em Tempo Real (onSnapshot)
+- [x] Sincronização em Tempo Real (onSnapshot)
 - [ ] Relatórios e Gráficos Mensais (DRE)
-- [ ] Lançamento Automático via Cloud Function (Cron)
+- [x] Lançamento Automático via Cloud Function (Cron)
 
 ## Gestão de Estoque
 - [x] Controle de Entrada/Saída
@@ -28,7 +28,7 @@
 - [x] Firestore Security Rules (Iniciais)
 - [x] Migração para Plano Blaze
 - [x] Resolução de Acesso (UI de Permissões)
-- [ ] Implementação de Custom Claims (Token JWT via Functions)
+- [x] Implementação de Custom Claims (Token JWT via Functions)
 - [ ] Checkov (IaC Security)
 - [ ] Snyk (Dependency Scan)
 - [ ] Gitleaks (Secret Detection)

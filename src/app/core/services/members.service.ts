@@ -1,27 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { of, Observable, from, throwError, forkJoin, catchError, map } from 'rxjs';
+import { of, Observable, from, throwError, forkJoin, catchError, map, switchMap } from 'rxjs';
 import { Member } from '../models/member.model';
 import { CepResponse } from '../models/common';
-import {
-    Firestore,
-    collection,
-    collectionData,
-    doc,
-    writeBatch,
-    query,
-    where,
-    getDocs,
-    updateDoc,
-    getDoc,
-    limit
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
+import { Storage } from '@angular/fire/storage';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { Normalizer } from '../../shared/utils/normalizer';
 import { LoggerService } from './logger.service';
 
 @Injectable({ providedIn: 'root' })
 export class MembersService {
     private firestore = inject(Firestore);
+    private storage = inject(Storage);
     private http = inject(HttpClient);
     private logger = inject(LoggerService);
 
@@ -30,21 +21,21 @@ export class MembersService {
     private COL_SPIRITUAL = 'members_spiritual';
 
     getMembers(): Observable<Partial<Member>[]> {
-        const colRef = collection(this.firestore, this.COL_BASE);
-        return (collectionData(colRef, { idField: 'id' }) as Observable<Partial<Member>[]>).pipe(
+        const colRef = FbUtils.collection(this.firestore, this.COL_BASE);
+        return (FbUtils.collectionData(colRef, { idField: 'id' }) as Observable<Partial<Member>[]>).pipe(
             map((data: Partial<Member>[]) => data.map(m => this.fixDates(m as unknown as Record<string, unknown>)))
         );
     }
 
     getById(id: string): Observable<Member | undefined> {
-        const docBase = doc(this.firestore, this.COL_BASE, id);
-        const docPrivate = doc(this.firestore, this.COL_PRIVATE, id);
-        const docSpiritual = doc(this.firestore, this.COL_SPIRITUAL, id);
+        const docBase = FbUtils.doc(this.firestore, this.COL_BASE, id);
+        const docPrivate = FbUtils.doc(this.firestore, this.COL_PRIVATE, id);
+        const docSpiritual = FbUtils.doc(this.firestore, this.COL_SPIRITUAL, id);
 
         return forkJoin({
-            base: from(getDoc(docBase)).pipe(map(s => s.data())),
-            private: from(getDoc(docPrivate)).pipe(map(s => s.data()), catchError(() => of(undefined))),
-            spiritual: from(getDoc(docSpiritual)).pipe(map(s => s.data()), catchError(() => of(undefined)))
+            base: from(FbUtils.getDoc(docBase)).pipe(map(s => s.data())),
+            private: from(FbUtils.getDoc(docPrivate)).pipe(map(s => s.data()), catchError(() => of(undefined))),
+            spiritual: from(FbUtils.getDoc(docSpiritual)).pipe(map(s => s.data()), catchError(() => of(undefined)))
         }).pipe(
             map(res => {
                 if (!res.base) return undefined;
@@ -61,24 +52,23 @@ export class MembersService {
 
     save(member: Member): Observable<boolean> {
         const isNew = !member.id;
-        const batch = writeBatch(this.firestore);
+        const batch = FbUtils.writeBatch(this.firestore);
 
-        const id = isNew ? doc(collection(this.firestore, this.COL_BASE)).id : member.id;
+        const id = isNew ? FbUtils.doc(FbUtils.collection(this.firestore, this.COL_BASE)).id : member.id;
 
-        const docBase = doc(this.firestore, this.COL_BASE, id);
-        const docPrivate = doc(this.firestore, this.COL_PRIVATE, id);
-        const docSpiritual = doc(this.firestore, this.COL_SPIRITUAL, id);
+        const docBase = FbUtils.doc(this.firestore, this.COL_BASE, id);
+        const docPrivate = FbUtils.doc(this.firestore, this.COL_PRIVATE, id);
+        const docSpiritual = FbUtils.doc(this.firestore, this.COL_SPIRITUAL, id);
 
         const { base, priv, spir } = this.splitMemberData(member, id);
 
         if (isNew) {
             return this.checkDuplicates(member).pipe(
-                map(() => {
+                switchMap(() => {
                     batch.set(docBase, { ...base, createdAt: new Date(), deleted: false });
                     batch.set(docPrivate, priv);
                     batch.set(docSpiritual, spir);
-                    from(batch.commit());
-                    return true;
+                    return from(batch.commit()).pipe(map(() => true));
                 }),
                 catchError(err => throwError(() => new Error(err.message || 'ERRO AO SALVAR MEMBRO.')))
             );
@@ -95,16 +85,16 @@ export class MembersService {
     }
 
     private checkDuplicates(member: Member): Observable<void> {
-        const colPriv = collection(this.firestore, this.COL_PRIVATE);
+        const colPriv = FbUtils.collection(this.firestore, this.COL_PRIVATE);
         const cpf_search = Normalizer.numbers(member.cpf);
         const email_search = member.email.toLowerCase();
 
-        const cpfQuery = query(colPriv, where('cpf_search', '==', cpf_search), limit(1));
-        const emailQuery = query(colPriv, where('email_search', '==', email_search), limit(1));
+        const cpfQuery = FbUtils.query(colPriv, FbUtils.where('cpf_search', '==', cpf_search), FbUtils.limit(1));
+        const emailQuery = FbUtils.query(colPriv, FbUtils.where('email_search', '==', email_search), FbUtils.limit(1));
 
         return forkJoin({
-            cpfExists: from(getDocs(cpfQuery)).pipe(map(s => !s.empty)),
-            emailExists: from(getDocs(emailQuery)).pipe(map(s => !s.empty))
+            cpfExists: from(FbUtils.getDocs(cpfQuery)).pipe(map(s => !s.empty)),
+            emailExists: from(FbUtils.getDocs(emailQuery)).pipe(map(s => !s.empty))
         }).pipe(
             map(res => {
                 if (res.cpfExists) throw new Error('ESTE CPF JÁ ESTÁ CADASTRADO.');
@@ -152,15 +142,15 @@ export class MembersService {
     }
 
     softDelete(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL_BASE, id);
-        return from(updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL_BASE, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             map(() => true)
         );
     }
 
     restore(id: string): Observable<boolean> {
-        const docRef = doc(this.firestore, this.COL_BASE, id);
-        return from(updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL_BASE, id);
+        return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             map(() => true)
         );
     }
@@ -196,5 +186,18 @@ export class MembersService {
     getAddressByCep(cep: string): Observable<CepResponse> {
         const cleanCep = cep.replace(/\D/g, '');
         return this.http.get<CepResponse>(`https://viacep.com.br/ws/${cleanCep}/json/`);
+    }
+
+    uploadProfilePicture(memberId: string, imageBlob: Blob): Observable<string> {
+        const storageRef = FbUtils.ref(this.storage, `profile-pictures/${memberId}`);
+        return from(FbUtils.uploadBytes(storageRef, imageBlob, { contentType: 'image/webp' })).pipe(
+            switchMap(uploadResult => from(FbUtils.getDownloadURL(uploadResult.ref))),
+            switchMap(downloadURL => {
+                const memberDocRef = FbUtils.doc(this.firestore, `members/${memberId}`);
+                return from(FbUtils.updateDoc(memberDocRef, { photoUrl: downloadURL, updatedAt: new Date() })).pipe(
+                    map(() => downloadURL)
+                );
+            })
+        );
     }
 }

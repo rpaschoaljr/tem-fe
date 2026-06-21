@@ -411,14 +411,28 @@ export class SettingsComponent implements OnInit {
   }
 
   addOption(config: ModuleConfig, field: DynamicField, existingOption?: FieldOption) {
+    let costCenters: string[] = [];
+    let paymentMethods: string[] = [];
+    let bankAccounts: string[] = [];
+
+    if (config.id === 'finance' && field.key === 'category') {
+       costCenters = config.fields.find(f => f.key === 'costCenter')?.options?.filter(o => !o.deleted).map(o => o.label) || [];
+       paymentMethods = config.fields.find(f => f.key === 'paymentMethod')?.options?.filter(o => !o.deleted).map(o => o.label) || [];
+       bankAccounts = config.fields.find(f => f.key === 'bankAccount')?.options?.filter(o => !o.deleted).map(o => o.label) || [];
+    }
+
     const dialogRef = this.dialog.open(OptionFormDialogComponent, {
       data: {
         label: field.label,
         showMeta: config.id === 'finance' && field.key === 'category',
+        showFeeConfig: config.id === 'finance' && (field.key === 'paymentMethod' || field.key === 'bankAccount'),
+        costCenters,
+        paymentMethods,
+        bankAccounts,
         value: existingOption,
         edit: !!existingOption
       },
-      width: '400px'
+      width: '450px'
     });
 
     dialogRef.afterClosed().subscribe(res => {
@@ -434,6 +448,11 @@ export class SettingsComponent implements OnInit {
             found.deleted = false;
             found.meta = res.meta;
             found.requiresMember = res.requiresMember;
+            found.costCenter = res.costCenter;
+            found.defaultPaymentMethod = res.defaultPaymentMethod;
+            found.defaultBankAccount = res.defaultBankAccount;
+            found.feeType = res.feeType;
+            found.feeValue = res.feeValue;
             this.saveAndReload(config, 'Opção restaurada!');
           } else {
             this.notify.showWarning('Esta opção já existe.');
@@ -442,9 +461,24 @@ export class SettingsComponent implements OnInit {
           existingOption.label = sanitized;
           existingOption.meta = res.meta;
           existingOption.requiresMember = res.requiresMember;
+          existingOption.costCenter = res.costCenter;
+          existingOption.defaultPaymentMethod = res.defaultPaymentMethod;
+          existingOption.defaultBankAccount = res.defaultBankAccount;
+          existingOption.feeType = res.feeType;
+          existingOption.feeValue = res.feeValue;
           this.saveAndReload(config, 'Opção atualizada!');
         } else {
-          field.options.push({ label: sanitized, deleted: false, meta: res.meta, requiresMember: res.requiresMember });
+          field.options.push({ 
+            label: sanitized, 
+            deleted: false, 
+            meta: res.meta, 
+            requiresMember: res.requiresMember,
+            costCenter: res.costCenter,
+            defaultPaymentMethod: res.defaultPaymentMethod,
+            defaultBankAccount: res.defaultBankAccount,
+            feeType: res.feeType,
+            feeValue: res.feeValue
+          });
           this.saveAndReload(config, 'Opção adicionada!');
         }
 

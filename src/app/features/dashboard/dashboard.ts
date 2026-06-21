@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Router } from '@angular/router';
-import { Auth, signOut } from '@angular/fire/auth';
+
 import { MembersService } from '../../core/services/members.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { StockService } from '../../core/services/stock.service';
@@ -30,7 +30,6 @@ import { map, take, tap } from 'rxjs/operators';
 })
 export class DashboardComponent implements OnInit {
   private router = inject(Router);
-  private auth = inject(Auth);
   private membersService = inject(MembersService);
   private financeService = inject(FinanceService);
   private stockService = inject(StockService);
@@ -67,9 +66,10 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/' + path]);
   }
 
-  async logout() {
-    await signOut(this.auth);
-    this.router.navigate(['/login']);
+  logout() {
+    this.authService.logout().subscribe(() => {
+      this.router.navigate(['/login']);
+    });
   }
 
   getIconForType(type: string): string {

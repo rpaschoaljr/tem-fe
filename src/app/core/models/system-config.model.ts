@@ -3,6 +3,11 @@ export interface FieldOption {
     deleted: boolean;
     meta?: string; // Campo opcional para metadados (ex: 'Entrada', 'Saída', etc)
     requiresMember?: boolean; // Se verdadeiro, exige selecionar um membro no lançamento
+    costCenter?: string;
+    defaultPaymentMethod?: string;
+    defaultBankAccount?: string;
+    feeType?: 'fixed' | 'percentage';
+    feeValue?: number;
 }
 
 export interface DynamicField {

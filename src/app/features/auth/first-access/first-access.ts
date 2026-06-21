@@ -7,8 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { updatePassword, Auth } from '@angular/fire/auth';
-import { Firestore, doc, updateDoc } from '@angular/fire/firestore';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoggerService } from '../../../core/services/logger.service';
@@ -26,8 +25,7 @@ import { take } from 'rxjs';
 })
 export class FirstAccessComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private auth = inject(Auth);
-  private firestore = inject(Firestore);
+
   private authService = inject(AuthService);
   private router = inject(Router);
   private notify = inject(NotificationService);
@@ -72,34 +70,30 @@ export class FirstAccessComponent implements OnInit {
     });
   }
 
-  async onSubmit() {
-    if (this.form.valid && this.auth.currentUser) {
+  onSubmit() {
+    if (this.form.valid) {
       this.loading = true;
-      try {
-        const newPassword = this.form.get('password')?.value;
-        
-        await updatePassword(this.auth.currentUser, newPassword);
-
-        const memberRef = doc(this.firestore, 'members', this.memberId);
-        await updateDoc(memberRef, { 
-          isFirstAccess: false,
-          updatedAt: new Date()
-        });
-
-        this.notify.showSuccess('Senha definida com sucesso! Bem-vindo.');
-        this.router.navigate(['/dashboard']);
-      } catch (error: unknown) {
-        this.logger.error('Erro no primeiro acesso', error);
-        let msg = 'Erro ao definir senha.';
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/requires-recent-login') {
-          msg = 'Por segurança, faça login novamente para trocar a senha.';
-          this.auth.signOut();
-          this.router.navigate(['/login']);
+      const newPassword = this.form.get('password')?.value;
+      
+      this.authService.completeFirstAccess(this.memberId, newPassword).subscribe({
+        next: () => {
+          this.notify.showSuccess('Senha definida com sucesso! Bem-vindo.');
+          this.router.navigate(['/dashboard']);
+          this.loading = false;
+        },
+        error: (error: any) => {
+          this.logger.error('Erro no primeiro acesso', error);
+          let msg = 'Erro ao definir senha.';
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/requires-recent-login') {
+            msg = 'Por segurança, faça login novamente para trocar a senha.';
+            this.authService.logout().subscribe(() => {
+              this.router.navigate(['/login']);
+            });
+          }
+          this.notify.showError(msg);
+          this.loading = false;
         }
-        this.notify.showError(msg);
-      } finally {
-        this.loading = false;
-      }
+      });
     }
   }
 }

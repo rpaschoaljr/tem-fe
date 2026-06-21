@@ -9,8 +9,8 @@
 - **Segurança Absoluta:** O sistema deve estar em conformidade com as melhores práticas de segurança, fatiando os dados para limitar o acesso a informações sensíveis e implementando regras restritas no backend.
 
 ## Tech Stack
-- **Frontend:** Angular (com Angular Material para UI).
-- **Backend/Database:** Firebase (Firestore, Storage, Authentication).
+- **Frontend:** Angular 20 (com Angular Material 20 para UI).
+- **Backend/Database:** Firebase 11 (Firestore, Storage, Authentication).
 - **Infraestrutura:** Plano Blaze (Pay-as-you-go) do Firebase habilitando o uso de Cloud Functions para processos automatizados.
 - **Autenticação e Permissões:** Baseada em Custom Claims injetados via JWT Token por uma Cloud Function.
 

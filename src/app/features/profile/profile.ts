@@ -8,17 +8,16 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
-import { Auth, updateProfile } from '@angular/fire/auth';
-import { Firestore } from '@angular/fire/firestore';
-import { doc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuthService } from '../../core/services/auth.service';
+import { MembersService } from '../../core/services/members.service';
 import { ConfigService } from '../../core/services/config.service';
 import { LoggerService } from '../../core/services/logger.service';
 import { Member } from '../../core/models/member.model';
 import { DynamicField, ModuleConfig } from '../../core/models/system-config.model';
 import { ComponentCanDeactivate } from '../../core/guards/pending-changes.guard';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { take, switchMap } from 'rxjs/operators';
 import { ImageCropperDialogComponent } from '../../shared/components/image-cropper-dialog/image-cropper-dialog';
 import { ChangePasswordDialogComponent } from './change-password-dialog/change-password-dialog';
 
@@ -40,10 +39,9 @@ import { ChangePasswordDialogComponent } from './change-password-dialog/change-p
   ],
 })
 export class ProfileComponent implements OnInit, ComponentCanDeactivate {
-  private storage = inject(Storage);
-  private auth = inject(Auth);
-  private firestore = inject(Firestore);
   private notification = inject(NotificationService);
+  private authService = inject(AuthService);
+  private membersService = inject(MembersService);
   private configService = inject(ConfigService);
   private dialog = inject(MatDialog);
   private logger = inject(LoggerService);
@@ -89,57 +87,31 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
     });
   }
 
-  async loadMember() {
-    const user = this.auth.currentUser;
-    if (user && user.email) {
-      try {
-        const colRef = collection(this.firestore, 'members');
-        const q = query(colRef, where('email', '==', user.email), limit(1));
-        const snap = await getDocs(q);
-
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          this.member.set({ ...this.fixDates(data), id: snap.docs[0].id } as Member);
-          this.profileImageUrl = this.member()?.photoUrl || user.photoURL || '';
+  loadMember() {
+    this.authService.member$.pipe(
+      take(1),
+      switchMap(member => {
+        if (member && member.id) {
+          return this.membersService.getById(member.id);
+        }
+        return of(undefined);
+      })
+    ).subscribe({
+      next: (fullMember) => {
+        if (fullMember) {
+          this.member.set(fullMember);
+          this.profileImageUrl = fullMember.photoUrl || '';
         } else {
           this.notification.showError('Perfil não encontrado no cadastro.');
         }
-      } catch (error) {
+        this.loading.set(false);
+      },
+      error: (error) => {
         this.logger.error('Erro ao carregar dados do perfil', error);
         this.notification.showError('Erro ao carregar dados do perfil.');
+        this.loading.set(false);
       }
-    }
-    this.loading.set(false);
-  }
-
-  private fixDates(data: Record<string, unknown>): Record<string, unknown> {
-    if (!data) return data;
-    const result = { ...data };
-    
-    const dateFields = ['createdAt', 'updatedAt', 'entryDate', 'exitDate'];
-    dateFields.forEach(f => { if (result[f]) result[f] = this.fixDate(result[f]); });
-
-    if (result['rituals']) {
-      const rituals = result['rituals'] as Record<string, unknown>;
-      Object.keys(rituals).forEach(k => { rituals[k] = this.fixDate(rituals[k]); });
-    }
-    if (result['consecrations']) {
-      const consecrations = result['consecrations'] as Record<string, unknown>;
-      Object.keys(consecrations).forEach(k => { consecrations[k] = this.fixDate(consecrations[k]); });
-    }
-    if (result['customFields']) {
-      const customFields = result['customFields'] as Record<string, unknown>;
-      Object.keys(customFields).forEach(k => { customFields[k] = this.fixDate(customFields[k]); });
-    }
-    return result;
-  }
-
-  private fixDate(val: unknown): Date | null {
-    if (!val) return null;
-    if (val && typeof val === 'object' && 'toDate' in val && typeof (val as Record<string, unknown>)['toDate'] === 'function') return (val as { toDate(): Date }).toDate();
-    if (val instanceof Date) return val;
-    if (val && typeof val === 'object' && 'seconds' in val) return new Date((val as { seconds: number }).seconds * 1000);
-    return new Date(val as string);
+    });
   }
 
   getFieldsBySection(section: string): DynamicField[] {
@@ -177,28 +149,21 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
         maxWidth: '90vw'
       });
 
-      dialogRef.afterClosed().subscribe(async (result: Blob | undefined) => {
+      dialogRef.afterClosed().subscribe((result: Blob | undefined) => {
         if (result) {
-          try {
-            this.loading.set(true);
-            const storageRef = ref(this.storage, `profile-pictures/${this.member()!.id}`);
-
-            const uploadResult = await uploadBytes(storageRef, result, { contentType: 'image/webp' });
-            const downloadURL = await getDownloadURL(uploadResult.ref);
-
-            const memberDocRef = doc(this.firestore, `members/${this.member()!.id}`);
-            await updateDoc(memberDocRef, { photoUrl: downloadURL, updatedAt: new Date() });
-
-            this.profileImageUrl = downloadURL;
-            this.notification.showSuccess('Foto de perfil atualizada!');
-            
-            this.loadMember();
-          } catch (error) {
-            this.logger.error('Erro ao fazer upload da imagem', error);
-            this.notification.showError('Erro ao salvar a foto.');
-          } finally {
-            this.loading.set(false);
-          }
+          this.loading.set(true);
+          this.membersService.uploadProfilePicture(this.member()!.id, result).subscribe({
+            next: (downloadURL) => {
+              this.profileImageUrl = downloadURL;
+              this.notification.showSuccess('Foto de perfil atualizada!');
+              this.loadMember();
+            },
+            error: (error) => {
+              this.logger.error('Erro ao fazer upload da imagem', error);
+              this.notification.showError('Erro ao salvar a foto.');
+              this.loading.set(false);
+            }
+          });
         }
         input.value = '';
       });

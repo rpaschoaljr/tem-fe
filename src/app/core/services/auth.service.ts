@@ -2,8 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { Auth, authState, User } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
-import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
-import { Observable, of, from } from 'rxjs';
+import { Observable, of, from, throwError } from 'rxjs';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { switchMap, map, shareReplay, catchError } from 'rxjs/operators';
 import { Member } from '../models/member.model';
 import { UserClaims } from '../models/common';
@@ -87,11 +87,11 @@ export class AuthService {
   }
 
   private async loadPermissionsFromFirestore(email: string): Promise<UserClaims> {
-    const userPermDoc = await getDoc(doc(this.firestore, 'permissions', email));
+    const userPermDoc = await FbUtils.getDoc(FbUtils.doc(this.firestore, 'permissions', email));
     const userPerm = userPermDoc.exists() ? userPermDoc.data() : null;
 
-    const memberSnap = await getDocs(
-      query(collection(this.firestore, 'members'), where('email', '==', email), limit(1))
+    const memberSnap = await FbUtils.getDocs(
+      FbUtils.query(FbUtils.collection(this.firestore, 'members'), FbUtils.where('email', '==', email), FbUtils.limit(1))
     );
 
     let rolePerm = null;
@@ -103,7 +103,7 @@ export class AuthService {
       if (role) {
         const normalized = role.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
         const roleId = `role_${normalized.replace(/[^A-Z0-9]/g, '')}`;
-        const roleDoc = await getDoc(doc(this.firestore, 'permissions', roleId));
+        const roleDoc = await FbUtils.getDoc(FbUtils.doc(this.firestore, 'permissions', roleId));
         if (roleDoc.exists()) {
           rolePerm = roleDoc.data();
           hierarchyLevel = Math.max(hierarchyLevel, (rolePerm as Record<string, unknown>)?.['hierarchyLevel'] as number || 0);
@@ -126,9 +126,9 @@ export class AuthService {
   }
 
   private getMemberByEmail(email: string): Observable<Member | null> {
-    const colRef = collection(this.firestore, 'members');
-    const q = query(colRef, where('email', '==', email), limit(1));
-    return from(getDocs(q)).pipe(
+    const colRef = FbUtils.collection(this.firestore, 'members');
+    const q = FbUtils.query(colRef, FbUtils.where('email', '==', email), FbUtils.limit(1));
+    return from(FbUtils.getDocs(q)).pipe(
       map(snap => {
         if (snap.empty) {
           this.logger.warn(`Membro não encontrado na coleção 'members' para o email: ${this.maskEmail(email)}`);
@@ -173,5 +173,41 @@ export class AuthService {
       ? domainParts[0][0] + '***.' + domainParts[domainParts.length - 1]
       : domain[0] + '***';
     return `${maskedLocal}@${maskedDomain}`;
+  }
+
+  // Ações de Autenticação
+  login(email: string, pass: string): Observable<any> {
+    return from(FbUtils.signInWithEmailAndPassword(this.auth, email, pass));
+  }
+
+  logout(): Observable<void> {
+    return from(FbUtils.signOut(this.auth));
+  }
+
+  updateUserPassword(newPass: string): Observable<void> {
+    if (!this.auth.currentUser) return throwError(() => new Error('Nenhum usuário logado.'));
+    return from(FbUtils.updatePassword(this.auth.currentUser, newPass));
+  }
+
+  resetPassword(email: string): Observable<void> {
+    return from(FbUtils.sendPasswordResetEmail(this.auth, email));
+  }
+
+  createUser(email: string, pass: string): Observable<any> {
+    return from(FbUtils.createUserWithEmailAndPassword(this.auth, email, pass));
+  }
+
+  completeFirstAccess(memberId: string, newPass: string): Observable<void> {
+    if (!this.auth.currentUser) return throwError(() => new Error('Nenhum usuário logado.'));
+    
+    return from(
+      FbUtils.updatePassword(this.auth.currentUser, newPass).then(() => {
+        const docRef = FbUtils.doc(this.firestore, `members/${memberId}`);
+        return FbUtils.updateDoc(docRef, { 
+          isFirstAccess: false, 
+          updatedAt: new Date() 
+        });
+      })
+    );
   }
 }

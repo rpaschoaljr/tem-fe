@@ -49,6 +49,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/finance/finance').then(m => m.FinanceComponent),
       },
       {
+        path: 'finance/report',
+        canActivate: [permissionGuard],
+        data: { module: 'finance', action: 'read' },
+        loadComponent: () => import('./features/finance/finance-report/finance-report').then(m => m.FinanceReport),
+      },
+      {
         path: 'stock',
         canActivate: [permissionGuard],
         data: { module: 'stock', action: 'read' },

@@ -25,7 +25,7 @@ describe('MainLayoutComponent', () => {
         { provide: MatDialog, useValue: {} },
         { provide: MatSnackBar, useValue: {} },
         { provide: NotificationService, useValue: {} },
-        { provide: AuthService, useValue: { hasPermission: () => of(false), member$: of(null), isAdmin$: () => of(false) } },
+        { provide: AuthService, useValue: { hasPermission: () => of(false), member$: of(null), isAdmin$: () => of(false), permissions$: of({}) } },
         { provide: ThemeService, useValue: { darkMode: () => false, toggle: () => {} } },
         { provide: LoggerService, useValue: { debug: () => {}, error: () => {}, info: () => {}, warn: () => {} } },
       ]

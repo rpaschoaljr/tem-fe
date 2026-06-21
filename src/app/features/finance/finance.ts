@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,7 +23,7 @@ import { ScheduledTransactionsService } from '../../core/services/scheduled-tran
 import { ScheduledTransactionsDialogComponent } from './scheduled-transactions-dialog/scheduled-transactions-dialog';
 import { DueSchedulesDialogComponent } from './scheduled-transactions-dialog/due-schedules-dialog';
 import { ScheduledTransaction } from '../../core/models/scheduled-transaction.model';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 
 const MONTHS = [
   { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
@@ -45,7 +46,8 @@ const MONTHS = [
     MatInputModule,
     FormsModule, 
     MatTooltipModule, 
-    GenericListComponent
+    GenericListComponent,
+    RouterModule
   ],
   templateUrl: './finance.html',
   styleUrl: './finance.scss'
@@ -62,6 +64,7 @@ export class FinanceComponent implements OnInit {
   allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
   exportData: Transaction[] = [];
+  private sub?: Subscription;
   canWrite$ = this.authService.hasPermission('finance', 'write');
 
   months = MONTHS;
@@ -87,8 +90,12 @@ export class FinanceComponent implements OnInit {
     this.checkDueSchedules();
   }
 
+  ngOnDestroy() {
+    this.sub?.unsubscribe();
+  }
+
   loadData() {
-    this.financeService.getTransactions().subscribe({
+    this.sub = this.financeService.getTransactions().subscribe({
       next: (data) => {
         this.allTransactions = data;
         this.years = [...new Set(data.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
@@ -169,7 +176,6 @@ export class FinanceComponent implements OnInit {
       this.financeService.save(result as Transaction).subscribe({
         next: () => {
           this.notify.showSuccess(transaction ? 'Lançamento atualizado!' : 'Lançamento registrado!');
-          this.loadData();
         },
         error: (e: unknown) => {
           this.logger.error('Erro ao salvar transação', e);
@@ -186,7 +192,6 @@ export class FinanceComponent implements OnInit {
     this.financeService.softDelete(transaction.id).subscribe({
       next: () => {
         this.notify.showSuccess('Item movido para a lixeira.');
-        this.loadData();
       },
       error: (err: unknown) => {
         this.logger.error('Erro ao deletar transação', err);
@@ -199,7 +204,6 @@ export class FinanceComponent implements OnInit {
     this.financeService.restore(transaction.id).subscribe({
       next: () => {
         this.notify.showSuccess('Item restaurado com sucesso!');
-        this.loadData();
       },
       error: (err: unknown) => {
         this.logger.error('Erro ao restaurar transação', err);
@@ -231,7 +235,6 @@ export class FinanceComponent implements OnInit {
           forkJoin(applies).subscribe({
             next: () => {
               this.notify.showSuccess(`${due.length} lançamento(s) realizados com sucesso!`);
-              this.loadData();
             },
             error: (e: unknown) => {
               this.logger.error('Erro ao aplicar agendamentos', e);

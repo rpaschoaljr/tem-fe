@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore } from '@angular/fire/firestore';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { Observable, from, map, of, switchMap, combineLatest, forkJoin } from 'rxjs';
+import { FbUtils } from '../../shared/utils/firebase-utils';
 import { ModuleConfig, DynamicField, FieldOption, PermissionConfig, ModulePermissions } from '../models/system-config.model';
 
 @Injectable({ providedIn: 'root' })
@@ -11,8 +11,8 @@ export class ConfigService {
     private PERM_COL = 'permissions';
 
     getConfig(moduleId: string): Observable<ModuleConfig> {
-        const docRef = doc(this.firestore, this.COL, moduleId);
-        return from(getDoc(docRef)).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, moduleId);
+        return from(FbUtils.getDoc(docRef)).pipe(
             map(snap => {
                 if (snap.exists()) {
                     return snap.data() as ModuleConfig;
@@ -24,8 +24,8 @@ export class ConfigService {
     }
 
     saveConfig(config: ModuleConfig): Observable<void> {
-        const docRef = doc(this.firestore, this.COL, config.id);
-        return from(setDoc(docRef, { ...config, updatedAt: new Date() }));
+        const docRef = FbUtils.doc(this.firestore, this.COL, config.id);
+        return from(FbUtils.setDoc(docRef, { ...config, updatedAt: new Date() }));
     }
 
     // --- PERMISSÕES ---
@@ -33,9 +33,9 @@ export class ConfigService {
     getRolePermission(roleName: string): Observable<PermissionConfig> {
         const normalized = roleName.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
         const safeId = `role_${normalized.replace(/[^A-Z0-9]/g, '')}`;
-        const docRef = doc(this.firestore, this.PERM_COL, safeId);
+        const docRef = FbUtils.doc(this.firestore, this.PERM_COL, safeId);
         
-        return from(getDoc(docRef)).pipe(
+        return from(FbUtils.getDoc(docRef)).pipe(
             map(snap => {
                 if (snap.exists()) {
                     return snap.data() as PermissionConfig;
@@ -47,8 +47,8 @@ export class ConfigService {
     }
 
     savePermission(perm: PermissionConfig): Observable<void> {
-        const docRef = doc(this.firestore, this.PERM_COL, perm.id);
-        return from(setDoc(docRef, { ...perm, updatedAt: new Date() }));
+        const docRef = FbUtils.doc(this.firestore, this.PERM_COL, perm.id);
+        return from(FbUtils.setDoc(docRef, { ...perm, updatedAt: new Date() }));
     }
 
     getAllRolePermissions(roleNames: string[]): Observable<PermissionConfig[]> {
@@ -59,8 +59,8 @@ export class ConfigService {
 
     getUserPermission(email: string): Observable<PermissionConfig> {
         const safeId = email;
-        const docRef = doc(this.firestore, this.PERM_COL, safeId);
-        return from(getDoc(docRef)).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.PERM_COL, safeId);
+        return from(FbUtils.getDoc(docRef)).pipe(
             map(snap => {
                 if (snap.exists()) {
                     return snap.data() as PermissionConfig;
@@ -71,8 +71,8 @@ export class ConfigService {
     }
 
     saveUserPermission(perm: PermissionConfig): Observable<void> {
-        const docRef = doc(this.firestore, this.PERM_COL, perm.id);
-        return from(setDoc(docRef, { ...perm, updatedAt: new Date() }));
+        const docRef = FbUtils.doc(this.firestore, this.PERM_COL, perm.id);
+        return from(FbUtils.setDoc(docRef, { ...perm, updatedAt: new Date() }));
     }
 
     private getDefaultUserPermission(email: string): PermissionConfig {
@@ -115,8 +115,8 @@ export class ConfigService {
     // --- FIM PERMISSÕES ---
 
     ensureInitialized(moduleId: string): Observable<void> {
-        const docRef = doc(this.firestore, this.COL, moduleId);
-        return from(getDoc(docRef)).pipe(
+        const docRef = FbUtils.doc(this.firestore, this.COL, moduleId);
+        return from(FbUtils.getDoc(docRef)).pipe(
             switchMap(snap => {
                 if (!snap.exists()) {
                     return this.saveConfig(this.getDefaultConfig(moduleId));

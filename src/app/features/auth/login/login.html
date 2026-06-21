@@ -26,9 +26,11 @@
                         Primeiro Acesso / Esqueci Senha
                     </button>
 
-                    <button mat-flat-button color="primary" type="submit" [disabled]="loginForm.invalid">
-                        ENTRAR
-                    </button>
+                    <button mat-raised-button color="primary" type="submit" [disabled]="loginForm.invalid || loading" class="w-full h-12 text-lg mt-4">
+          <mat-icon *ngIf="loading" class="animate-spin" style="margin-right: 8px;">sync</mat-icon>
+          <span *ngIf="!loading">Entrar</span>
+          <span *ngIf="loading">Acessando...</span>
+        </button>
                 </div>
 
                 <!-- REMOVI A LINHA DO ERROR MESSAGE AQUI POIS USAMOS O SNACKBAR AGORA -->

@@ -23,6 +23,9 @@ export interface ScheduledTransaction {
     memberId?: string;
     memberName?: string;
     lastAppliedDate?: Date;
+    paymentMethod?: string;
+    bankAccount?: string;
+    costCenter?: string;
 }
 
 export type FirestoreScheduledTransaction = Omit<ScheduledTransaction, 'nextDueDate' | 'lastAppliedDate'> & {

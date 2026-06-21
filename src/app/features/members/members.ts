@@ -59,8 +59,7 @@ export class MembersComponent implements OnInit {
   tableColumns: ColumnDef[] = [
     { def: 'name', label: 'Nome' },
     { def: 'role', label: 'Função', hideOnMobile: true },
-    { def: 'status', label: 'Status', hideOnMobile: true },
-    { def: 'financeStatus', label: 'Financeiro', type: 'status', hideOnMobile: true }
+    { def: 'status', label: 'Status', hideOnMobile: true }
   ];
 
   ngOnInit() {
@@ -73,51 +72,76 @@ export class MembersComponent implements OnInit {
 
     combineLatest({
       members: this.membersService.getMembers(),
-      transactions: this.financeService.getTransactions()
+      canWriteFinance: this.authService.hasPermission('finance', 'write')
     }).subscribe({
       next: (res) => {
-        this.logger.debug('Dados de membros carregados', { membersCount: res.members.length, transactionsCount: res.transactions.length });
+        this.logger.debug('Dados de membros carregados', { membersCount: res.members.length });
 
-        const currentMensalidades = res.transactions.filter(t => 
-          !t.deleted && 
-          t.category === 'MENSALIDADE' && 
-          t.refMonth === curMonth && 
-          t.refYear === curYear
-        );
+        // Ajusta as colunas dinamicamente
+        const hasFinanceCol = this.tableColumns.some(c => c.def === 'financeStatus');
+        if (res.canWriteFinance && !hasFinanceCol) {
+          this.tableColumns = [...this.tableColumns, { def: 'financeStatus', label: 'Financeiro', type: 'status', hideOnMobile: true }];
+        } else if (!res.canWriteFinance && hasFinanceCol) {
+          this.tableColumns = this.tableColumns.filter(c => c.def !== 'financeStatus');
+        }
 
         this.roles = [...new Set(res.members.map(m => m.role).filter((role): role is string => !!role))].sort();
         this.totalActive = res.members.filter(m => !m.deleted && m.status === 'Ativo').length;
 
-        this.allMembers = res.members.map(m => {
-          let financeStatus = '-';
-          let financeClass = '';
-
-          if (m.status === 'Ativo' && !m.deleted) {
-            const isPaid = currentMensalidades.some(t => t.memberId === m.id);
-            const isExempt = m.isExempt ?? false;
-
-            if (isExempt) {
-              financeStatus = 'Isento';
-              financeClass = 'status-exempt';
-            } else if (isPaid) {
-              financeStatus = 'Pago';
-              financeClass = 'status-paid';
-            } else {
-              financeStatus = 'Atrasado';
-              financeClass = 'status-late';
+        // Se puder escrever no financeiro, busca transações para cruzar dados
+        if (res.canWriteFinance) {
+          this.financeService.getTransactions().subscribe({
+            next: (transactions) => {
+              const currentMensalidades = transactions.filter(t => 
+                !t.deleted && 
+                t.category === 'MENSALIDADE' && 
+                t.refMonth === curMonth && 
+                t.refYear === curYear
+              );
+              this.mapMembersData(res.members as Member[], currentMensalidades, true);
+            },
+            error: (e) => {
+              this.logger.error('Erro ao carregar dados financeiros', e);
+              this.mapMembersData(res.members as Member[], [], false);
             }
-          }
-
-          return { ...m, financeStatus, financeClass } as Member & { financeStatus?: string; financeClass?: string };
-        });
-
-        this.applyFilter();
+          });
+        } else {
+          // Não tem permissão, apenas carrega os membros
+          this.mapMembersData(res.members as Member[], [], false);
+        }
       },
       error: (e: unknown) => {
         this.logger.error('Erro ao carregar dados de membros', e);
         this.notify.showError('Erro ao carregar dados.');
       }
     });
+  }
+
+  private mapMembersData(members: Partial<Member>[], currentMensalidades: any[], showFinance: boolean) {
+    this.allMembers = members.map(m => {
+      let financeStatus = '-';
+      let financeClass = '';
+
+      if (showFinance && m.status === 'Ativo' && !m.deleted) {
+        const isPaid = currentMensalidades.some(t => t.memberId === m.id);
+        const isExempt = m.isExempt ?? false;
+
+        if (isExempt) {
+          financeStatus = 'Isento';
+          financeClass = 'status-exempt';
+        } else if (isPaid) {
+          financeStatus = 'Pago';
+          financeClass = 'status-paid';
+        } else {
+          financeStatus = 'Atrasado';
+          financeClass = 'status-late';
+        }
+      }
+
+      return { ...m, financeStatus, financeClass } as Member & { financeStatus?: string; financeClass?: string };
+    });
+
+    this.applyFilter();
   }
 
   applyFilter() {
@@ -135,17 +159,21 @@ export class MembersComponent implements OnInit {
   }
 
   exportMembers() {
-    const columns = [
+    const columns: any[] = [
       { key: 'name', label: 'Nome' },
       { key: 'email', label: 'E-mail' },
       { key: 'phone', label: 'Telefone' },
       { key: 'role', label: 'Função' },
       { key: 'status', label: 'Status' },
-      { key: 'financeStatus', label: 'Financeiro (Mês Atual)' },
       { key: 'entryDate', label: 'Data de Entrada' },
       { key: 'address.city', label: 'Cidade' },
       { key: 'address.state', label: 'UF' }
     ];
+
+    if (this.tableColumns.some(c => c.def === 'financeStatus')) {
+      columns.splice(5, 0, { key: 'financeStatus', label: 'Financeiro (Mês Atual)' });
+    }
+
     this.exportService.exportToCsv(this.exportData, 'membros_temfe', columns);
   }
 
@@ -158,7 +186,7 @@ export class MembersComponent implements OnInit {
     }
   }
 
-  onEdit(member: Member) {
+  onEdit(member: Partial<Member>) {
     try {
       if (!member.id) throw new Error('Membro sem ID inválido.');
       this.router.navigate(['/members/edit', member.id]);
@@ -168,7 +196,8 @@ export class MembersComponent implements OnInit {
     }
   }
 
-  onDelete(member: Member) {
+  onDelete(member: Partial<Member>) {
+    if (!member.id) return;
     this.membersService.softDelete(member.id).subscribe({
       next: () => {
         this.notify.showSuccess('Membro movido para a lixeira.');
@@ -181,7 +210,8 @@ export class MembersComponent implements OnInit {
     });
   }
 
-  onRestore(member: Member) {
+  onRestore(member: Partial<Member>) {
+    if (!member.id) return;
     this.membersService.restore(member.id).subscribe({
       next: () => {
         this.notify.showSuccess('Membro restaurado!');

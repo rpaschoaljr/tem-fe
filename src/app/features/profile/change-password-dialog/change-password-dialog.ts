@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Auth, updatePassword } from '@angular/fire/auth';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoggerService } from '../../../core/services/logger.service';
 
@@ -26,7 +26,7 @@ import { LoggerService } from '../../../core/services/logger.service';
 export class ChangePasswordDialogComponent {
   private dialogRef = inject(MatDialogRef<ChangePasswordDialogComponent>);
   private fb = inject(FormBuilder);
-  private auth = inject(Auth);
+  private authService = inject(AuthService);
   private notify = inject(NotificationService);
   private logger = inject(LoggerService);
 
@@ -51,24 +51,26 @@ export class ChangePasswordDialogComponent {
     this.dialogRef.close();
   }
 
-  async onConfirm() {
-    if (this.form.valid && this.auth.currentUser) {
+  onConfirm() {
+    if (this.form.valid) {
       this.loading = true;
-      try {
-        const newPassword = this.form.get('password')?.value;
-        await updatePassword(this.auth.currentUser, newPassword);
-        this.notify.showSuccess('Senha alterada com sucesso!');
-        this.dialogRef.close(true);
-      } catch (error: unknown) {
-        this.logger.error('Erro ao alterar senha', error);
-        let msg = 'Erro ao alterar senha.';
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/requires-recent-login') {
-          msg = 'Por segurança, você precisa fazer login novamente antes de trocar a senha.';
+      const newPassword = this.form.get('password')?.value;
+      this.authService.updateUserPassword(newPassword).subscribe({
+        next: () => {
+          this.notify.showSuccess('Senha alterada com sucesso!');
+          this.dialogRef.close(true);
+          this.loading = false;
+        },
+        error: (error: any) => {
+          this.logger.error('Erro ao alterar senha', error);
+          let msg = 'Erro ao alterar senha.';
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/requires-recent-login') {
+            msg = 'Por segurança, você precisa fazer login novamente antes de trocar a senha.';
+          }
+          this.notify.showError(msg);
+          this.loading = false;
         }
-        this.notify.showError(msg);
-      } finally {
-        this.loading = false;
-      }
+      });
     }
   }
 }

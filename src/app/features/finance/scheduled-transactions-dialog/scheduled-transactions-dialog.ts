@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -86,7 +87,7 @@ interface ScheduleViewModel extends ScheduledTransaction {
 </mat-dialog-actions>
     `
 })
-export class ScheduledTransactionsDialogComponent implements OnInit {
+export class ScheduledTransactionsDialogComponent implements OnInit, OnDestroy {
     private service = inject(ScheduledTransactionsService);
     private notify = inject(NotificationService);
     private dialog = inject(MatDialog);
@@ -94,6 +95,7 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
     private logger = inject(LoggerService);
 
     schedules: ScheduleViewModel[] = [];
+    private sub?: Subscription;
 
     columns: ColumnDef[] = [
         { def: 'description', label: 'Descrição' },
@@ -105,8 +107,12 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
 
     ngOnInit() { this.loadData(); }
 
+    ngOnDestroy() {
+        this.sub?.unsubscribe();
+    }
+
     loadData() {
-        this.service.getAll(true).subscribe({
+        this.sub = this.service.getAll().subscribe({
             next: (data) => {
                 this.schedules = data.map(s => ({
                     ...s,
@@ -131,7 +137,7 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
         ref.afterClosed().subscribe(result => {
             if (!result) return;
             this.service.save(result as ScheduledTransaction).subscribe({
-                next: () => { this.notify.showSuccess('Agendamento criado!'); this.loadData(); },
+                next: () => { this.notify.showSuccess('Agendamento criado!'); },
                 error: (e: unknown) => {
                     this.logger.error('Erro ao salvar agendamento', e);
                     this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
@@ -154,7 +160,7 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
         ref.afterClosed().subscribe(result => {
             if (!result) return;
             this.service.save(result as ScheduledTransaction).subscribe({
-                next: () => { this.notify.showSuccess('Agendamento atualizado!'); this.loadData(); },
+                next: () => { this.notify.showSuccess('Agendamento atualizado!'); },
                 error: (e: unknown) => {
                     this.logger.error('Erro ao salvar agendamento', e);
                     this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
@@ -165,7 +171,7 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
 
     onDelete(s: ScheduleViewModel) {
         this.service.softDelete(s.id).subscribe({
-            next: () => { this.notify.showSuccess('Agendamento removido.'); this.loadData(); },
+            next: () => { this.notify.showSuccess('Agendamento removido.'); },
             error: (e: unknown) => {
                 this.logger.error('Erro ao excluir agendamento', e);
                 this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));
@@ -175,7 +181,7 @@ export class ScheduledTransactionsDialogComponent implements OnInit {
 
     onRestore(s: ScheduleViewModel) {
         this.service.restore(s.id).subscribe({
-            next: () => { this.notify.showSuccess('Agendamento restaurado!'); this.loadData(); },
+            next: () => { this.notify.showSuccess('Agendamento restaurado!'); },
             error: (e: unknown) => {
                 this.logger.error('Erro ao restaurar agendamento', e);
                 this.notify.showError('Erro: ' + (e instanceof Error ? e.message : ''));

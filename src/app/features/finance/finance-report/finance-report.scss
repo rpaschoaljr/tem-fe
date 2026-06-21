@@ -1,0 +1,63 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .header-titles {
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+      color: #333;
+    }
+    p {
+      margin: 4px 0 0;
+      color: #666;
+    }
+  }
+}
+
+.report-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.chart-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  canvas {
+    max-height: 400px;
+  }
+}
+
+.table-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.text-green { color: #4caf50; }
+.text-red { color: #f44336; }
+.bold { font-weight: bold; }
+
+.result-row {
+  background: #f5f5f5;
+  td {
+    font-weight: bold;
+    color: #000;
+  }
+}
