@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -50,6 +50,7 @@ const MONTHS = [
     RouterModule
   ],
   templateUrl: './finance.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './finance.scss'
 })
 export class FinanceComponent implements OnInit {

@@ -5,7 +5,7 @@ import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angul
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 
 // Firebase Imports
@@ -32,7 +32,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideAnimations(),
-    provideHttpClient(),
+    provideHttpClient(withXhr()),
     // Inicialização do Firebase
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
 

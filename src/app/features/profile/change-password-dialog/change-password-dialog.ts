@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -18,6 +18,7 @@ import { LoggerService } from '../../../core/services/logger.service';
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule
   ],
   templateUrl: './change-password-dialog.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .full-width { width: 100%; margin: 10px 0; }
     p { margin-bottom: 20px; color: #666; font-size: 0.9rem; }

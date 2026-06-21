@@ -1,4 +1,4 @@
-import { Component, inject, Inject, signal, OnInit } from '@angular/core';
+import { Component, inject, Inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -44,6 +44,7 @@ const MONTHS = [
   ],
   providers: [],
   templateUrl: './transaction-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .net-value-box {
       display: flex;

@@ -1,4 +1,4 @@
-import { Component, inject, Inject, signal, OnInit } from '@angular/core';
+import { Component, inject, Inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -37,6 +37,7 @@ import { FieldOption } from '../../../core/models/system-config.model';
         InputMaskDirective
     ],
     templateUrl: './scheduled-transaction-form.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './scheduled-transaction-form.scss'
 })
 export class ScheduledTransactionFormComponent implements OnInit {

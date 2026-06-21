@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -32,6 +32,7 @@ import { StockAdjustComponent, AdjustResult } from './stock-adjust/stock-adjust'
     GenericListComponent
   ],
   templateUrl: './stock.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './stock.scss'
 })
 export class StockComponent implements OnInit {

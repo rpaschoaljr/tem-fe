@@ -1,4 +1,4 @@
-import { Component, inject, Inject } from '@angular/core';
+import { Component, inject, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -19,6 +19,7 @@ export interface AdjustResult { item: StockItem; delta: number; }
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatIconModule,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './stock-adjust.html',
 })
 export class StockAdjustComponent {

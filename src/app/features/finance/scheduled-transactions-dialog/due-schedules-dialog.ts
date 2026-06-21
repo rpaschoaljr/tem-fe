@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,7 @@ export interface DueSchedulesDialogData {
     selector: 'app-due-schedules-dialog',
     standalone: true,
     imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatListModule],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
 <h2 mat-dialog-title>
     <mat-icon color="warn" style="vertical-align: middle; margin-right: 8px;">alarm</mat-icon>

@@ -1,4 +1,4 @@
-import { Component, ViewChild, inject, signal, OnInit } from '@angular/core';
+import { Component, ViewChild, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
@@ -36,6 +36,7 @@ import { AuthService } from '../../services/auth.service';
     AsyncPipe
   ],
   templateUrl: './main-layout.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './main-layout.scss'
 })
 export class MainLayoutComponent implements OnInit {

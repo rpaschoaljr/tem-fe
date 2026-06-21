@@ -34,7 +34,8 @@ Iniciando a cultura de qualidade total:
 2. **Bash Variable Interpolation:** Evitar comandos `node -e " ... $1 "` pelo terminal. O Bash avalia `$1` como vazio, o que quebrou as strings do `spyOn`. Para operações globais (Regex/AST) em vários arquivos, **sempre utilize um script Node independente (como `migrate_fbutils.js`)**.
 3. **TypeScript Inference na Ternária:** Para contornar a falha em mocks repetidos e ao mesmo tempo satisfazer a tipagem estrita do compilador sem o erro `Property 'and' does not exist`, a sintaxe exata e segura que escrevemos no `migrate_fbutils.js` é:
    `(((FbUtils.metodo as any)?.and ? FbUtils.metodo : spyOn(FbUtils, 'metodo')) as any)`
-4. **Status Atual e Próximos Passos:** 
+4. **Resolução de Conflitos (ERESOLVE) no Upgrade do Angular:** Nunca utilize a flag `--legacy-peer-deps` cegamente ao fazer upgrades de versão maior (`ng update`). Para pacotes que ficam defasados e não são atualizados automaticamente pelo script do Angular (ex: `@angular/fire`), edite o `package.json` manualmente para alinhar a versão do pacote com a nova geração do Angular, limpe o cache (`rm -rf node_modules package-lock.json && npm cache clean --force`) e rode um `npm install` limpo. O script de migração do Angular pode travar com erros nativos de corrupção do NPM (`Cannot read properties of null (reading 'children')`) caso isso não seja feito adequadamente.
+5. **Status Atual e Próximos Passos:** 
    - A pasta `src/app/` foi restaurada para o estado estável da área de staging.
    - O arquivo `migrate_fbutils.js` foi criado na raiz do projeto.
    - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Executar `node migrate_fbutils.js` e em seguida rodar os testes com `npm run test -- --watch=false --browsers=FirefoxHeadless` para prosseguir com os acertos da cobertura de testes.

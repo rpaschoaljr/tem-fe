@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FinanceService } from '../../../core/services/finance.service';
 import { Transaction } from '../../../core/models/transaction.model';
@@ -27,6 +27,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
     RouterModule
   ],
   templateUrl: './finance-report.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './finance-report.scss',
 })
 export class FinanceReport implements OnInit {

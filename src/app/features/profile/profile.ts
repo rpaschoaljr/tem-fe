@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, HostListener, signal } from '@angular/core';
+import { Component, inject, OnInit, HostListener, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,6 +26,7 @@ import { ChangePasswordDialogComponent } from './change-password-dialog/change-p
   templateUrl: './profile.html',
   styleUrls: ['./profile.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     MatCardModule,

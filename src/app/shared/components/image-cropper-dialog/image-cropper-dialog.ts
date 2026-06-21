@@ -1,4 +1,4 @@
-import { Component, Inject, signal } from '@angular/core';
+import { Component, Inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +32,7 @@ import { ImageCropperComponent, ImageCroppedEvent, LoadedImage } from 'ngx-image
       <button mat-raised-button color="primary" (click)="onConfirm()" [disabled]="!croppedImage()">Confirmar</button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .cropper-wrapper {
       max-height: 70vh;

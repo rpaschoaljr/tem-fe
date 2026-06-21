@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, AfterViewInit, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, AfterViewInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule, MatPaginatorIntl } from '@angular/material/paginator';
@@ -54,6 +54,7 @@ export interface ColumnDef {
     ]),
   ],
   templateUrl: './generic-list.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './generic-list.scss'
 })
 export class GenericListComponent<T> implements OnChanges, AfterViewInit {

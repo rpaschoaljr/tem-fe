@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -34,6 +34,7 @@ import { GenericListComponent, ColumnDef } from '../../shared/components/generic
     GenericListComponent
   ],
   templateUrl: './members.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './members.scss'
 })
 export class MembersComponent implements OnInit {

@@ -7,7 +7,7 @@
 
   <form [formGroup]="form" class="adjust-container">
     <div class="quantity-selector">
-      <button type="button" mat-fab color="warn" (click)="adjust(-1)" [disabled]="form.get('quantity')?.value! <= 1">
+      <button type="button" mat-fab color="warn" (click)="adjust(-1)" [disabled]="$safeNavigationMigration(form.get('quantity')?.value)! <= 1">
         <mat-icon>remove</mat-icon>
       </button>
 

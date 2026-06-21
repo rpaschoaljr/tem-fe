@@ -8,7 +8,7 @@ import { LoggerService } from '../../../core/services/logger.service';
 import { of, throwError } from 'rxjs';
 import { ScheduledTransaction } from '../../../core/models/scheduled-transaction.model';
 import { provideFirebaseMocks } from '../../../core/services/firebase-testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('ScheduledTransactionsDialogComponent', () => {
@@ -62,7 +62,7 @@ describe('ScheduledTransactionsDialogComponent', () => {
       imports: [ScheduledTransactionsDialogComponent, NoopAnimationsModule, MatDialogModule],
       providers: [
         provideFirebaseMocks(),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MatDialog, useValue: dialogSpy },

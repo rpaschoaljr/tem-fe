@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -19,6 +19,7 @@ import { take } from 'rxjs';
     MatFormFieldModule, MatInputModule, MatButtonModule
   ],
   templateUrl: './forgot-password-dialog.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .full-width { width: 100%; margin: 10px 0; }
     p { margin-bottom: 20px; color: #666; }

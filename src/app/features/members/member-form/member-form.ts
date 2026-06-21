@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -47,6 +47,7 @@ import { Observable } from 'rxjs';
   ],
   providers: [],
   templateUrl: './member-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './member-form.scss'
 })
 export class MemberFormComponent implements OnInit, ComponentCanDeactivate {

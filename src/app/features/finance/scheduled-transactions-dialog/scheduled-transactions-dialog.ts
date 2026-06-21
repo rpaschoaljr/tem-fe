@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
@@ -58,6 +58,7 @@ interface ScheduleViewModel extends ScheduledTransaction {
             }
         }
     `],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
 <h2 mat-dialog-title>
     <mat-icon style="vertical-align: middle; margin-right: 8px;">schedule</mat-icon>

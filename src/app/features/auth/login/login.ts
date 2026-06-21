@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -22,6 +22,7 @@ import { take, filter, map, switchMap } from 'rxjs';
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatDialogModule
   ],
   templateUrl: './login.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './login.scss'
 })
 export class LoginComponent {

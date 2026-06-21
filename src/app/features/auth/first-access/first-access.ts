@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -21,6 +21,7 @@ import { take } from 'rxjs';
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule
   ],
   templateUrl: './first-access.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './first-access.scss'
 })
 export class FirstAccessComponent implements OnInit {
