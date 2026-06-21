@@ -31,6 +31,9 @@ jobs:
       - name: Run Angular Unit Tests
         run: npm run test -- --no-watch --browsers=ChromeHeadless
 
+      - name: Setup Environment Config
+        run: cp src/app/app.config.example.ts src/app/app.config.ts
+
       - name: Build Angular Project
         run: npm run build
 
@@ -64,6 +67,9 @@ jobs:
         run: npm audit signatures || true
         # Verifica a autenticidade dos pacotes que possuem o selo Provenance.
         # Está com '|| true' porque muitos pacotes antigos do ecosistema ainda não adotaram o selo.
+
+      - name: Setup Environment Config
+        run: cp src/app/app.config.example.ts src/app/app.config.ts
 
       - name: Start Angular App for ZAP
         run: npm start &
