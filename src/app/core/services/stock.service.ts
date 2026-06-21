@@ -30,7 +30,7 @@ export class StockService {
         }
 
         const colRef = FbUtils.collection(this.firestore, this.COL);
-        return from(FbUtils.getDocs(colRef)).pipe(
+        return from(FbUtils.getDocs(FbUtils.query(colRef))).pipe(
             map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
             tap(data => this.updateCache(data)),
             catchError(() => {

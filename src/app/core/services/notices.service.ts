@@ -23,7 +23,7 @@ export class NoticesService {
     getNotices(forceRefresh = false): Observable<Notice[]> {
         const colRef = FbUtils.collection(this.firestore, this.COL);
         
-        return from(FbUtils.getDocs(colRef)).pipe(
+        return from(FbUtils.getDocs(FbUtils.query(colRef))).pipe(
             map(snap => {
                 const list = snap.docs.map(d => this.fromFirestore(d.id, d.data()));
                 return list.sort((a, b) => b.date.getTime() - a.date.getTime());

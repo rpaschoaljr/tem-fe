@@ -22,7 +22,7 @@ export class MembersService {
 
     getMembers(): Observable<Partial<Member>[]> {
         const colRef = FbUtils.collection(this.firestore, this.COL_BASE);
-        return (FbUtils.collectionData(colRef, { idField: 'id' }) as Observable<Partial<Member>[]>).pipe(
+        return (FbUtils.collectionData(FbUtils.query(colRef), { idField: 'id' }) as Observable<Partial<Member>[]>).pipe(
             map((data: Partial<Member>[]) => data.map(m => this.fixDates(m as unknown as Record<string, unknown>)))
         );
     }

@@ -12,9 +12,9 @@ import {
     where, 
     limit, 
     writeBatch,
-    runTransaction
-} from 'firebase/firestore';
-import { collectionData } from '@angular/fire/firestore';
+    runTransaction,
+    collectionData
+} from '@angular/fire/firestore';
 import { uploadBytes, getDownloadURL, ref as storageRef } from '@angular/fire/storage';
 import { signInWithEmailAndPassword, updatePassword, signOut, sendPasswordResetEmail, updateProfile, authState, createUserWithEmailAndPassword } from '@angular/fire/auth';
 

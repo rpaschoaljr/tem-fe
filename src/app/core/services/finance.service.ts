@@ -17,7 +17,7 @@ export class FinanceService {
 
     getTransactions(): Observable<Transaction[]> {
         const colRef = FbUtils.collection(this.firestore, this.COL);
-        return (FbUtils.collectionData(colRef, { idField: 'id' }) as Observable<Record<string, unknown>[]>).pipe(
+        return (FbUtils.collectionData(FbUtils.query(colRef), { idField: 'id' }) as Observable<Record<string, unknown>[]>).pipe(
             map(data => data.map(d => this.fromFirestore(d['id'] as string, d))),
             catchError(err => {
                 this.logger.error('Erro ao escutar transações', err);
