@@ -16,7 +16,9 @@
     "scan:checkov": "docker run --rm -v \"$PWD:/tf\" bridgecrew/checkov -d /tf",
     "scan:secrets": "docker run --rm -v \"$PWD:/path\" zricethezav/gitleaks:latest detect --source=\"/path\" -v",
     "scan:owasp": "docker run --rm --network host ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:4200",
-    "scan:all": "npm run scan:snyk && npm run scan:checkov && npm run scan:secrets && npm run scan:owasp"
+    "scan:owasp-full": "docker run --rm --network host ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t http://localhost:4200",
+    "scan:nuclei": "docker run --rm --network host projectdiscovery/nuclei:latest -u http://localhost:4200",
+    "scan:all": "npm run scan:snyk && npm run scan:checkov && npm run scan:secrets && npm run scan:owasp && npm run scan:nuclei"
   },
   "prettier": {
     "printWidth": 100,

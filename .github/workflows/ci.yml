@@ -80,3 +80,5 @@ jobs:
       - name: OWASP ZAP (Baseline Scan)
         run: npm run scan:owasp || true
 
+      - name: Nuclei (Vulnerability Scan)
+        run: npm run scan:nuclei || true
