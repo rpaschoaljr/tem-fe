@@ -33,7 +33,13 @@ export class StockService {
         return from(FbUtils.getDocs(FbUtils.query(colRef))).pipe(
             map(snap => snap.docs.map(d => this.fromFirestore(d.id, d.data()))),
             tap(data => this.updateCache(data)),
-            catchError(() => {
+            catchError((err) => {
+                const errorCode = (err as any)?.code;
+                const errorMessage = String((err as any)?.message || '');
+                if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
+                    this.logger.debug('Acesso negado silenciado no estoque.', err);
+                    return of([]);
+                }
                 if (hasCache) {
                     return of(JSON.parse(hasCache).map((i: Record<string, unknown>) => ({ ...i, updatedAt: new Date(i['updatedAt'] as string) })));
                 }

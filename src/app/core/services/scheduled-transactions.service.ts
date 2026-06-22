@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, throwError, forkJoin } from 'rxjs';
+import { Observable, from, throwError, forkJoin, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { Firestore } from '@angular/fire/firestore';
 import { FbUtils } from '../../shared/utils/firebase-utils';
@@ -20,6 +20,12 @@ export class ScheduledTransactionsService {
         return (FbUtils.collectionData(FbUtils.query(colRef), { idField: 'id' }) as Observable<Record<string, unknown>[]>).pipe(
             map(snap => snap.map(d => this.fromFirestore(d['id'] as string, d))),
             catchError(err => {
+                const errorCode = (err as any)?.code;
+                const errorMessage = String((err as any)?.message || '');
+                if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
+                    this.logger.debug('Acesso negado silenciado em agendamentos.', err);
+                    return of([]);
+                }
                 this.logger.error('Erro ao buscar agendamentos', err);
                 return throwError(() => new Error('Não foi possível carregar agendamentos.'));
             })

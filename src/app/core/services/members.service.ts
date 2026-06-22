@@ -23,7 +23,16 @@ export class MembersService {
     getMembers(): Observable<Partial<Member>[]> {
         const colRef = FbUtils.collection(this.firestore, this.COL_BASE);
         return (FbUtils.collectionData(FbUtils.query(colRef), { idField: 'id' }) as Observable<Partial<Member>[]>).pipe(
-            map((data: Partial<Member>[]) => data.map(m => this.fixDates(m as unknown as Record<string, unknown>)))
+            map((data: Partial<Member>[]) => data.map(m => this.fixDates(m as unknown as Record<string, unknown>))),
+            catchError(err => {
+                const errorCode = (err as any)?.code;
+                const errorMessage = String((err as any)?.message || '');
+                if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
+                    this.logger.debug('Acesso negado silenciado em membros.', err);
+                    return of([]);
+                }
+                return throwError(() => new Error('ERRO AO CARREGAR MEMBROS.'));
+            })
         );
     }
 

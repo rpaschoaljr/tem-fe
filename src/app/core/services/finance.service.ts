@@ -20,6 +20,14 @@ export class FinanceService {
         return (FbUtils.collectionData(FbUtils.query(colRef), { idField: 'id' }) as Observable<Record<string, unknown>[]>).pipe(
             map(data => data.map(d => this.fromFirestore(d['id'] as string, d))),
             catchError(err => {
+                const errorCode = (err as any)?.code;
+                const errorMessage = String((err as any)?.message || '');
+                
+                if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
+                    this.logger.debug('Acesso negado silenciado nas transações.', err);
+                    return of([]); // Retorna array vazio em vez de quebrar a tela com um erro vermelho
+                }
+
                 this.logger.error('Erro ao escutar transações', err);
                 return throwError(() => new Error('Não foi possível conectar ao servidor financeiro.'));
             })
