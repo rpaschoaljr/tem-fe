@@ -63,6 +63,13 @@ jobs:
       - name: Snyk (Dependency Scan)
         run: npm run scan:snyk || true
 
+      - name: Socket Security Scan
+        uses: socketsecurity/socket-github-app@v1
+        env:
+          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+        # Mantendo o mesmo padrão de não travar a esteira que as outras tools
+        continue-on-error: true
+
       - name: Verify NPM Provenance and Signatures
         run: npm audit signatures || true
         # Verifica a autenticidade dos pacotes que possuem o selo Provenance.

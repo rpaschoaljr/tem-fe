@@ -214,7 +214,7 @@ async function seed() {
       modules: {
         members: { read: true, write: true }, finance: { read: true, write: true },
         stock: { read: true, write: true }, settings: { read: true, write: true }, 
-        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }, pdv: { read: true, write: true }
       }
     },
     {
@@ -223,7 +223,7 @@ async function seed() {
       modules: {
         members: { read: true, write: true }, finance: { read: true, write: true },
         stock: { read: true, write: true }, settings: { read: true, write: true }, 
-        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }, pdv: { read: true, write: true }
       }
     },
     {
@@ -232,7 +232,7 @@ async function seed() {
       modules: {
         members: { read: true, write: true }, finance: { read: false, write: false },
         stock: { read: true, write: true }, settings: { read: false, write: false }, 
-        notices: { read: true, write: true }, dashboard: { read: true, write: true }
+        notices: { read: true, write: true }, dashboard: { read: true, write: true }, pdv: { read: true, write: true }
       }
     },
     {
@@ -241,7 +241,7 @@ async function seed() {
       modules: {
         members: { read: true, write: false }, finance: { read: false, write: false },
         stock: { read: true, write: true }, settings: { read: false, write: false }, 
-        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }, pdv: { read: true, write: true }
       }
     },
     {
@@ -250,7 +250,7 @@ async function seed() {
       modules: {
         members: { read: true, write: false }, finance: { read: false, write: false },
         stock: { read: true, write: true }, settings: { read: false, write: false }, 
-        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }, pdv: { read: true, write: true }
       }
     },
     {
@@ -259,7 +259,7 @@ async function seed() {
       modules: {
         members: { read: true, write: false }, finance: { read: false, write: false },
         stock: { read: false, write: false }, settings: { read: false, write: false }, 
-        notices: { read: true, write: false }, dashboard: { read: true, write: true }
+        notices: { read: true, write: false }, dashboard: { read: true, write: true }, pdv: { read: false, write: false }
       }
     },
     {
@@ -268,7 +268,7 @@ async function seed() {
       modules: {
         members: { read: false, write: false }, finance: { read: false, write: false },
         stock: { read: false, write: false }, settings: { read: false, write: false }, 
-        notices: { read: true, write: false }, dashboard: { read: true, write: false }
+        notices: { read: true, write: false }, dashboard: { read: true, write: false }, pdv: { read: false, write: false }
       }
     }
   ];

@@ -61,6 +61,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/stock/stock').then(m => m.StockComponent),
       },
       {
+        path: 'pdv',
+        canActivate: [permissionGuard],
+        data: { module: 'pdv', action: 'read' },
+        loadComponent: () => import('./features/pdv/pdv').then(m => m.Pdv),
+      },
+      {
         path: 'profile',
         canDeactivate: [pendingChangesGuard],
         loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent),

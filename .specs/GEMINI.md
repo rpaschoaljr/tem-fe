@@ -29,16 +29,17 @@ Iniciando a cultura de qualidade total:
 - **Testes de Integração:** Fluxos completos entre componentes e serviços do Firebase (usando emuladores).
 - **Testes de Cloud Functions:** Garantia de que as lógicas de backend e segurança estão íntegras.
 
-**O Que Aprendemos Hoje (Angular 20 + Firebase Modular):**
+**O Que Aprendemos Hoje (Angular 22 + Firebase Modular):**
 1. **Restrições de Espionagem (spyOn):** O Angular 20 rodando pacotes ESM (ES Modules) bloqueia o `spyOn` direto em importações puras. Para resolver isso, criamos o wrapper `FbUtils` que exporta as funções de forma espionável.
 2. **Bash Variable Interpolation:** Evitar comandos `node -e " ... $1 "` pelo terminal. O Bash avalia `$1` como vazio, o que quebrou as strings do `spyOn`. Para operações globais (Regex/AST) em vários arquivos, **sempre utilize um script Node independente (como `migrate_fbutils.js`)**.
 3. **TypeScript Inference na Ternária:** Para contornar a falha em mocks repetidos e ao mesmo tempo satisfazer a tipagem estrita do compilador sem o erro `Property 'and' does not exist`, a sintaxe exata e segura que escrevemos no `migrate_fbutils.js` é:
    `(((FbUtils.metodo as any)?.and ? FbUtils.metodo : spyOn(FbUtils, 'metodo')) as any)`
 4. **Resolução de Conflitos (ERESOLVE) no Upgrade do Angular:** Nunca utilize a flag `--legacy-peer-deps` cegamente ao fazer upgrades de versão maior (`ng update`). Para pacotes que ficam defasados e não são atualizados automaticamente pelo script do Angular (ex: `@angular/fire`), edite o `package.json` manualmente para alinhar a versão do pacote com a nova geração do Angular, limpe o cache (`rm -rf node_modules package-lock.json && npm cache clean --force`) e rode um `npm install` limpo. O script de migração do Angular pode travar com erros nativos de corrupção do NPM (`Cannot read properties of null (reading 'children')`) caso isso não seja feito adequadamente.
 5. **Status Atual e Próximos Passos:** 
-   - A pasta `src/app/` foi restaurada para o estado estável da área de staging.
-   - O arquivo `migrate_fbutils.js` foi criado na raiz do projeto.
-   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Executar `node migrate_fbutils.js` e em seguida rodar os testes com `npm run test -- --watch=false --browsers=FirefoxHeadless` para prosseguir com os acertos da cobertura de testes.
+   - Upgrade para o Angular 22 realizado com sucesso.
+   - 100% dos testes unitários estão passando, com cobertura em ~70.6%. A meta de 80% continua.
+   - Foram implementadas as exportações (xlsx) e melhorias nos relatórios financeiros (DRE).
+   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Iniciar a implementação do módulo de Vendas (PDV / Frente de Caixa) para os membros operarem sem acesso ao painel financeiro completo. Isso incluirá a inserção de preços no estoque e baixa automática.
 ----
 
 ## ✅ Checklist de Progresso
@@ -64,6 +65,13 @@ Iniciando a cultura de qualidade total:
 - [x] Alertas de Estoque Mínimo
 - [x] Mesclagem de itens
 - [ ] Histórico de movimentações por item
+- [ ] Inclusão de Preços nos Itens do Estoque
+
+### Vendas e PDV (Frente de Caixa)
+- [ ] Criação de Página de Vendas (acesso restrito sem expor financeiro completo)
+- [ ] Baixa automática de estoque ao realizar venda
+- [ ] Bloqueio/alerta para venda com itens em estoque negativo
+- [ ] Integração do PDV gerando lançamentos financeiros (DRE)
 
 ### Infraestrutura e Segurança
 - [x] Autenticação (Email/Senha)
