@@ -64,7 +64,7 @@ jobs:
         run: npm run scan:snyk || true
 
       - name: Socket Security Scan
-        uses: socketsecurity/socket-github-app@v1
+        uses: SocketDev/socket-basics@v1
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
         # Mantendo o mesmo padrão de não travar a esteira que as outras tools
