@@ -147,6 +147,62 @@ describe('ScheduledTransactionsService', () => {
                 }
             });
         });
+
+        describe('Zero Trust / Negative Scenarios', () => {
+            it('should reject if scheduled transaction is null or undefined', (done) => {
+                service.save(null as any).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Dados do agendamento inválidos.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if description is empty or invalid', (done) => {
+                const tx = { description: '  ', type: 'Entrada', category: 'x', value: 10, recurrence: 'once', nextDueDate: new Date() } as any;
+                service.save(tx).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Descrição é obrigatória.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if value is invalid', (done) => {
+                const tx = { description: 'Valid', type: 'Entrada', category: 'x', value: '10', recurrence: 'once', nextDueDate: new Date() } as any;
+                service.save(tx).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Valor inválido.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if type is invalid', (done) => {
+                const tx = { description: 'Valid', type: 'Other', category: 'x', value: 10, recurrence: 'once', nextDueDate: new Date() } as any;
+                service.save(tx).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Tipo de transação inválido. Deve ser Entrada ou Saída.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if category is missing', (done) => {
+                const tx = { description: 'Valid', type: 'Entrada', category: '', value: 10, recurrence: 'once', nextDueDate: new Date() } as any;
+                service.save(tx).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Categoria é obrigatória.');
+                        done();
+                    }
+                });
+            });
+        });
     });
 
     describe('softDelete and restore', () => {
@@ -185,6 +241,28 @@ describe('ScheduledTransactionsService', () => {
                     expect(err.message).toBe('Erro ao restaurar agendamento.');
                     done();
                 }
+            });
+        });
+
+        describe('Zero Trust / Negative Scenarios', () => {
+            it('should reject invalid id for softDelete', (done) => {
+                service.softDelete('').subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('ID inválido.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject invalid id for restore', (done) => {
+                service.restore(' ').subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('ID inválido.');
+                        done();
+                    }
+                });
             });
         });
     });

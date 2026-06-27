@@ -65,13 +65,22 @@ export class EditProfileDialogComponent {
   }
 
   save() {
-    if (this.form.invalid) {
+    const val = this.form.value;
+    const hasEmptySpaces = 
+      !val.phone?.trim() ||
+      !val.cep?.trim() ||
+      !val.street?.trim() ||
+      !val.number?.trim() ||
+      !val.neighborhood?.trim() ||
+      !val.city?.trim() ||
+      !val.state?.trim();
+
+    if (this.form.invalid || hasEmptySpaces) {
       this.notification.showWarning('Preencha os campos obrigatórios.');
       return;
     }
     
     this.loading = true;
-    const val = this.form.value;
     const updateData = {
       phone: val.phone,
       address: {

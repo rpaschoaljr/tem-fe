@@ -18,10 +18,10 @@
             <button mat-button (click)="navigate('archive')" [color]="viewMode === 'archive' ? 'primary' : ''">
                 <mat-icon>history</mat-icon> Arquivo
             </button>
-            <button mat-button (click)="navigate('trash')" [color]="viewMode === 'trash' ? 'primary' : ''">
+            <button mat-button *ngIf="canWrite$ | async" (click)="navigate('trash')" [color]="viewMode === 'trash' ? 'primary' : ''">
                 <mat-icon>delete_outline</mat-icon> Lixeira
             </button>
-            <button mat-raised-button color="primary" *ngIf="viewMode === 'active'" (click)="openForm()">
+            <button mat-raised-button color="primary" *ngIf="viewMode === 'active' && (canWrite$ | async)" (click)="openForm()">
                 <mat-icon>add</mat-icon> Novo Aviso
             </button>
         </div>
@@ -64,8 +64,8 @@
 
                 <!-- Actions Column -->
                 <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef> Ações </th>
-                    <td mat-cell *matCellDef="let n">
+                    <th mat-header-cell *matHeaderCellDef [hidden]="!(canWrite$ | async)"> Ações </th>
+                    <td mat-cell *matCellDef="let n" [hidden]="!(canWrite$ | async)">
                         <ng-container *ngIf="viewMode !== 'trash'">
                             <button mat-icon-button color="primary" (click)="openForm(n)" title="Editar">
                                 <mat-icon>edit</mat-icon>

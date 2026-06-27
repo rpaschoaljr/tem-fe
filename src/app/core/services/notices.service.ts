@@ -69,6 +69,20 @@ export class NoticesService {
     }
 
     save(notice: Notice): Observable<boolean> {
+        if (!notice) {
+            return throwError(() => new Error('Dados do aviso inválidos.'));
+        }
+        if (!notice.title || typeof notice.title !== 'string' || notice.title.trim() === '') {
+            return throwError(() => new Error('Título é obrigatório.'));
+        }
+        if (!notice.content || typeof notice.content !== 'string' || notice.content.trim() === '') {
+            return throwError(() => new Error('Conteúdo é obrigatório.'));
+        }
+        const validTypes = ['event', 'payment', 'warning', 'info'];
+        if (!notice.type || !validTypes.includes(notice.type)) {
+            return throwError(() => new Error('Tipo de aviso inválido.'));
+        }
+
         const isNew = !notice.id;
         const colRef = FbUtils.collection(this.firestore, this.COL);
         const docRef = isNew ? FbUtils.doc(colRef) : FbUtils.doc(this.firestore, this.COL, notice.id);
@@ -102,6 +116,9 @@ export class NoticesService {
     }
 
     softDelete(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             map(() => true),
@@ -119,6 +136,9 @@ export class NoticesService {
     }
 
     restore(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             map(() => true),
@@ -136,6 +156,9 @@ export class NoticesService {
     }
 
     hardDelete(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.deleteDoc(docRef)).pipe(
             map(() => true),

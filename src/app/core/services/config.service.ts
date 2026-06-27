@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore } from '@angular/fire/firestore';
-import { Observable, from, map, of, switchMap, combineLatest, forkJoin } from 'rxjs';
+import { Observable, from, map, of, switchMap, combineLatest, forkJoin, throwError } from 'rxjs';
 import { FbUtils } from '../../shared/utils/firebase-utils';
 import { ModuleConfig, DynamicField, FieldOption, PermissionConfig, ModulePermissions } from '../models/system-config.model';
 
@@ -11,6 +11,9 @@ export class ConfigService {
     private PERM_COL = 'permissions';
 
     getConfig(moduleId: string): Observable<ModuleConfig> {
+        if (!moduleId || typeof moduleId !== 'string' || moduleId.trim() === '') {
+            return throwError(() => new Error('ID do módulo inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, moduleId);
         return from(FbUtils.getDoc(docRef)).pipe(
             map(snap => {
@@ -24,6 +27,9 @@ export class ConfigService {
     }
 
     saveConfig(config: ModuleConfig): Observable<void> {
+        if (!config || !config.id || typeof config.id !== 'string' || config.id.trim() === '') {
+            return throwError(() => new Error('Configuração inválida.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, config.id);
         return from(FbUtils.setDoc(docRef, { ...config, updatedAt: new Date() }));
     }
@@ -31,6 +37,9 @@ export class ConfigService {
     // --- PERMISSÕES ---
 
     getRolePermission(roleName: string): Observable<PermissionConfig> {
+        if (!roleName || typeof roleName !== 'string' || roleName.trim() === '') {
+            return throwError(() => new Error('Nome do cargo inválido.'));
+        }
         const normalized = roleName.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
         const safeId = `role_${normalized.replace(/[^A-Z0-9]/g, '')}`;
         const docRef = FbUtils.doc(this.firestore, this.PERM_COL, safeId);
@@ -47,6 +56,9 @@ export class ConfigService {
     }
 
     savePermission(perm: PermissionConfig): Observable<void> {
+        if (!perm || !perm.id || typeof perm.id !== 'string' || perm.id.trim() === '') {
+            return throwError(() => new Error('Permissão inválida.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.PERM_COL, perm.id);
         return from(FbUtils.setDoc(docRef, { ...perm, updatedAt: new Date() }));
     }
@@ -58,7 +70,10 @@ export class ConfigService {
     }
 
     getUserPermission(email: string): Observable<PermissionConfig> {
-        const safeId = email;
+        if (!email || typeof email !== 'string' || email.trim() === '') {
+            return throwError(() => new Error('Email inválido.'));
+        }
+        const safeId = email.trim();
         const docRef = FbUtils.doc(this.firestore, this.PERM_COL, safeId);
         return from(FbUtils.getDoc(docRef)).pipe(
             map(snap => {
@@ -71,6 +86,9 @@ export class ConfigService {
     }
 
     saveUserPermission(perm: PermissionConfig): Observable<void> {
+        if (!perm || !perm.id || typeof perm.id !== 'string' || perm.id.trim() === '') {
+            return throwError(() => new Error('Permissão de usuário inválida.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.PERM_COL, perm.id);
         return from(FbUtils.setDoc(docRef, { ...perm, updatedAt: new Date() }));
     }

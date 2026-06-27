@@ -329,5 +329,80 @@ describe('NoticesService', () => {
 
       expect(err.message).toBe('Aviso não encontrado.');
     }));
+
+    describe('Zero Trust / Negative Scenarios', () => {
+      it('save should reject null notice', (done) => {
+        service.save(null as any).subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('Dados do aviso inválidos.');
+            done();
+          }
+        });
+      });
+
+      it('save should reject missing title', (done) => {
+        const notice = { ...dummyNotice, title: '' };
+        service.save(notice).subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('Título é obrigatório.');
+            done();
+          }
+        });
+      });
+
+      it('save should reject missing content', (done) => {
+        const notice = { ...dummyNotice, content: '   ' };
+        service.save(notice).subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('Conteúdo é obrigatório.');
+            done();
+          }
+        });
+      });
+
+      it('save should reject invalid type', (done) => {
+        const notice = { ...dummyNotice, type: 'invalid_type' as any };
+        service.save(notice).subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('Tipo de aviso inválido.');
+            done();
+          }
+        });
+      });
+
+      it('softDelete should reject invalid id', (done) => {
+        service.softDelete('').subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('ID inválido.');
+            done();
+          }
+        });
+      });
+
+      it('restore should reject invalid id', (done) => {
+        service.restore('  ').subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('ID inválido.');
+            done();
+          }
+        });
+      });
+
+      it('hardDelete should reject invalid id', (done) => {
+        service.hardDelete('').subscribe({
+          next: () => fail('Should have failed'),
+          error: (err) => {
+            expect(err.message).toBe('ID inválido.');
+            done();
+          }
+        });
+      });
+    });
   });
 });

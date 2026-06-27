@@ -270,4 +270,109 @@ describe('StockService', () => {
             });
         });
     });
+    describe('Zero Trust / Negative Scenarios', () => {
+        it('save should reject null item', (done) => {
+            service.save(null as any).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Dados do item inválidos.');
+                    done();
+                }
+            });
+        });
+
+        it('save should reject missing name', (done) => {
+            const item: any = { unit: 'un', category: 'cat', quantity: 10 };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Nome é obrigatório.');
+                    done();
+                }
+            });
+        });
+
+        it('save should reject missing category', (done) => {
+            const item: any = { name: 'name', unit: 'un', quantity: 10 };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Categoria é obrigatória.');
+                    done();
+                }
+            });
+        });
+
+        it('save should reject missing unit', (done) => {
+            const item: any = { name: 'name', category: 'cat', quantity: 10 };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Unidade é obrigatória.');
+                    done();
+                }
+            });
+        });
+
+        it('save should reject invalid quantity', (done) => {
+            const item: any = { name: 'name', category: 'cat', unit: 'un', quantity: -5 };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Quantidade inválida.');
+                    done();
+                }
+            });
+        });
+
+        it('mergeItems should reject invalid sourceId', (done) => {
+            service.mergeItems('', 'target').subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('ID de origem inválido.');
+                    done();
+                }
+            });
+        });
+
+        it('mergeItems should reject invalid targetId', (done) => {
+            service.mergeItems('source', '   ').subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('ID de destino inválido.');
+                    done();
+                }
+            });
+        });
+
+        it('mergeItems should reject same source and target IDs', (done) => {
+            service.mergeItems('same-id', 'same-id').subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('IDs de origem e destino não podem ser iguais.');
+                    done();
+                }
+            });
+        });
+
+        it('softDelete should reject invalid id', (done) => {
+            service.softDelete('   ').subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('ID inválido.');
+                    done();
+                }
+            });
+        });
+
+        it('restore should reject invalid id', (done) => {
+            service.restore('').subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('ID inválido.');
+                    done();
+                }
+            });
+        });
+    });
 });

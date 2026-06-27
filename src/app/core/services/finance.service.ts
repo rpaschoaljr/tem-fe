@@ -24,7 +24,7 @@ export class FinanceService {
                 const errorMessage = String((err as any)?.message || '');
                 
                 if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
-                    this.logger.debug('Acesso negado silenciado nas transações.', err);
+                    this.logger.debug('Acesso bloqueado por segurança', err);
                     return of([]); // Retorna array vazio em vez de quebrar a tela com um erro vermelho
                 }
 
@@ -35,6 +35,22 @@ export class FinanceService {
     }
 
     save(transaction: Transaction): Observable<boolean> {
+        if (!transaction) {
+            return throwError(() => new Error('Dados da transação inválidos.'));
+        }
+        if (!transaction.description || typeof transaction.description !== 'string' || transaction.description.trim() === '') {
+            return throwError(() => new Error('Descrição é obrigatória.'));
+        }
+        if (typeof transaction.value !== 'number' || isNaN(transaction.value)) {
+            return throwError(() => new Error('Valor inválido.'));
+        }
+        if (transaction.type !== 'Entrada' && transaction.type !== 'Saída') {
+            return throwError(() => new Error('Tipo de transação inválido. Deve ser Entrada ou Saída.'));
+        }
+        if (!transaction.category || typeof transaction.category !== 'string' || transaction.category.trim() === '') {
+            return throwError(() => new Error('Categoria é obrigatória.'));
+        }
+
         const isNew = !transaction.id;
         const colRef = FbUtils.collection(this.firestore, this.COL);
         const docRef = isNew ? FbUtils.doc(colRef) : FbUtils.doc(this.firestore, this.COL, transaction.id);
@@ -58,6 +74,9 @@ export class FinanceService {
     }
 
     softDelete(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             map(() => true),
@@ -66,6 +85,9 @@ export class FinanceService {
     }
 
     restore(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             map(() => true),

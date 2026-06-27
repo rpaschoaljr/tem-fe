@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NoticesService } from '../../core/services/notices.service';
 import { Notice } from '../../core/models/notice.model';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 import { NoticeFormComponent } from './notice-form/notice-form';
 
 @Component({
@@ -33,6 +34,9 @@ export class NoticesComponent implements OnInit {
   private snack = inject(MatSnackBar);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authService = inject(AuthService);
+
+  canWrite$ = this.authService.hasPermission('notices', 'write');
 
   viewMode: 'active' | 'archive' | 'trash' = 'active';
   notices: Notice[] = [];
@@ -78,25 +82,40 @@ export class NoticesComponent implements OnInit {
 
   deleteNotice(id: string) {
     if (confirm('Tem certeza que deseja mover este aviso para a lixeira?')) {
-      this.noticesService.softDelete(id).subscribe(() => {
-        this.loadNotices();
-        this.snack.open('Aviso movido para a lixeira.', 'OK', { duration: 3000 });
+      this.noticesService.softDelete(id).subscribe({
+        next: () => {
+          this.loadNotices();
+          this.snack.open('Aviso movido para a lixeira.', 'OK', { duration: 3000 });
+        },
+        error: (err) => {
+          this.snack.open('Erro: Acesso negado ou aviso inválido.', 'OK', { duration: 3000 });
+        }
       });
     }
   }
 
   restoreNotice(id: string) {
-    this.noticesService.restore(id).subscribe(() => {
-      this.loadNotices();
-      this.snack.open('Aviso restaurado.', 'OK', { duration: 3000 });
+    this.noticesService.restore(id).subscribe({
+      next: () => {
+        this.loadNotices();
+        this.snack.open('Aviso restaurado.', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.snack.open('Erro: Acesso negado ou aviso inválido.', 'OK', { duration: 3000 });
+      }
     });
   }
 
   hardDeleteNotice(id: string) {
     if (confirm('ATENÇÃO: Esta ação é permanente e não pode ser desfeita. Excluir definitivamente?')) {
-      this.noticesService.hardDelete(id).subscribe(() => {
-        this.loadNotices();
-        this.snack.open('Aviso excluído permanentemente.', 'OK', { duration: 3000 });
+      this.noticesService.hardDelete(id).subscribe({
+        next: () => {
+          this.loadNotices();
+          this.snack.open('Aviso excluído permanentemente.', 'OK', { duration: 3000 });
+        },
+        error: (err) => {
+          this.snack.open('Erro: Acesso negado.', 'OK', { duration: 3000 });
+        }
       });
     }
   }

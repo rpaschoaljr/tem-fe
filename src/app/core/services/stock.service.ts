@@ -37,7 +37,7 @@ export class StockService {
                 const errorCode = (err as any)?.code;
                 const errorMessage = String((err as any)?.message || '');
                 if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
-                    this.logger.debug('Acesso negado silenciado no estoque.', err);
+                    this.logger.debug('Acesso bloqueado por segurança', err);
                     return of([]);
                 }
                 if (hasCache) {
@@ -49,6 +49,22 @@ export class StockService {
     }
 
     save(item: StockItem): Observable<boolean> {
+        if (!item) {
+            return throwError(() => new Error('Dados do item inválidos.'));
+        }
+        if (!item.name || typeof item.name !== 'string' || item.name.trim() === '') {
+            return throwError(() => new Error('Nome é obrigatório.'));
+        }
+        if (!item.category || typeof item.category !== 'string' || item.category.trim() === '') {
+            return throwError(() => new Error('Categoria é obrigatória.'));
+        }
+        if (!item.unit || typeof item.unit !== 'string' || item.unit.trim() === '') {
+            return throwError(() => new Error('Unidade é obrigatória.'));
+        }
+        if (typeof item.quantity !== 'number' || isNaN(item.quantity) || item.quantity < 0) {
+            return throwError(() => new Error('Quantidade inválida.'));
+        }
+
         const isNew = !item.id;
         const colRef = FbUtils.collection(this.firestore, this.COL);
 
@@ -91,6 +107,16 @@ export class StockService {
     }
 
     mergeItems(sourceId: string, targetId: string): Observable<void> {
+        if (!sourceId || typeof sourceId !== 'string' || sourceId.trim() === '') {
+            return throwError(() => new Error('ID de origem inválido.'));
+        }
+        if (!targetId || typeof targetId !== 'string' || targetId.trim() === '') {
+            return throwError(() => new Error('ID de destino inválido.'));
+        }
+        if (sourceId === targetId) {
+            return throwError(() => new Error('IDs de origem e destino não podem ser iguais.'));
+        }
+
         const sourceRef = FbUtils.doc(this.firestore, this.COL, sourceId);
         const targetRef = FbUtils.doc(this.firestore, this.COL, targetId);
 
@@ -117,6 +143,9 @@ export class StockService {
     }
 
     softDelete(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),
@@ -125,6 +154,9 @@ export class StockService {
     }
 
     restore(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL, id);
         return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             tap(() => localStorage.removeItem(this.TIME_KEY)),

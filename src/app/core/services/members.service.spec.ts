@@ -231,6 +231,83 @@ describe('MembersService', () => {
                 }
             });
         });
+
+        describe('Zero Trust / Negative Scenarios', () => {
+            it('should reject if member is null', (done) => {
+                service.save(null as any).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Dados do membro inválidos.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if name is missing', (done) => {
+                const member = { email: 'a@a.com', cpf: '123' } as any;
+                service.save(member).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Nome é obrigatório.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if email is missing', (done) => {
+                const member = { name: 'John', cpf: '123' } as any;
+                service.save(member).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('E-mail é obrigatório.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if cpf is missing', (done) => {
+                const member = { name: 'John', email: 'a@a.com' } as any;
+                service.save(member).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('CPF é obrigatório.');
+                        done();
+                    }
+                });
+            });
+        });
+    });
+
+    describe('updateProfileData', () => {
+        it('should update profile data successfully', (done) => {
+            service.updateProfileData('1', { phone: '11999999999', address: { cep: '123', logradouro: '', numero: '', complemento: '', bairro: '', localidade: '', uf: '' } as any }).subscribe(res => {
+                expect(res).toBeTrue();
+                expect(FbUtils.updateDoc).toHaveBeenCalled();
+                done();
+            });
+        });
+
+        describe('Zero Trust / Negative Scenarios', () => {
+            it('should reject if id is invalid', (done) => {
+                service.updateProfileData('', { phone: '123', address: { cep: '123' } } as any).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('ID inválido.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject if data is incomplete', (done) => {
+                service.updateProfileData('1', null as any).subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('Dados de perfil incompletos.');
+                        done();
+                    }
+                });
+            });
+        });
     });
 
     describe('softDelete and restore', () => {
@@ -247,6 +324,28 @@ describe('MembersService', () => {
                 expect(res).toBeTrue();
                 expect(FbUtils.updateDoc).toHaveBeenCalled();
                 done();
+            });
+        });
+
+        describe('Zero Trust / Negative Scenarios', () => {
+            it('should reject invalid id for softDelete', (done) => {
+                service.softDelete('').subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('ID inválido.');
+                        done();
+                    }
+                });
+            });
+
+            it('should reject invalid id for restore', (done) => {
+                service.restore(' ').subscribe({
+                    next: () => fail('Should have failed'),
+                    error: (err) => {
+                        expect(err.message).toBe('ID inválido.');
+                        done();
+                    }
+                });
             });
         });
     });

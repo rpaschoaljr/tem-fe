@@ -178,4 +178,65 @@ describe('ConfigService', () => {
       });
     });
   });
+  describe('Zero Trust / Negative Scenarios', () => {
+    it('getConfig should reject invalid moduleId', (done) => {
+      service.getConfig('   ').subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('ID do módulo inválido.');
+          done();
+        }
+      });
+    });
+
+    it('saveConfig should reject invalid config id', (done) => {
+      service.saveConfig({ id: '', fields: [], updatedAt: new Date() }).subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('Configuração inválida.');
+          done();
+        }
+      });
+    });
+
+    it('getRolePermission should reject invalid roleName', (done) => {
+      service.getRolePermission('   ').subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('Nome do cargo inválido.');
+          done();
+        }
+      });
+    });
+
+    it('savePermission should reject invalid perm id', (done) => {
+      service.savePermission({ id: '', type: 'role', target: 'x', hierarchyLevel: 1, modules: {} as any, updatedAt: new Date() }).subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('Permissão inválida.');
+          done();
+        }
+      });
+    });
+
+    it('getUserPermission should reject invalid email', (done) => {
+      service.getUserPermission('   ').subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('Email inválido.');
+          done();
+        }
+      });
+    });
+
+    it('saveUserPermission should reject invalid perm id', (done) => {
+      service.saveUserPermission({ id: '', type: 'user', target: 'x', hierarchyLevel: 1, modules: {} as any, updatedAt: new Date() }).subscribe({
+        next: () => fail('Should have failed'),
+        error: (err) => {
+          expect(err.message).toBe('Permissão de usuário inválida.');
+          done();
+        }
+      });
+    });
+  });
 });

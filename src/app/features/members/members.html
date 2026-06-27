@@ -57,6 +57,7 @@
 
             <app-generic-list [data]="members" [columns]="tableColumns" 
                 [hideActions]="!(canWrite$ | async)"
+                [hideTrash]="!(canWrite$ | async)"
                 (filteredDataChange)="exportData = $event"
                 (editAction)="onEdit($event)"
                 (deleteAction)="onDelete($event)" (restoreAction)="onRestore($event)">

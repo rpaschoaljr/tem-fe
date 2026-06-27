@@ -28,7 +28,7 @@ export class MembersService {
                 const errorCode = (err as any)?.code;
                 const errorMessage = String((err as any)?.message || '');
                 if (errorCode === 'permission-denied' || errorMessage.includes('admin is undefined')) {
-                    this.logger.debug('Acesso negado silenciado em membros.', err);
+                    this.logger.debug('Acesso bloqueado por segurança', err);
                     return of([]);
                 }
                 return throwError(() => new Error('ERRO AO CARREGAR MEMBROS.'));
@@ -60,6 +60,19 @@ export class MembersService {
     }
 
     save(member: Member): Observable<boolean> {
+        if (!member) {
+            return throwError(() => new Error('Dados do membro inválidos.'));
+        }
+        if (!member.name || typeof member.name !== 'string' || member.name.trim() === '') {
+            return throwError(() => new Error('Nome é obrigatório.'));
+        }
+        if (!member.email || typeof member.email !== 'string' || member.email.trim() === '') {
+            return throwError(() => new Error('E-mail é obrigatório.'));
+        }
+        if (!member.cpf || typeof member.cpf !== 'string' || member.cpf.trim() === '') {
+            return throwError(() => new Error('CPF é obrigatório.'));
+        }
+
         const isNew = !member.id;
         const batch = FbUtils.writeBatch(this.firestore);
 
@@ -133,7 +146,7 @@ export class MembersService {
             phone: member.phone,
             phone_search: Normalizer.numbers(member.phone),
             address: member.address,
-            cep_search: Normalizer.numbers(member.address.cep),
+            cep_search: Normalizer.numbers(member.address?.cep || ''),
             updatedAt: new Date()
         };
 
@@ -151,6 +164,13 @@ export class MembersService {
     }
 
     updateProfileData(id: string, data: { phone: string, address: Member['address'] }): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
+        if (!data || !data.phone || !data.address || !data.address.cep) {
+            return throwError(() => new Error('Dados de perfil incompletos.'));
+        }
+
         const docPrivate = FbUtils.doc(this.firestore, this.COL_PRIVATE, id);
         
         const privUpdate = {
@@ -168,6 +188,9 @@ export class MembersService {
     }
 
     softDelete(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL_BASE, id);
         return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
             map(() => true)
@@ -175,6 +198,9 @@ export class MembersService {
     }
 
     restore(id: string): Observable<boolean> {
+        if (!id || typeof id !== 'string' || id.trim() === '') {
+            return throwError(() => new Error('ID inválido.'));
+        }
         const docRef = FbUtils.doc(this.firestore, this.COL_BASE, id);
         return from(FbUtils.updateDoc(docRef, { deleted: false, updatedAt: new Date() })).pipe(
             map(() => true)

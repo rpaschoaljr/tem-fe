@@ -10,10 +10,10 @@ import { FinanceService } from '../../core/services/finance.service';
 import { StockService } from '../../core/services/stock.service';
 import { NoticesService } from '../../core/services/notices.service';
 import { AuthService } from '../../core/services/auth.service';
-import { forkJoin, Observable, combineLatest } from 'rxjs';
+import { forkJoin, Observable, combineLatest, of } from 'rxjs';
 import { Notice } from '../../core/models/notice.model';
 import { AsyncPipe } from '@angular/common';
-import { map, take, tap } from 'rxjs/operators';
+import { map, take, tap, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -50,9 +50,9 @@ export class DashboardComponent implements OnInit {
     this.activeNotices$ = this.noticesService.getActiveNotices();
 
     forkJoin({
-      members: this.membersService.getMembers().pipe(take(1)),
-      transactions: this.financeService.getTransactions().pipe(take(1)),
-      stock: this.stockService.getStock().pipe(take(1)),
+      members: this.membersService.getMembers().pipe(take(1), catchError(() => of([]))),
+      transactions: this.financeService.getTransactions().pipe(take(1), catchError(() => of([]))),
+      stock: this.stockService.getStock().pipe(take(1), catchError(() => of([]))),
     }).subscribe(({ members, transactions, stock }) => {
       this.kpis.activeMembers = members.filter(m => !m.deleted).length;
 

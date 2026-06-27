@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { NoticesService } from '../../../core/services/notices.service';
 import { Notice } from '../../../core/models/notice.model';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-notice-form',
@@ -21,7 +22,8 @@ import { Notice } from '../../../core/models/notice.model';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatDatepickerModule
+    MatDatepickerModule,
+    MatSnackBarModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data ? 'Editar' : 'Novo' }} Aviso</h2>
@@ -81,6 +83,7 @@ export class NoticeFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private noticesService = inject(NoticesService);
   private dialogRef = inject(MatDialogRef<NoticeFormComponent>);
+  private snack = inject(MatSnackBar);
   
   form: FormGroup;
 
@@ -101,8 +104,13 @@ export class NoticeFormComponent implements OnInit {
 
   save() {
     if (this.form.valid) {
-      this.noticesService.save(this.form.value).subscribe(() => {
-        this.dialogRef.close(true);
+      this.noticesService.save(this.form.value).subscribe({
+        next: () => {
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          this.snack.open('Erro ao salvar: Acesso negado ou dados inválidos.', 'OK', { duration: 4000 });
+        }
       });
     }
   }

@@ -13,7 +13,6 @@ export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
 
   const module = route.data['module'] as string;
   const action = (route.data['action'] as 'read' | 'write') || 'read';
-  logger.debug('Verificando permissão', { module, action });
   if (!module) {
     logger.error('Módulo não definido na rota');
     return true;
@@ -23,11 +22,8 @@ export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
     take(1),
     tap(hasPermission => {
       if (!hasPermission) {
-        logger.warn('Acesso negado', { module, action });
-        notify.showError(`Você não tem permissão de ${action === 'read' ? 'acesso' : 'escrita'} para o módulo ${module}.`);
+        notify.showError('Acesso restrito. Você não possui as permissões necessárias.');
         router.navigate(['/dashboard']);
-      } else {
-        logger.debug('Acesso permitido', { module, action });
       }
     })
   );

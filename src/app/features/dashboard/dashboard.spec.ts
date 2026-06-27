@@ -7,7 +7,7 @@ import { StockService } from '../../core/services/stock.service';
 import { NoticesService } from '../../core/services/notices.service';
 import { AuthService } from '../../core/services/auth.service';
 import { provideFirebaseMocks } from '../../core/services/firebase-testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import * as auth from '@angular/fire/auth';
 import { FbUtils } from '../../shared/utils/firebase-utils';
@@ -95,4 +95,33 @@ describe('DashboardComponent', () => {
     expect(mockAuthService.logout).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   }));
+
+  describe('Zero Trust / Negative Scenarios', () => {
+    it('should handle members service failure gracefully', () => {
+      mockMembersService.getMembers.and.returnValue(throwError(() => new Error('Permission denied')));
+      component.ngOnInit();
+      
+      expect(component.kpis.activeMembers).toBe(0);
+      expect(component.kpis.balance).toBe(50); // Others should still load
+      expect(component.kpis.outOfStock).toBe(1);
+    });
+
+    it('should handle finance service failure gracefully', () => {
+      mockFinanceService.getTransactions.and.returnValue(throwError(() => new Error('Permission denied')));
+      component.ngOnInit();
+      
+      expect(component.kpis.activeMembers).toBe(1); // Others should still load
+      expect(component.kpis.balance).toBe(0);
+      expect(component.kpis.outOfStock).toBe(1);
+    });
+
+    it('should handle stock service failure gracefully', () => {
+      mockStockService.getStock.and.returnValue(throwError(() => new Error('Permission denied')));
+      component.ngOnInit();
+      
+      expect(component.kpis.activeMembers).toBe(1);
+      expect(component.kpis.balance).toBe(50);
+      expect(component.kpis.outOfStock).toBe(0); // This should fail gracefully to 0
+    });
+  });
 });
