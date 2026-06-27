@@ -13,6 +13,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { MembersService } from '../../../core/services/members.service';
 import { ConfigService } from '../../../core/services/config.service';
@@ -25,6 +26,7 @@ import { CustomValidators } from '../../../shared/utils/validators';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ComponentCanDeactivate } from '../../../core/guards/pending-changes.guard';
 import { Observable } from 'rxjs';
+import { ImageCropperDialogComponent } from '../../../shared/components/image-cropper-dialog/image-cropper-dialog';
 
 
 @Component({
@@ -43,6 +45,7 @@ import { Observable } from 'rxjs';
     MatIconModule,
     MatCheckboxModule,
     MatDividerModule,
+    MatDialogModule,
     InputMaskDirective
   ],
   providers: [],
@@ -58,6 +61,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private logger = inject(LoggerService);
+  private dialog = inject(MatDialog);
 
   form!: FormGroup;
   isEditMode = false;
@@ -65,6 +69,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   selectedIndex = 0;
   totalTabs = 4;
   formSubmitted = false;
+  profileImageUrl: string = '';
 
   canDeactivate(): boolean | Observable<boolean> {
     if (this.form && this.form.dirty && !this.formSubmitted) {
@@ -204,6 +209,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
         if (member) {
           this.form.patchValue(member);
           this.form.markAsPristine();
+          this.profileImageUrl = member.photoUrl || '';
         } else {
           this.notify.showError('Membro não encontrado.');
           this.router.navigate(['/members']);
@@ -332,5 +338,32 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
 
   onCancel() {
     this.router.navigate(['/members']);
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0 && this.memberId) {
+      const dialogRef = this.dialog.open(ImageCropperDialogComponent, {
+        data: { event },
+        width: '500px',
+        maxWidth: '90vw'
+      });
+
+      dialogRef.afterClosed().subscribe((result: Blob | undefined) => {
+        if (result) {
+          this.membersService.uploadProfilePicture(this.memberId!, result).subscribe({
+            next: (downloadURL) => {
+              this.profileImageUrl = downloadURL;
+              this.notify.showSuccess('Foto atualizada com sucesso!');
+            },
+            error: (error) => {
+              this.logger.error('Erro ao fazer upload da imagem', error);
+              this.notify.showError(error.message || 'Erro ao salvar a foto.');
+            }
+          });
+        }
+        input.value = '';
+      });
+    }
   }
 }

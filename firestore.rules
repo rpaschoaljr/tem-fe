@@ -39,7 +39,8 @@ service cloud.firestore {
     match /members_private/{memberId} {
       // Lê se for Admin OU se for o dono do próprio dado
       allow read: if hasPerm('members', 'read') || (request.auth.uid == memberId) || (resource != null && resource.data.uid == request.auth.uid);
-      allow write: if hasPerm('members', 'write');
+      allow create, delete: if hasPerm('members', 'write');
+      allow update: if hasPerm('members', 'write') || request.auth.uid == memberId || (resource != null && resource.data.uid == request.auth.uid);
     }
 
     // 3. MEMBROS - FATIA ESPIRITUAL (Rituais, Orixás)

@@ -39,7 +39,7 @@ Iniciando a cultura de qualidade total:
    - Upgrade para o Angular 22 realizado com sucesso.
    - 100% dos testes unitários estão passando, com cobertura em ~70.6%. A meta de 80% continua.
    - Foram implementadas as exportações (xlsx) e melhorias nos relatórios financeiros (DRE).
-   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Iniciar a implementação do módulo de Vendas (PDV / Frente de Caixa) para os membros operarem sem acesso ao painel financeiro completo. Isso incluirá a inserção de preços no estoque e baixa automática.
+   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Testar a edição de dados pessoais (Telefone e Endereço) pelo próprio usuário na aba "Meu Perfil" e validar preenchimento automático do ViaCEP. Em seguida, iniciar a implementação do módulo de Vendas (PDV / Frente de Caixa).
 ----
 
 ## ✅ Checklist de Progresso
@@ -49,7 +49,7 @@ Iniciando a cultura de qualidade total:
 - [x] Cadastro e Edição
 - [x] **Fatiamento de Dados (Basic, Private, Spiritual)**
 - [x] **Sincronização em Tempo Real (onSnapshot)**
-- [ ] Upload de Foto para o Firebase Storage
+- [x] Upload de Foto para o Firebase Storage
 - [ ] Exportação de Ficha de Membro (PDF)
 
 ### Gestão Financeira
@@ -86,6 +86,7 @@ Iniciando a cultura de qualidade total:
 - [x] Configuração de CI/CD (GitHub Actions/GCP)
 - [ ] Cobertura de Testes Unitários > 80%
 - [x] Pentest Approval (OWASP/Nuclei)
+- [ ] Resolver vulnerabilidades e débitos técnicos em pacotes legados reportados pelo Socket Security (tar, xlsx, form-data, zone.js)
 
 ---
 

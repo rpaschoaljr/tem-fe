@@ -263,5 +263,112 @@ describe('MembersService', () => {
             expect(req.request.method).toBe('GET');
             req.flush(mockResponse);
         });
+    describe('uploadProfilePicture (Zero Trust)', () => {
+        let refSpy: jasmine.Spy;
+        let uploadBytesSpy: jasmine.Spy;
+        let getDownloadURLSpy: jasmine.Spy;
+        let updateDocSpy: jasmine.Spy;
+
+        beforeEach(() => {
+            refSpy = ((FbUtils.ref as any)?.and ? FbUtils.ref : spyOn(FbUtils, 'ref')) as jasmine.Spy;
+            uploadBytesSpy = ((FbUtils.uploadBytes as any)?.and ? FbUtils.uploadBytes : spyOn(FbUtils, 'uploadBytes')) as jasmine.Spy;
+            getDownloadURLSpy = ((FbUtils.getDownloadURL as any)?.and ? FbUtils.getDownloadURL : spyOn(FbUtils, 'getDownloadURL')) as jasmine.Spy;
+            
+            updateDocSpy = FbUtils.updateDoc as jasmine.Spy;
+            
+            refSpy.and.returnValue({} as any);
+            uploadBytesSpy.and.returnValue(Promise.resolve({ ref: {} } as any));
+            getDownloadURLSpy.and.returnValue(Promise.resolve('https://url.com/photo.webp'));
+            updateDocSpy.and.returnValue(Promise.resolve());
+        });
+
+        it('should upload valid image and update firestore doc', (done) => {
+            const validBlob = new Blob(['data'], { type: 'image/webp' });
+            Object.defineProperty(validBlob, 'size', { value: 1024 });
+
+            service.uploadProfilePicture('member-123', validBlob).subscribe(url => {
+                expect(url).toBe('https://url.com/photo.webp');
+                expect(uploadBytesSpy).toHaveBeenCalled();
+                expect(updateDocSpy).toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it('should throw error if memberId is empty', (done) => {
+            const validBlob = new Blob(['data'], { type: 'image/webp' });
+            service.uploadProfilePicture('', validBlob).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('ID do membro inválido.');
+                    done();
+                }
+            });
+        });
+
+        it('should throw error if imageBlob is null', (done) => {
+            service.uploadProfilePicture('member-123', null as any).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Arquivo de imagem inválido.');
+                    done();
+                }
+            });
+        });
+
+        it('should throw error if image size exceeds 5MB', (done) => {
+            const hugeBlob = new Blob(['data'], { type: 'image/webp' });
+            Object.defineProperty(hugeBlob, 'size', { value: 6 * 1024 * 1024 });
+
+            service.uploadProfilePicture('member-123', hugeBlob).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('O arquivo excede o limite de 5MB.');
+                    done();
+                }
+            });
+        });
+
+        it('should throw error if file type is not an image', (done) => {
+            const textBlob = new Blob(['data'], { type: 'text/plain' });
+            
+            service.uploadProfilePicture('member-123', textBlob).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Formato de arquivo não permitido. Envie apenas imagens.');
+                    done();
+                }
+            });
+        });
+
+        it('should handle storage upload failure', (done) => {
+            const validBlob = new Blob(['data'], { type: 'image/webp' });
+            Object.defineProperty(validBlob, 'size', { value: 1024 });
+
+            uploadBytesSpy.and.returnValue(Promise.reject(new Error('Storage unavailable')));
+
+            service.uploadProfilePicture('member-123', validBlob).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Falha ao enviar imagem para o servidor.');
+                    done();
+                }
+            });
+        });
+
+        it('should handle firestore update failure', (done) => {
+            const validBlob = new Blob(['data'], { type: 'image/webp' });
+            Object.defineProperty(validBlob, 'size', { value: 1024 });
+
+            updateDocSpy.and.returnValue(Promise.reject(new Error('Permission denied')));
+
+            service.uploadProfilePicture('member-123', validBlob).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Imagem salva, mas falha ao atualizar o perfil.');
+                    done();
+                }
+            });
+        });
     });
+});
 });

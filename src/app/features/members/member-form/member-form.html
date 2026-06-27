@@ -4,6 +4,21 @@
         <h1>{{ isEditMode ? 'Editar Membro' : 'Novo Membro' }}</h1>
     </div>
 
+    <!-- FOTO DE PERFIL (APENAS EDIÇÃO) -->
+    <div class="profile-photo-container" *ngIf="isEditMode">
+        <div class="photo-wrapper">
+            <img *ngIf="profileImageUrl" [src]="profileImageUrl" alt="Foto do Membro" class="profile-photo">
+            <div *ngIf="!profileImageUrl" class="no-profile-image">
+                <mat-icon>account_circle</mat-icon>
+            </div>
+            <!-- Usa button com (click) no input escondido ao invés de label for -->
+            <button mat-mini-fab color="primary" class="upload-btn" (click)="fileInput.click()" type="button">
+                <mat-icon>camera_alt</mat-icon>
+            </button>
+        </div>
+        <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
+    </div>
+
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" animationDuration="200ms" [(selectedIndex)]="selectedIndex">
 

@@ -20,6 +20,7 @@ import { Observable, of } from 'rxjs';
 import { take, switchMap } from 'rxjs/operators';
 import { ImageCropperDialogComponent } from '../../shared/components/image-cropper-dialog/image-cropper-dialog';
 import { ChangePasswordDialogComponent } from './change-password-dialog/change-password-dialog';
+import { EditProfileDialogComponent } from './edit-profile-dialog/edit-profile-dialog';
 
 @Component({
   selector: 'app-profile',
@@ -175,6 +176,21 @@ export class ProfileComponent implements OnInit, ComponentCanDeactivate {
     this.dialog.open(ChangePasswordDialogComponent, {
       width: '100%',
       maxWidth: '400px'
+    });
+  }
+
+  openEditProfile() {
+    if (!this.member()) return;
+    const dialogRef = this.dialog.open(EditProfileDialogComponent, {
+      width: '100%',
+      maxWidth: '500px',
+      data: { member: this.member() }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadMember();
+      }
     });
   }
 }

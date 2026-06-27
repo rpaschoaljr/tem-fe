@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>Editar Dados Pessoais</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="edit-profile-form">
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Telefone / WhatsApp</mat-label>
+      <input matInput formControlName="phone" appInputMask="phone" placeholder="(00) 00000-0000">
+      <mat-error *ngIf="form.get('phone')?.hasError('required')">O telefone é obrigatório</mat-error>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>CEP</mat-label>
+        <input matInput formControlName="cep" appInputMask="cep" placeholder="00000-000" (blur)="buscarCep()">
+        <mat-error *ngIf="form.get('cep')?.hasError('required')">O CEP é obrigatório</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>Estado (UF)</mat-label>
+        <input matInput formControlName="state" placeholder="SP" maxlength="2">
+        <mat-error *ngIf="form.get('state')?.hasError('required')">O estado é obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>Cidade</mat-label>
+        <input matInput formControlName="city">
+        <mat-error *ngIf="form.get('city')?.hasError('required')">A cidade é obrigatória</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>Bairro</mat-label>
+        <input matInput formControlName="neighborhood">
+        <mat-error *ngIf="form.get('neighborhood')?.hasError('required')">O bairro é obrigatório</mat-error>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Rua / Logradouro</mat-label>
+      <input matInput formControlName="street">
+      <mat-error *ngIf="form.get('street')?.hasError('required')">A rua é obrigatória</mat-error>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>Número</mat-label>
+        <input matInput formControlName="number">
+        <mat-error *ngIf="form.get('number')?.hasError('required')">O número é obrigatório</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="col-half">
+        <mat-label>Complemento</mat-label>
+        <input matInput formControlName="complement">
+      </mat-form-field>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close [disabled]="loading">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || loading">
+    {{ loading ? 'Salvando...' : 'Salvar' }}
+  </button>
+</mat-dialog-actions>

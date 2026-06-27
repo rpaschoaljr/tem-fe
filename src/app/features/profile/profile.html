@@ -5,9 +5,14 @@
         <h1>Meu Perfil</h1>
         <p class="subtitle">Visualize suas informações cadastradas no sistema</p>
       </div>
-      <button mat-flat-button color="accent" (click)="openChangePassword()">
-        <mat-icon>lock_reset</mat-icon> ALTERAR SENHA
-      </button>
+      <div class="header-actions" style="display: flex; gap: 8px;">
+        <button mat-flat-button color="primary" (click)="openEditProfile()">
+          <mat-icon>edit</mat-icon> EDITAR DADOS
+        </button>
+        <button mat-flat-button color="accent" (click)="openChangePassword()">
+          <mat-icon>lock_reset</mat-icon> ALTERAR SENHA
+        </button>
+      </div>
     </div>
   </header>
 

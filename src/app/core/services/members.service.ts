@@ -150,6 +150,23 @@ export class MembersService {
         return { base, priv, spir };
     }
 
+    updateProfileData(id: string, data: { phone: string, address: Member['address'] }): Observable<boolean> {
+        const docPrivate = FbUtils.doc(this.firestore, this.COL_PRIVATE, id);
+        
+        const privUpdate = {
+            phone: data.phone,
+            phone_search: Normalizer.numbers(data.phone),
+            address: data.address,
+            cep_search: Normalizer.numbers(data.address.cep),
+            updatedAt: new Date()
+        };
+
+        return from(FbUtils.updateDoc(docPrivate, privUpdate)).pipe(
+            map(() => true),
+            catchError((err) => throwError(() => new Error(err.message || 'FALHA AO ATUALIZAR DADOS DO PERFIL.')))
+        );
+    }
+
     softDelete(id: string): Observable<boolean> {
         const docRef = FbUtils.doc(this.firestore, this.COL_BASE, id);
         return from(FbUtils.updateDoc(docRef, { deleted: true, updatedAt: new Date() })).pipe(
@@ -198,13 +215,28 @@ export class MembersService {
     }
 
     uploadProfilePicture(memberId: string, imageBlob: Blob): Observable<string> {
+        if (!memberId || memberId.trim() === '') {
+            return throwError(() => new Error('ID do membro inválido.'));
+        }
+        if (!imageBlob) {
+            return throwError(() => new Error('Arquivo de imagem inválido.'));
+        }
+        if (imageBlob.size > 5 * 1024 * 1024) {
+            return throwError(() => new Error('O arquivo excede o limite de 5MB.'));
+        }
+        if (!imageBlob.type.startsWith('image/')) {
+            return throwError(() => new Error('Formato de arquivo não permitido. Envie apenas imagens.'));
+        }
+
         const storageRef = FbUtils.ref(this.storage, `profile-pictures/${memberId}`);
         return from(FbUtils.uploadBytes(storageRef, imageBlob, { contentType: 'image/webp' })).pipe(
+            catchError(() => throwError(() => new Error('Falha ao enviar imagem para o servidor.'))),
             switchMap(uploadResult => from(FbUtils.getDownloadURL(uploadResult.ref))),
             switchMap(downloadURL => {
                 const memberDocRef = FbUtils.doc(this.firestore, `members/${memberId}`);
                 return from(FbUtils.updateDoc(memberDocRef, { photoUrl: downloadURL, updatedAt: new Date() })).pipe(
-                    map(() => downloadURL)
+                    map(() => downloadURL),
+                    catchError(() => throwError(() => new Error('Imagem salva, mas falha ao atualizar o perfil.')))
                 );
             })
         );

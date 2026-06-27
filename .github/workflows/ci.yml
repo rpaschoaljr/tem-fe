@@ -64,11 +64,9 @@ jobs:
         run: npm run scan:snyk || true
 
       - name: Socket Security Scan
-        run: npx socket scan create --ci --org paschoal-open-soucer --no-interactive
+        run: npx socket ci --org paschoal-open-soucer --no-interactive
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-        # Mantendo o mesmo padrão de não travar a esteira que as outras tools
-        continue-on-error: true
 
       - name: Verify NPM Provenance and Signatures
         run: npm audit signatures || true
