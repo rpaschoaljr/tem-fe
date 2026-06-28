@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Finalizar Venda</h2>
+<mat-dialog-content>
+  <div class="checkout-summary">
+    <div class="summary-row">
+      <span>Total a Pagar:</span>
+      <span class="amount">{{ data.totalAmount | currency:'BRL' }}</span>
+    </div>
+  </div>
+
+  <div class="payment-methods">
+    <h3>Método de Pagamento</h3>
+    <mat-radio-group [(ngModel)]="paymentMethod" class="payment-options">
+      @for (method of data.paymentMethods; track method.label) {
+        <mat-radio-button [value]="method.label">{{method.label}}</mat-radio-button>
+      }
+    </mat-radio-group>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancelar</button>
+  <button mat-flat-button color="primary" class="btn-confirm" (click)="confirm()">Confirmar Pagamento</button>
+</mat-dialog-actions>

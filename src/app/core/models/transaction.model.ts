@@ -21,6 +21,8 @@ export interface Transaction {
     bankAccount?: string;
     costCenter?: string;
     receiptUrl?: string;
+    
+    pdvDetails?: { saleId: string; totalCost: number }; // Links to the Sale and stores total cost (CMV) for DRE
 }
 
 export type FirestoreTransaction = Omit<Transaction, 'date'> & {

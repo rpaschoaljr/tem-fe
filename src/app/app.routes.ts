@@ -61,7 +61,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/stock/stock').then(m => m.StockComponent),
       },
       {
-        path: 'pdv',
+        path: 'sales',
         canActivate: [permissionGuard],
         data: { module: 'pdv', action: 'read' },
         loadComponent: () => import('./features/pdv/pdv').then(m => m.Pdv),

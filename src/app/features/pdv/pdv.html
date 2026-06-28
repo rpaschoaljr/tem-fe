@@ -1,4 +1,115 @@
-<div style="padding: 24px;">
-  <h2>Ponto de Venda (PDV)</h2>
-  <p>Você tem acesso ao PDV! Esta página está em construção.</p>
+<div class="pdv-container">
+  <!-- Left Side: Catalog -->
+  <div class="catalog-section" *ngIf="!showingHistory">
+    <div class="catalog-header">
+      <h2>Catálogo de Produtos</h2>
+      <button mat-stroked-button (click)="toggleHistory()">
+        <mat-icon>history</mat-icon> Histórico de Vendas
+      </button>
+    </div>
+
+    <div class="catalog-filters">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Pesquisar produto</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="Digite o nome do produto...">
+      </mat-form-field>
+    </div>
+
+    <div class="catalog-grid">
+      @for (product of pagedProducts; track product.id) {
+        <div class="product-card" 
+             [class.out-of-stock]="product.quantity <= 0"
+             [class.allow-backorder]="product.allowBackorder"
+             (click)="addToCart(product)">
+          
+          @if (product.quantity <= 0 && product.allowBackorder) {
+            <span class="badge-backorder">Sob Encomenda</span>
+          }
+
+          <div class="product-name">{{ product.name }}</div>
+          <div class="product-price">{{ product.salePrice | currency:'BRL' }}</div>
+          <div class="product-stock">
+            @if (product.quantity > 0) {
+              Estoque: {{ product.quantity }} {{ product.unit }}
+            } @else {
+              Sem estoque
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <mat-paginator 
+      [length]="filteredProducts.length"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[20, 50, 100]"
+      showFirstLastButtons
+      (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
+
+  <!-- Left Side: History -->
+  <div class="history-section" *ngIf="showingHistory">
+    <app-sales-history 
+      (closeHistory)="toggleHistory()" 
+      (editCart)="loadToCart($event)">
+    </app-sales-history>
+  </div>
+
+  <!-- Mobile Cart Backdrop -->
+  <div class="cart-backdrop" [class.open]="isCartOpen" (click)="isCartOpen = false"></div>
+
+  <!-- Right Side: Cart -->
+  <div class="cart-section" [class.open]="isCartOpen">
+    <div class="cart-header">
+      <h2>Carrinho</h2>
+      <button mat-icon-button class="close-cart-btn" (click)="isCartOpen = false">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="cart-items">
+      @if (cart.length === 0) {
+        <div class="empty-cart">
+          <mat-icon>shopping_cart</mat-icon>
+          <p>Adicione produtos para iniciar a venda</p>
+        </div>
+      }
+
+      @for (item of cart; track item.itemId) {
+        <div class="cart-item">
+          <div class="item-info">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-price">{{ item.unitPrice | currency:'BRL' }}</div>
+          </div>
+          <div class="item-controls">
+            <button class="qty-btn" (click)="updateQuantity(item, item.quantity - 1)">
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="item-qty">{{ item.quantity }}</span>
+            <button class="qty-btn" (click)="updateQuantity(item, item.quantity + 1)">
+              <mat-icon>add</mat-icon>
+            </button>
+            <div class="item-total">{{ item.totalPrice | currency:'BRL' }}</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="cart-footer">
+      <div class="cart-summary">
+        <span class="summary-label">Total da Venda</span>
+        <span class="summary-total">{{ cartTotal | currency:'BRL' }}</span>
+      </div>
+      <button mat-flat-button class="btn-checkout" [disabled]="cart.length === 0" (click)="checkout()">
+        Finalizar Venda
+      </button>
+    </div>
+  </div>
 </div>
+
+<!-- Mobile FAB to open cart -->
+<button mat-fab class="mobile-cart-fab" color="primary" (click)="isCartOpen = true">
+  <mat-icon [matBadge]="cart.length" matBadgeColor="accent" [matBadgeHidden]="cart.length === 0" aria-hidden="false">shopping_cart</mat-icon>
+</button>

@@ -77,7 +77,7 @@ describe('PermissionGuard', () => {
     tick();
 
     expect(notifyMock.showError).toHaveBeenCalledWith(
-      'Você não tem permissão de escrita para o módulo stock.'
+      'Acesso restrito. Você não possui as permissões necessárias.'
     );
   }));
 
@@ -92,7 +92,7 @@ describe('PermissionGuard', () => {
     tick();
 
     expect(notifyMock.showError).toHaveBeenCalledWith(
-      'Você não tem permissão de acesso para o módulo settings.'
+      'Acesso restrito. Você não possui as permissões necessárias.'
     );
   }));
 

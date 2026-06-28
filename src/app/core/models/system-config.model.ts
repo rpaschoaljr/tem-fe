@@ -46,6 +46,7 @@ export interface PermissionConfig {
         stock?: ModulePermissions;
         settings?: ModulePermissions;
         notices?: ModulePermissions;
+        pdv?: ModulePermissions;
         [key: string]: ModulePermissions | undefined;
     };
     updatedAt: Date;

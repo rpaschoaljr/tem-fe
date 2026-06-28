@@ -65,6 +65,34 @@ export class StockService {
             return throwError(() => new Error('Quantidade inválida.'));
         }
 
+        // Zero trust validations para PDV e Lotes
+        if (item.isForSale) {
+            if (typeof item.salePrice !== 'number' || isNaN(item.salePrice) || item.salePrice <= 0) {
+                return throwError(() => new Error('Preço de venda inválido. Deve ser maior que zero para itens à venda.'));
+            }
+        } else {
+            // Se não está à venda, garante que as opções derivadas não sejam ativadas via API
+            item.allowBackorder = false;
+        }
+
+        if (item.lots && Array.isArray(item.lots)) {
+            try {
+                let totalLots = 0;
+                item.lots.forEach(lot => {
+                    if (typeof lot.quantity !== 'number' || isNaN(lot.quantity) || lot.quantity < 0) {
+                        throw new Error(`Quantidade inválida no lote ${lot.id}.`);
+                    }
+                    totalLots += lot.quantity;
+                });
+                // A quantidade total do estoque nunca pode ser menor que a soma dos lotes
+                if (totalLots > item.quantity) {
+                   return throwError(() => new Error('INCONSISTÊNCIA: A soma dos lotes é maior que a quantidade total.'));
+                }
+            } catch (e: any) {
+                return throwError(() => new Error(e.message || 'Erro ao processar lotes.'));
+            }
+        }
+
         const isNew = !item.id;
         const colRef = FbUtils.collection(this.firestore, this.COL);
 
@@ -130,9 +158,12 @@ export class StockService {
 
             const sourceQty = sourceDoc.data()?.['quantity'] || 0;
             const targetQty = targetDoc.data()?.['quantity'] || 0;
+            const sourceLots = sourceDoc.data()?.['lots'] || [];
+            const targetLots = targetDoc.data()?.['lots'] || [];
 
             transaction.update(targetRef, { 
                 quantity: targetQty + sourceQty,
+                lots: [...targetLots, ...sourceLots],
                 updatedAt: new Date()
             });
 

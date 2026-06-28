@@ -27,7 +27,7 @@ describe('StockAdjustComponent', () => {
       imports: [StockAdjustComponent, NoopAnimationsModule],
       providers: [
         { provide: MatDialogRef, useValue: dialogRefSpy },
-        { provide: MAT_DIALOG_DATA, useValue: mockItem }
+        { provide: MAT_DIALOG_DATA, useValue: { item: mockItem, type: 'add' } }
       ]
     }).compileComponents();
 
@@ -70,12 +70,12 @@ describe('StockAdjustComponent', () => {
   });
 
   it('should submit valid form with delta', () => {
-    component.form.patchValue({ quantity: 5 });
+    component.form.patchValue({ quantity: 5, adjustMode: 'new_lot', purchasePrice: 10 });
     component.onSubmit();
     expect(dialogRefSpy.close).toHaveBeenCalled();
     const result: AdjustResult = dialogRefSpy.close.calls.first().args[0] as AdjustResult;
     expect(result.delta).toBe(5);
-    expect(result.item.id).toBe('1');
+    expect(result.updatedItem.id).toBe('1');
   });
 
   it('should submit even if form value is undefined somehow', () => {

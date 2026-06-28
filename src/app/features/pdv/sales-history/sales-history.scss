@@ -1,0 +1,55 @@
+
+
+.table-container {
+  border-radius: 12px;
+  overflow-x: auto;
+  background: var(--mat-sys-surface-container-highest);
+
+  table {
+    width: 100%;
+  }
+
+  .sale-total {
+    font-weight: 600;
+    color: var(--mat-sys-on-surface);
+  }
+
+  .item-summary {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.9rem;
+  }
+
+  .payment-badge {
+    background: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .empty-row {
+    text-align: center;
+    padding: 32px;
+    color: var(--mat-sys-on-surface-variant);
+    font-style: italic;
+  }
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

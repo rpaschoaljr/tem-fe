@@ -374,5 +374,40 @@ describe('StockService', () => {
                 }
             });
         });
+
+        it('save should reject if isForSale is true but salePrice is invalid', (done) => {
+            const item: any = { name: 'name', category: 'cat', unit: 'un', quantity: 10, isForSale: true, salePrice: 0 };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('Preço de venda inválido. Deve ser maior que zero para itens à venda.');
+                    done();
+                }
+            });
+        });
+
+        it('save should set allowBackorder to false if isForSale is false', (done) => {
+            const item: any = { id: '1', name: 'name', category: 'cat', unit: 'un', quantity: 10, isForSale: false, allowBackorder: true };
+            service.save(item).subscribe(res => {
+                expect(res).toBeTrue();
+                const setDocArgs = (FbUtils.setDoc as jasmine.Spy).calls.mostRecent().args;
+                expect(setDocArgs[1].allowBackorder).toBeFalse();
+                done();
+            });
+        });
+
+        it('save should reject if lot quantity sum is greater than total quantity', (done) => {
+            const item: any = { 
+                id: '1', name: 'name', category: 'cat', unit: 'un', quantity: 10, 
+                lots: [{ id: 'l1', quantity: 15, purchasePrice: 5 }] 
+            };
+            service.save(item).subscribe({
+                next: () => fail('Should have failed'),
+                error: (err) => {
+                    expect(err.message).toBe('INCONSISTÊNCIA: A soma dos lotes é maior que a quantidade total.');
+                    done();
+                }
+            });
+        });
     });
 });

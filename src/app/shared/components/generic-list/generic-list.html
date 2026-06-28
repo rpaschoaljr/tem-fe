@@ -53,7 +53,7 @@
                                         matTooltip="Remover do estoque">
                                     <mat-icon>remove_circle_outline</mat-icon>
                                 </button>
-                                <button mat-icon-button color="primary" *ngIf="!hideActions" (click)="editAction.emit(element); $event.stopPropagation()" matTooltip="Editar">
+                                <button mat-icon-button color="primary" *ngIf="!hideActions && !hideEdit" (click)="editAction.emit(element); $event.stopPropagation()" matTooltip="Editar">
                                     <mat-icon>edit</mat-icon>
                                 </button>
                                 <button mat-icon-button color="warn" *ngIf="!hideActions" (click)="confirmDelete(element); $event.stopPropagation()" matTooltip="Mover para lixeira">

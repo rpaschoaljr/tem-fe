@@ -112,7 +112,7 @@ export class AuthService {
     }
 
     const perms: Record<string, { read: boolean; write: boolean }> = {};
-    const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard'];
+    const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard', 'pdv'];
     for (const mod of modules) {
       const rM = ((rolePerm as Record<string, unknown>)?.['modules'] as Record<string, { read: boolean; write: boolean }>)?.[mod] || { read: false, write: false };
       const uM = ((userPerm as Record<string, unknown>)?.['modules'] as Record<string, { read: boolean; write: boolean }>)?.[mod];

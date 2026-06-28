@@ -69,7 +69,7 @@ export class MainLayoutComponent implements OnInit {
     { label: 'Membros', icon: 'groups', route: '/members', module: 'members' },
     { label: 'Financeiro', icon: 'attach_money', route: '/finance', module: 'finance' },
     { label: 'Estoque', icon: 'inventory_2', route: '/stock', module: 'stock' },
-    { label: 'Vendas (PDV)', icon: 'storefront', route: '/pdv', module: 'pdv' },
+    { label: 'Vendas (PDV)', icon: 'storefront', route: '/sales', module: 'pdv' },
     { label: 'Avisos', icon: 'campaign', route: '/notices', module: 'notices' },
     { label: 'Configurações', icon: 'settings', route: '/settings', module: 'settings' },
   ];

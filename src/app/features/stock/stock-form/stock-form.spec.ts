@@ -101,7 +101,6 @@ describe('StockFormComponent', () => {
       name: ' feijão  ',
       category: 'ALIMENTOS',
       unit: 'KG',
-      quantity: 5,
       minStock: 1
     });
 
@@ -111,7 +110,6 @@ describe('StockFormComponent', () => {
     const result = dialogRefSpy.close.calls.first().args[0] as Partial<StockItem>;
     expect(result.name).toBe('FEIJÃO');
     expect(result.category).toBe('ALIMENTOS');
-    expect(result.quantity).toBe(5);
   });
 
   it('should submit form correctly when optional fields are empty', () => {
@@ -119,7 +117,6 @@ describe('StockFormComponent', () => {
       name: 'ÁGUA',
       category: 'BEBIDAS',
       unit: 'UN',
-      quantity: 10,
       minStock: null
     });
 
@@ -133,8 +130,7 @@ describe('StockFormComponent', () => {
     component.form.patchValue({
       name: null as any,
       category: null as any,
-      unit: null as any,
-      quantity: null as any
+      unit: null as any
     });
 
     // bypass validation for testing defaults
@@ -146,7 +142,6 @@ describe('StockFormComponent', () => {
     expect(result.name).toBe('');
     expect(result.category).toBe('');
     expect(result.unit).toBe('UN');
-    expect(result.quantity).toBe(0);
   });
 
   it('should close on cancel', () => {

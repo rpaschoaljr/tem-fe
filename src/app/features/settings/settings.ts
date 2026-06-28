@@ -91,7 +91,8 @@ export class SettingsComponent implements OnInit {
     { id: 'finance', label: 'Financeiro' },
     { id: 'stock', label: 'Estoque' },
     { id: 'notices', label: 'Avisos' },
-    { id: 'settings', label: 'Configurações' }
+    { id: 'settings', label: 'Configurações' },
+    { id: 'pdv', label: 'PDV / Vendas' }
   ];
 
   stockColumns: ColumnDef[] = [

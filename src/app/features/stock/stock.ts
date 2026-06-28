@@ -118,7 +118,7 @@ export class StockComponent implements OnInit {
   onAdjust(event: { item: StockItem, type: 'add' | 'remove' }) {
     const item = event.item;
     const ref = this.dialog.open(StockAdjustComponent, { 
-      data: item, 
+      data: { item, type: event.type }, 
       width: '100%',
       maxWidth: '400px',
       panelClass: 'responsive-dialog'
@@ -126,14 +126,13 @@ export class StockComponent implements OnInit {
     ref.afterClosed().subscribe((result: AdjustResult | undefined) => {
       if (!result) return;
       
-      let delta = Math.abs(result.delta);
-      if (event.type === 'remove') delta = -delta;
+      const updatedItem = result.updatedItem;
+      const delta = result.delta;
 
-      const updated: StockItem = { ...result.item, quantity: result.item.quantity + delta, updatedAt: new Date() };
-      this.stockService.save(updated).subscribe({
+      this.stockService.save(updatedItem).subscribe({
         next: () => {
           const action = event.type === 'add' ? 'adicionado ao' : 'removido do';
-          this.notify.showSuccess(`Estoque ajustado! ${Math.abs(delta)} ${updated.unit} ${action} saldo.`);
+          this.notify.showSuccess(`Estoque ajustado! ${Math.abs(delta)} ${updatedItem.unit} ${action} saldo.`);
           this.loadData();
         },
         error: (e: unknown) => {

@@ -34,12 +34,12 @@ Iniciando a cultura de qualidade total:
 2. **Bash Variable Interpolation:** Evitar comandos `node -e " ... $1 "` pelo terminal. O Bash avalia `$1` como vazio, o que quebrou as strings do `spyOn`. Para operações globais (Regex/AST) em vários arquivos, **sempre utilize um script Node independente (como `migrate_fbutils.js`)**.
 3. **TypeScript Inference na Ternária:** Para contornar a falha em mocks repetidos e ao mesmo tempo satisfazer a tipagem estrita do compilador sem o erro `Property 'and' does not exist`, a sintaxe exata e segura que escrevemos no `migrate_fbutils.js` é:
    `(((FbUtils.metodo as any)?.and ? FbUtils.metodo : spyOn(FbUtils, 'metodo')) as any)`
-4. **Resolução de Conflitos (ERESOLVE) no Upgrade do Angular:** Nunca utilize a flag `--legacy-peer-deps` cegamente ao fazer upgrades de versão maior (`ng update`). Para pacotes que ficam defasados e não são atualizados automaticamente pelo script do Angular (ex: `@angular/fire`), edite o `package.json` manualmente para alinhar a versão do pacote com a nova geração do Angular, limpe o cache (`rm -rf node_modules package-lock.json && npm cache clean --force`) e rode um `npm install` limpo. O script de migração do Angular pode travar com erros nativos de corrupção do NPM (`Cannot read properties of null (reading 'children')`) caso isso não seja feito adequadamente.
-5. **Status Atual e Próximos Passos:** 
-   - Upgrade para o Angular 22 realizado com sucesso.
-   - 100% dos testes unitários estão passando, com cobertura em ~70.6%. A meta de 80% continua.
-   - Foram implementadas as exportações (xlsx) e melhorias nos relatórios financeiros (DRE).
-   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Testar a edição de dados pessoais (Telefone e Endereço) pelo próprio usuário na aba "Meu Perfil" e validar preenchimento automático do ViaCEP. Em seguida, iniciar a implementação do módulo de Vendas (PDV / Frente de Caixa).
+4. **Resolução de Conflitos (ERESOLVE) no Upgrade do Angular:** Nunca utilize a flag `--legacy-peer-deps` cegamente ao fazer upgrades de versão maior (`ng update`). Para pacotes que ficam defasados e não são atualizados automaticamente pelo script do Angular (ex: `@angular/fire`), edite o `package.json` manualmente para alinhar a versão do pacote com a nova geração do Angular, limpe o cache (`rm -rf node_modules package-lock.json && npm cache clean --force`) e rode um `npm install` limpo.
+5. **Integração de Módulos (PDV):** Ao trabalhar com regras de negócio cruzadas (Vendas afetando Estoque e Financeiro), a interface de PDV foi desenhada para otimizar o fluxo de caixa. O Histórico de Vendas substitui visualmente o catálogo, e a edição de vendas foi desenhada como um "estorno + recarga do carrinho" para evitar inconsistências contábeis.
+6. **Status Atual e Próximos Passos:** 
+   - Módulo de Vendas (PDV) / Frente de Caixa criado com sucesso (layout, carrinho, validações de estoque, histórico de vendas in-line).
+   - O histórico de vendas foi componentizado, permitindo estorno completo e botão "Editar" que recarrega o carrinho.
+   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Implementar a lógica real de *Checkout* da Venda (finalizar o carrinho). A venda deverá: (1) dar baixa real no estoque, (2) lançar automaticamente uma entrada no financeiro e (3) salvar a transação de venda.
 ----
 
 ## ✅ Checklist de Progresso
@@ -68,9 +68,10 @@ Iniciando a cultura de qualidade total:
 - [ ] Inclusão de Preços nos Itens do Estoque
 
 ### Vendas e PDV (Frente de Caixa)
-- [ ] Criação de Página de Vendas (acesso restrito sem expor financeiro completo)
+- [x] Criação de Página de Vendas (acesso restrito sem expor financeiro completo)
+- [x] Bloqueio/alerta para venda com itens em estoque negativo (Permitir "Sob Encomenda")
+- [x] Histórico de vendas com estorno e recarga de carrinho
 - [ ] Baixa automática de estoque ao realizar venda
-- [ ] Bloqueio/alerta para venda com itens em estoque negativo
 - [ ] Integração do PDV gerando lançamentos financeiros (DRE)
 
 ### Infraestrutura e Segurança

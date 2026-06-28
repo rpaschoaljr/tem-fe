@@ -1,0 +1,17 @@
+<div class="history-header">
+  <button mat-icon-button (click)="closeHistory.emit()" matTooltip="Voltar ao Catálogo">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2>Histórico de Vendas Recentes</h2>
+</div>
+
+<div class="history-content">
+  <div class="table-container mat-elevation-z2">
+    <app-generic-list 
+      [data]="sales" 
+      [columns]="tableColumns" 
+      (editAction)="editSale($event)"
+      (deleteAction)="deleteSale($event)">
+    </app-generic-list>
+  </div>
+</div>

@@ -65,6 +65,7 @@ export class GenericListComponent<T> implements OnChanges, AfterViewInit {
   @Input() showAdjust = false;
   @Input() hideTrash = false;
   @Input() hideActions = false;
+  @Input() hideEdit = false;
   @Input() rowClassFn?: (row: T) => Record<string, boolean | string> | null;
 
   @Output() editAction = new EventEmitter<T>();

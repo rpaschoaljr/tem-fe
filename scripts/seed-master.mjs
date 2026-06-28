@@ -77,7 +77,7 @@ async function firestoreDeleteAll(collectionName) {
 
 async function verifyDatabase() {
   console.log('\n🔍 VERIFICANDO BANCO DE DADOS APÓS SEED:');
-  const collections = ['members', 'transactions', 'stock', 'permissions'];
+  const collections = ['members', 'transactions', 'stock', 'permissions', 'sales'];
   
   for (const col of collections) {
     const res = await fetch(`${FIRESTORE_API}/${col}`, {
@@ -127,7 +127,7 @@ function generateCPF() {
 
 async function seed() {
   console.log('\n🚀 Iniciando SEED de alta carga...');
-  const collections = ['system_configs', 'members', 'members_private', 'members_spiritual', 'permissions', 'transactions', 'stock', 'notices'];
+  const collections = ['system_configs', 'members', 'members_private', 'members_spiritual', 'permissions', 'transactions', 'stock', 'notices', 'sales'];
   for (const col of collections) {
     process.stdout.write(`🧹 Limpando ${col}... `);
     await firestoreDeleteAll(col);
@@ -346,13 +346,41 @@ async function seed() {
     else if (rand < 0.5) quantity = Math.floor(Math.random() * 5) + 1;
     const itemName = `Item de Estoque ${i}`;
     const catName = stockCats[Math.floor(Math.random() * stockCats.length)];
+    
+    // Configurações de Venda
+    const isForSale = Math.random() > 0.3; // 70% chance de ser vendável
+    const salePrice = isForSale ? parseFloat((Math.random() * 50 + 5).toFixed(2)) : undefined;
+    const allowBackorder = isForSale && Math.random() > 0.7;
+
+    // Gerar Lotes simulados
+    const lots = [];
+    let remainingQty = quantity;
+    if (remainingQty > 0) {
+        const numLots = Math.floor(Math.random() * 3) + 1; // 1 a 3 lotes
+        let qtyPerLot = Math.floor(remainingQty / numLots);
+        for(let l=0; l<numLots; l++) {
+            let lotQty = (l === numLots - 1) ? remainingQty : qtyPerLot;
+            remainingQty -= lotQty;
+            const lotCost = salePrice ? parseFloat((salePrice * (Math.random() * 0.4 + 0.3)).toFixed(2)) : parseFloat((Math.random() * 30 + 2).toFixed(2));
+            const lotDate = new Date();
+            lotDate.setDate(lotDate.getDate() - Math.floor(Math.random() * 30)); // Até 30 dias atrás
+            lots.push({
+                id: `lote_${lotDate.getTime()}_${l}`,
+                quantity: lotQty,
+                purchasePrice: lotCost,
+                date: lotDate
+            });
+        }
+    }
+
     await firestoreCreate('stock', `s${i}`, {
       id: `s${i}`, name: itemName,
       name_search: normalize(itemName),
       category: catName,
       category_search: normalize(catName),
       quantity, unit: units[i % units.length], minStock: 10,
-      deleted: false, updatedAt: now
+      deleted: false, updatedAt: now,
+      isForSale, salePrice, allowBackorder, lots
     });
   }
 
@@ -475,6 +503,54 @@ async function seed() {
           { label: 'UN', deleted: false }, { label: 'KG', deleted: false }, { label: 'L', deleted: false }
         ]
       }
+    ]
+  });
+
+  await firestoreCreate('system_configs', 'pdv', {
+    id: 'pdv', updatedAt: now,
+    fields: [
+      { 
+        key: 'paymentMethods', label: 'Métodos de Pagamento', type: 'select', required: true, order: 1, isSystem: true,
+        options: [
+          { label: 'PIX', deleted: false }, { label: 'DINHEIRO', deleted: false },
+          { label: 'CARTÃO DE CRÉDITO', deleted: false }, { label: 'CARTÃO DE DÉBITO', deleted: false }
+        ]
+      }
+    ]
+  });
+
+  console.log('🛒 Criando Vendas do PDV...');
+  const sale1Date = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago (fora do tempo)
+  const sale2Date = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 days ago (dentro do tempo)
+  const sale3Date = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000); // 1 day ago (dentro do tempo)
+
+  await firestoreCreate('sales', 'sale-1', {
+    totalAmount: 15.00,
+    paymentMethod: 'PIX',
+    date: sale1Date,
+    deleted: false,
+    items: [
+      { itemId: 'stock-vela-branca', name: 'Vela Branca 7 Dias', quantity: 1, unitPrice: 15.00, totalPrice: 15.00, totalCost: 5.00, fractionFactor: 1 }
+    ]
+  });
+
+  await firestoreCreate('sales', 'sale-2', {
+    totalAmount: 50.00,
+    paymentMethod: 'DINHEIRO',
+    date: sale2Date,
+    deleted: false,
+    items: [
+      { itemId: 'stock-banho-defesa', name: 'Banho de Defesa', quantity: 2, unitPrice: 25.00, totalPrice: 50.00, totalCost: 15.00, fractionFactor: 1 }
+    ]
+  });
+
+  await firestoreCreate('sales', 'sale-3', {
+    totalAmount: 120.00,
+    paymentMethod: 'CARTÃO DE CRÉDITO',
+    date: sale3Date,
+    deleted: false,
+    items: [
+      { itemId: 'stock-pemba', name: 'Pemba Branca', quantity: 10, unitPrice: 12.00, totalPrice: 120.00, totalCost: 30.00, fractionFactor: 1 }
     ]
   });
 

@@ -105,7 +105,8 @@ export class ConfigService {
                 finance: {},
                 stock: {},
                 notices: {},
-                settings: {}
+                settings: {},
+                pdv: {}
             },
             updatedAt: new Date()
         };
@@ -124,7 +125,8 @@ export class ConfigService {
                 finance: { ...defaultModulePerm },
                 stock: { ...defaultModulePerm },
                 notices: { ...defaultModulePerm },
-                settings: { ...defaultModulePerm }
+                settings: { ...defaultModulePerm },
+                pdv: { ...defaultModulePerm }
             },
             updatedAt: new Date()
         };
@@ -191,6 +193,7 @@ export class ConfigService {
                     label: 'Categoria Financeira', 
                     type: 'select', 
                     options: [
+                        { label: 'VENDAS', deleted: false, meta: 'Entrada', requiresMember: false },
                         { label: 'DOAÇÃO', deleted: false, meta: 'Entrada', requiresMember: false },
                         { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true },
                         { label: 'CONTAS', deleted: false, meta: 'Saída', requiresMember: false },
@@ -266,6 +269,23 @@ export class ConfigService {
                 { key: 'nana', label: 'Nanã', type: 'date', required: false, order: 34, isSystem: true, section: 'Consagrações (Orixás)' },
                 { key: 'oxumare', label: 'Oxumaré', type: 'date', required: false, order: 35, isSystem: true, section: 'Consagrações (Orixás)' },
                 { key: 'oroina', label: 'Oroiná (Egunitá)', type: 'date', required: false, order: 36, isSystem: true, section: 'Consagrações (Orixás)' }
+            ];
+        } else if (moduleId === 'pdv') {
+            fields = [
+                { 
+                    key: 'paymentMethods', 
+                    label: 'Métodos de Pagamento', 
+                    type: 'select', 
+                    options: [
+                        { label: 'PIX', deleted: false },
+                        { label: 'DINHEIRO', deleted: false },
+                        { label: 'CARTÃO DE DÉBITO', deleted: false },
+                        { label: 'CARTÃO DE CRÉDITO', deleted: false }
+                    ], 
+                    required: true, 
+                    order: 1, 
+                    isSystem: true 
+                }
             ];
         }
 

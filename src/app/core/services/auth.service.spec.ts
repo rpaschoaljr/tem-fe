@@ -17,7 +17,7 @@ function mergePermissions(
   const hierarchyLevel = Math.max(userHL, roleHL);
 
   const perms: Record<string, { read: boolean; write: boolean }> = {};
-  const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard'];
+  const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard', 'pdv'];
   for (const mod of modules) {
     const rM = ((rolePerm?.['modules'] as Record<string, { read: boolean; write: boolean }>)?.[
       mod
@@ -37,7 +37,7 @@ function mergePermissions(
 function buildUserModules(
   overrides: Partial<Record<string, { read?: boolean; write?: boolean }>>
 ): Record<string, { read: boolean; write: boolean }> {
-  const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard'];
+  const modules = ['members', 'finance', 'stock', 'settings', 'notices', 'dashboard', 'pdv'];
   const result: Record<string, { read: boolean; write: boolean }> = {};
   for (const mod of modules) {
     result[mod] = { read: false, write: false, ...overrides[mod] };
