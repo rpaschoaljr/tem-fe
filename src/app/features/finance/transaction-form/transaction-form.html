@@ -125,6 +125,22 @@
       </mat-expansion-panel>
     </mat-accordion>
 
+    <div *ngIf="transaction?.pdvDetails" class="pdv-details-box">
+      <div class="pdv-details-title">
+        <mat-icon>shopping_bag</mat-icon>
+        <span>Origem: Venda PDV</span>
+      </div>
+      <div class="pdv-details-grid">
+        <span>Custo dos Produtos:</span>
+        <span class="value">{{ transaction?.pdvDetails?.totalCost | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+        
+        <span>Doação Real (Líquida):</span>
+        <span class="value bold primary">
+          {{ ((form.get('value')?.value || 0) - (transaction?.pdvDetails?.totalCost || 0)) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+        </span>
+      </div>
+    </div>
+
     <div class="row">
     <!-- MANTIVE ESTE CÓDIGO FORA DO REPLACE -->
 

@@ -49,7 +49,7 @@ export class PdvService {
      * - Cria transação financeira em 'transactions'
      * Tudo feito em uma transação do Firestore para garantir integridade.
      */
-    checkout(saleData: Omit<Sale, 'id' | 'date' | 'financeTransactionId' | 'createdBy' | 'updatedAt' | 'deleted'>): Observable<void> {
+    checkout(saleData: Omit<Sale, 'id' | 'date' | 'financeTransactionId' | 'createdBy' | 'updatedAt' | 'deleted' | 'totalCost'>): Observable<void> {
         return from(FbUtils.runTransaction(this.firestore, async (transaction) => {
             const user = this.firebaseAuth.currentUser;
             if (!user) throw new Error('Usuário não autenticado.');
@@ -70,12 +70,15 @@ export class PdvService {
                 if (!stockDoc.exists()) throw new Error(`Item ${saleItem.name} não encontrado no estoque.`);
                 
                 const stockData = stockDoc.data() as StockItem;
+                const currentStockQty = Number(stockData.quantity || 0);
+                const requestedQty = saleItem.quantity * (saleItem.fractionFactor || 1);
+                const allowBackorder = stockData.allowBackorder === true;
                 
-                if (stockData.quantity < saleItem.quantity * (saleItem.fractionFactor || 1) && !stockData.allowBackorder) {
+                if (currentStockQty < requestedQty && !allowBackorder) {
                     throw new Error(`Estoque insuficiente para ${saleItem.name}.`);
                 }
 
-                let remainingToDeduct = saleItem.quantity * (saleItem.fractionFactor || 1);
+                let remainingToDeduct = requestedQty;
                 let itemTotalCost = 0;
                 const deductedLots: { lotId: string; quantity: number; costPrice: number }[] = [];
 
@@ -98,7 +101,7 @@ export class PdvService {
                 // If allowBackorder is true and we still need to deduct, we create a "negative" phantom lot or just deduct from general stock quantity 
                 // but for strict accounting we can deduct from the most recent lot or create a backorder lot.
                 if (remainingToDeduct > 0) {
-                     if (!stockData.allowBackorder) {
+                     if (!allowBackorder) {
                          throw new Error(`Estoque de lotes inconsistente para ${saleItem.name}.`);
                      }
                      // Create a backorder lot (negative) to balance the equation
@@ -140,7 +143,7 @@ export class PdvService {
                 value: saleData.totalAmount,
                 netValue: saleData.totalAmount, // Assuming no fee calculation for now, could be added later
                 type: 'Entrada',
-                category: 'VENDAS', // Defined by system-config
+                category: 'DOAÇÃO', // Changed to 'DOAÇÃO' for religious center reasons
                 paymentMethod: saleData.paymentMethod,
                 costCenter: 'RECEITAS OPERACIONAIS',
                 deleted: false,
@@ -318,11 +321,15 @@ export class PdvService {
                 const stockData = stockMap.get(newItem.itemId);
                 if (!stockData) throw new Error(`Item ${newItem.name} não encontrado no estoque.`);
                 
-                if (stockData.quantity < newItem.quantity * (newItem.fractionFactor || 1) && !stockData.allowBackorder) {
+                const currentStockQty = Number(stockData.quantity || 0);
+                const requestedQty = newItem.quantity * (newItem.fractionFactor || 1);
+                const allowBackorder = stockData.allowBackorder === true;
+
+                if (currentStockQty < requestedQty && !allowBackorder) {
                     throw new Error(`Estoque insuficiente para ${newItem.name}.`);
                 }
 
-                let remainingToDeduct = newItem.quantity * (newItem.fractionFactor || 1);
+                let remainingToDeduct = requestedQty;
                 let itemTotalCost = 0;
                 const deductedLots: { lotId: string; quantity: number; costPrice: number }[] = [];
 
@@ -342,7 +349,7 @@ export class PdvService {
                 }
 
                 if (remainingToDeduct > 0) {
-                     if (!stockData.allowBackorder) throw new Error(`Estoque de lotes inconsistente para ${newItem.name}.`);
+                     if (!allowBackorder) throw new Error(`Estoque de lotes inconsistente para ${newItem.name}.`);
                      const lastCostPrice = sortedLots.length > 0 ? sortedLots[sortedLots.length - 1].purchasePrice : (stockData.salePrice || 0);
                      const backorderLotId = `backorder_${new Date().getTime()}`;
                      sortedLots.push({ id: backorderLotId, quantity: -remainingToDeduct, purchasePrice: lastCostPrice, date: new Date() });
@@ -363,7 +370,10 @@ export class PdvService {
 
             // --- ESCRITAS ---
             allStockIds.forEach((id, idx) => {
-                transaction.update(stockRefs[idx], { quantity: stockMap.get(id)!.quantity, lots: stockMap.get(id)!.lots });
+                const stockData = stockMap.get(id);
+                if (stockData) {
+                    transaction.update(stockRefs[idx], { quantity: stockData.quantity, lots: stockData.lots });
+                }
             });
 
             if (txRef) {

@@ -70,8 +70,17 @@ export class Pdv implements OnInit {
       const q = this.searchQuery.toLowerCase();
       filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
     }
-    // Sort alphabetically
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort logic: items that are out of stock and cannot be backordered go to the end of the list.
+    // Within each group, sort alphabetically.
+    return filtered.sort((a, b) => {
+      const aUnavailable = (a.quantity <= 0 && !a.allowBackorder) ? 1 : 0;
+      const bUnavailable = (b.quantity <= 0 && !b.allowBackorder) ? 1 : 0;
+
+      if (aUnavailable !== bUnavailable) {
+        return aUnavailable - bUnavailable;
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   get pagedProducts(): StockItem[] {
@@ -122,7 +131,9 @@ export class Pdv implements OnInit {
   }
 
   addToCart(product: StockItem) {
-    if (product.quantity <= 0 && !product.allowBackorder) return;
+    const currentQty = Number(product.quantity || 0);
+    const allowBackorder = product.allowBackorder === true;
+    if (currentQty <= 0 && !allowBackorder) return;
     
     const existing = this.cart.find(i => i.itemId === product.id);
     if (existing) {
@@ -153,7 +164,11 @@ export class Pdv implements OnInit {
     const product = this.products.find(p => p.id === item.itemId);
     const fractionFactor = product?.fractionable && product?.fractionFactor ? product.fractionFactor : 1;
     
-    if (product && (product.quantity < qty * fractionFactor) && !product.allowBackorder) {
+    const currentQty = product ? Number(product.quantity || 0) : 0;
+    const requiredQty = qty * fractionFactor;
+    const allowBackorder = product?.allowBackorder === true;
+    
+    if (product && (currentQty < requiredQty) && !allowBackorder) {
         this.snackbar.open('Estoque insuficiente para esta quantidade.', 'OK', { duration: 3000 });
         return;
     }
@@ -181,7 +196,7 @@ export class Pdv implements OnInit {
           items: this.cart
         };
         
-        this.pdvService.checkout(saleData as any).subscribe({
+        this.pdvService.checkout(saleData).subscribe({
           next: () => {
             this.snackbar.open('Venda finalizada com sucesso!', 'OK', { duration: 3000 });
             this.cart = [];

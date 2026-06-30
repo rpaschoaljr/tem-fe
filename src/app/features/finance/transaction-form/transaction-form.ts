@@ -10,6 +10,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatIconModule } from '@angular/material/icon';
 import { Transaction } from '../../../core/models/transaction.model';
 import { InputMaskDirective } from '../../../shared/directives/input-mask';
 import { ConfigService } from '../../../core/services/config.service';
@@ -40,6 +41,7 @@ const MONTHS = [
     MatNativeDateModule,
     MatAutocompleteModule,
     MatExpansionModule,
+    MatIconModule,
     InputMaskDirective,
   ],
   providers: [],
@@ -67,6 +69,42 @@ const MONTHS = [
     }
     .net-value-box .value.negative {
       color: var(--mat-sys-error);
+    }
+    .pdv-details-box {
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: rgba(0, 150, 136, 0.08);
+      border: 1px solid rgba(0, 150, 136, 0.25);
+      border-radius: 4px;
+    }
+    .pdv-details-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #009688;
+    }
+    .pdv-details-title mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+    .pdv-details-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .pdv-details-grid .value {
+      font-weight: 500;
+      text-align: right;
+    }
+    .pdv-details-grid .value.bold {
+      font-weight: bold;
+    }
+    .pdv-details-grid .value.primary {
+      color: var(--mat-sys-primary);
     }
   `]
 })

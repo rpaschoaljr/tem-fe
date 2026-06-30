@@ -117,6 +117,22 @@
   .product-stock {
     font-size: 0.85rem;
     color: var(--mat-sys-on-surface-variant);
+
+    &.in-stock {
+      color: #2e7d32;
+    }
+
+    &.no-stock {
+      color: var(--mat-sys-error);
+    }
+  }
+
+  :host-context(.dark-theme) {
+    .product-stock {
+      &.in-stock {
+        color: #81c784;
+      }
+    }
   }
 
   .badge-backorder {

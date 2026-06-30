@@ -22,16 +22,14 @@
              [class.out-of-stock]="product.quantity <= 0"
              [class.allow-backorder]="product.allowBackorder"
              (click)="addToCart(product)">
-          
-          @if (product.quantity <= 0 && product.allowBackorder) {
-            <span class="badge-backorder">Sob Encomenda</span>
-          }
 
           <div class="product-name">{{ product.name }}</div>
           <div class="product-price">{{ product.salePrice | currency:'BRL' }}</div>
-          <div class="product-stock">
+          <div class="product-stock" [class.in-stock]="product.quantity > 0" [class.no-stock]="product.quantity <= 0">
             @if (product.quantity > 0) {
               Estoque: {{ product.quantity }} {{ product.unit }}
+            } @else if (product.allowBackorder) {
+              Sem estoque: Sob encomenda
             } @else {
               Sem estoque
             }

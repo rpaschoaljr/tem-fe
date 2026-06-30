@@ -36,10 +36,14 @@ Iniciando a cultura de qualidade total:
    `(((FbUtils.metodo as any)?.and ? FbUtils.metodo : spyOn(FbUtils, 'metodo')) as any)`
 4. **Resolução de Conflitos (ERESOLVE) no Upgrade do Angular:** Nunca utilize a flag `--legacy-peer-deps` cegamente ao fazer upgrades de versão maior (`ng update`). Para pacotes que ficam defasados e não são atualizados automaticamente pelo script do Angular (ex: `@angular/fire`), edite o `package.json` manualmente para alinhar a versão do pacote com a nova geração do Angular, limpe o cache (`rm -rf node_modules package-lock.json && npm cache clean --force`) e rode um `npm install` limpo.
 5. **Integração de Módulos (PDV):** Ao trabalhar com regras de negócio cruzadas (Vendas afetando Estoque e Financeiro), a interface de PDV foi desenhada para otimizar o fluxo de caixa. O Histórico de Vendas substitui visualmente o catálogo, e a edição de vendas foi desenhada como um "estorno + recarga do carrinho" para evitar inconsistências contábeis.
-6. **Status Atual e Próximos Passos:** 
-   - Módulo de Vendas (PDV) / Frente de Caixa criado com sucesso (layout, carrinho, validações de estoque, histórico de vendas in-line).
-   - O histórico de vendas foi componentizado, permitindo estorno completo e botão "Editar" que recarrega o carrinho.
-   - **PRIMEIRO PASSO DA PRÓXIMA SESSÃO:** Implementar a lógica real de *Checkout* da Venda (finalizar o carrinho). A venda deverá: (1) dar baixa real no estoque, (2) lançar automaticamente uma entrada no financeiro e (3) salvar a transação de venda.
+6. **Prevenção de Estoque Negativo:** O uso de tipagem estrita `Number(...)` para estoque e validação do booleano `allowBackorder === true` tanto no frontend quanto no backend previne falhas de comparação dinâmica causadas por valores nulos, strings ou indefinidos no Firestore.
+7. **Integração com Categoria de Doação:** Em entidades religiosas, transações de frente de caixa/venda não devem ser registradas sob categorias comerciais genéricas como "VENDAS", mas sim como **DOAÇÃO**. Isto alinha as vendas com o plano de contas regulamentar e simplifica a auditoria da "Doação Real" (Valor doado - Custo dos itens).
+8. **Status Atual e Próximos Passos:** 
+   - Módulo de Vendas (PDV) / Frente de Caixa concluído e testado com sucesso (baixas de estoque, FIFO, cancelamentos e estornos integrados).
+   - Ajustamos o layout do catálogo do PDV com indicadores visuais coloridos e ordenação inteligente (itens indisponíveis empurrados para o final).
+   - Corrigida a brecha de estoque negativo indevido e integrada a gravação de vendas na categoria `DOAÇÃO`.
+   - Adicionado painel visual de "Doação Real" (Lucro Líquido) no formulário de transações financeiras.
+   - **PRÓXIMOS PASSOS:** Implementar o Histórico de Movimentações por Item no estoque ou a Exportação de Ficha de Membro em PDF.
 ----
 
 ## ✅ Checklist de Progresso
@@ -65,14 +69,14 @@ Iniciando a cultura de qualidade total:
 - [x] Alertas de Estoque Mínimo
 - [x] Mesclagem de itens
 - [ ] Histórico de movimentações por item
-- [ ] Inclusão de Preços nos Itens do Estoque
+- [x] Inclusão de Preços nos Itens do Estoque
 
 ### Vendas e PDV (Frente de Caixa)
 - [x] Criação de Página de Vendas (acesso restrito sem expor financeiro completo)
 - [x] Bloqueio/alerta para venda com itens em estoque negativo (Permitir "Sob Encomenda")
 - [x] Histórico de vendas com estorno e recarga de carrinho
-- [ ] Baixa automática de estoque ao realizar venda
-- [ ] Integração do PDV gerando lançamentos financeiros (DRE)
+- [x] Baixa automática de estoque ao realizar venda
+- [x] Integração do PDV gerando lançamentos financeiros (DRE)
 
 ### Infraestrutura e Segurança
 - [x] Autenticação (Email/Senha)
