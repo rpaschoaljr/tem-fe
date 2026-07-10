@@ -402,6 +402,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Etapa 2.45: OWASP ZAP (Baseline Scan)
+  // Aponta para a porta 4200 do dev server do Angular
+  const zapBaselineCmd = 'node scripts/run-owasp.mjs http://localhost:4200 baseline';
+  const secZapBaseline = runStep('OWASP ZAP (Baseline Scan)', zapBaselineCmd, ROOT_DIR, false);
+  job2Steps.push(secZapBaseline);
+
   // Etapa 2.5: OWASP ZAP (Full Scan)
   // Aponta para a porta 4200 do dev server do Angular
   const zapCmd = 'node scripts/run-owasp.mjs http://localhost:4200 full';

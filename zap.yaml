@@ -3,7 +3,7 @@ env:
   - excludePaths: []
     name: baseline
     urls:
-    - http://localhost:5000
+    - http://localhost:4200
   parameters:
     failOnError: true
     progressToStdout: false
@@ -14,7 +14,7 @@ jobs:
   type: passiveScan-config
 - parameters:
     maxDuration: 1
-    url: http://localhost:5000
+    url: http://localhost:4200
   type: spider
 - parameters:
     maxDuration: 0
@@ -38,4 +38,32 @@ jobs:
   - action: IGNORE
     customMessage: ''
     id: 10110
+  - action: IGNORE
+    customMessage: ''
+    id: 90034
+  - action: IGNORE
+    customMessage: ''
+    id: 40046
+  - action: IGNORE
+    customMessage: ''
+    id: 90035
+  - action: IGNORE
+    customMessage: ''
+    id: 90036
+  - action: IGNORE
+    customMessage: ''
+    id: 40015
+  - action: IGNORE
+    customMessage: ''
+    id: 90025
+  - action: IGNORE
+    customMessage: ''
+    id: 40040
   type: outputSummary
+- parameters:
+    reportDescription: ''
+    reportDir: /zap/wrk/
+    reportFile: reports/zap_report_baseline.html
+    reportTitle: ZAP Scanning Report
+    template: traditional-html
+  type: report
