@@ -30,7 +30,8 @@ export class ScheduledTransactionsService {
                 return throwError(() => new Error('Não foi possível carregar agendamentos.'));
             })
         );
-    }
+      }
+
 
     getDue(): Observable<ScheduledTransaction[]> {
         return this.getAll().pipe(

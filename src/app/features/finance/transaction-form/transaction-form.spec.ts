@@ -20,9 +20,13 @@ describe('TransactionFormComponent', () => {
   let configServiceSpy: jasmine.SpyObj<ConfigService>;
   let membersServiceSpy: jasmine.SpyObj<MembersService>;
 
-  const mockConfig: ModuleConfig = {
+  const mockConfig: any = {
     id: 'finance',
     updatedAt: new Date(),
+    customParams: {
+      defaultDuesValue: 80,
+      courseDiscountPercent: 50
+    },
     fields: [
       {
         key: 'category',
@@ -34,7 +38,7 @@ describe('TransactionFormComponent', () => {
           { label: 'MENSALIDADE', deleted: false, meta: 'Entrada', requiresMember: true },
           { label: 'CONTAS', deleted: false, meta: 'Saída' },
           { label: 'OUTROS', deleted: true },
-          { label: 'DOAÇÃO', deleted: false } // No meta
+          { label: 'DOAÇÃO', deleted: false }
         ]
       }
     ]
@@ -193,5 +197,29 @@ describe('TransactionFormComponent', () => {
   it('should close dialog on cancel', () => {
     component.onCancel();
     expect(dialogRefSpy.close).toHaveBeenCalledWith();
+  });
+
+  it('should auto-populate dues value based on member status and discount', () => {
+    const regularMember = { id: 'm1', name: 'João Silva', status: 'Ativo', isExempt: false, duesDiscountPercent: 0 } as any;
+    const courseMember = { id: 'm2', name: 'Pedro Dias', status: 'Em Curso', isExempt: false, duesDiscountPercent: 0 } as any;
+    const discountedMember = { id: 'm3', name: 'Ana Costa', status: 'Ativo', isExempt: false, duesDiscountPercent: 25 } as any;
+
+    component.allMembers.set([regularMember, courseMember, discountedMember]);
+    component.form.patchValue({ category: 'MENSALIDADE' });
+
+    const event1 = { option: { value: regularMember } } as any;
+    component.onMemberSelected(event1);
+    expect(component.form.get('value')?.value).toBe(80);
+    expect(component.form.get('valueDisplay')?.value).toBe('80,00');
+
+    const event2 = { option: { value: courseMember } } as any;
+    component.onMemberSelected(event2);
+    expect(component.form.get('value')?.value).toBe(40);
+    expect(component.form.get('valueDisplay')?.value).toBe('40,00');
+
+    const event3 = { option: { value: discountedMember } } as any;
+    component.onMemberSelected(event3);
+    expect(component.form.get('value')?.value).toBe(60);
+    expect(component.form.get('valueDisplay')?.value).toBe('60,00');
   });
 });

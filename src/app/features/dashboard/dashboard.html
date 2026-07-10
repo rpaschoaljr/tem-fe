@@ -7,6 +7,12 @@
         </div>
     </header>
 
+    <!-- Alerta de Mensalidade (Personalizado e privado) -->
+    <div class="payment-alert-banner" *ngIf="paymentStatus() !== 'ok'" [ngClass]="paymentStatus()">
+        <mat-icon>{{ paymentStatus() === 'overdue' ? 'error' : 'warning' }}</mat-icon>
+        <span class="alert-message">{{ paymentAlertMsg() }}</span>
+    </div>
+
     <!-- KPIs REAIS -->
     <div class="kpi-strip">
         <mat-card class="kpi-chip members" (click)="navigate('members')" *ngIf="canAccessMembers$ | async">

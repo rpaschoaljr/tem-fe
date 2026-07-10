@@ -240,35 +240,37 @@ export class ConfigService {
                     isSystem: true,
                     section: 'Vida Espiritual'
                 },
-      { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }], required: true, order: 13, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Ativo', deleted: false }, { label: 'Inativo', deleted: false }, { label: 'Em Curso', deleted: false }], required: true, order: 13, isSystem: true, section: 'Vida Espiritual' },
       { key: 'isExempt', label: 'Isento de Mensalidade', type: 'boolean', required: false, order: 14, isSystem: true, section: 'Vida Espiritual' },
-      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 15, isSystem: true, section: 'Vida Espiritual' },
-      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 16, isSystem: true, section: 'Vida Espiritual' },
-                { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 16, isSystem: true, section: 'Vida Espiritual' },
-                { key: 'observations', label: 'Observações', type: 'text', required: false, order: 17, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'duesDiscountPercent', label: 'Desconto na Mensalidade (%)', type: 'number', required: false, order: 15, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'duesDueDay', label: 'Dia de Vencimento Personalizado', type: 'number', required: false, order: 15.5, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'showSpiritualData', label: 'Liberar Dados Espirituais', type: 'boolean', required: false, order: 16, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'entryDate', label: 'Data de Entrada', type: 'date', required: true, order: 17, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'exitDate', label: 'Data de Saída', type: 'date', required: false, order: 18, isSystem: true, section: 'Vida Espiritual' },
+      { key: 'observations', label: 'Observações', type: 'text', required: false, order: 19, isSystem: true, section: 'Vida Espiritual' },
 
-                // Rituais
-                { key: 'initiation', label: 'Lavagem / Iniciação', type: 'date', required: false, order: 18, isSystem: true, section: 'Rituais' },
-                { key: 'baptism', label: 'Batismo', type: 'date', required: false, order: 19, isSystem: true, section: 'Rituais' },
-                { key: 'baptism1Year', label: 'Batismo (1 Ano)', type: 'date', required: false, order: 20, isSystem: true, section: 'Rituais' },
-                { key: 'coronation', label: 'Coroação', type: 'date', required: false, order: 21, isSystem: true, section: 'Rituais' },
-                { key: 'crownWashing', label: 'Lavagem de Coroa', type: 'date', required: false, order: 22, isSystem: true, section: 'Rituais' },
+      // Rituais
+      { key: 'initiation', label: 'Lavagem / Iniciação', type: 'date', required: false, order: 20, isSystem: true, section: 'Rituais' },
+      { key: 'baptism', label: 'Batismo', type: 'date', required: false, order: 21, isSystem: true, section: 'Rituais' },
+      { key: 'baptism1Year', label: 'Batismo (1 Ano)', type: 'date', required: false, order: 22, isSystem: true, section: 'Rituais' },
+      { key: 'coronation', label: 'Coroação', type: 'date', required: false, order: 23, isSystem: true, section: 'Rituais' },
+      { key: 'crownWashing', label: 'Lavagem de Coroa', type: 'date', required: false, order: 24, isSystem: true, section: 'Rituais' },
 
-                // Orixás
-                { key: 'oxossi', label: 'Oxóssi', type: 'date', required: false, order: 23, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'iemanja', label: 'Iemanjá', type: 'date', required: false, order: 24, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'oxala', label: 'Oxalá', type: 'date', required: false, order: 25, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'ogum', label: 'Ogum', type: 'date', required: false, order: 26, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'obaluae', label: 'Obaluaê', type: 'date', required: false, order: 27, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'oxum', label: 'Oxum', type: 'date', required: false, order: 28, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'xango', label: 'Xangô', type: 'date', required: false, order: 29, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'oba', label: 'Obá', type: 'date', required: false, order: 30, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'omulu', label: 'Omulú', type: 'date', required: false, order: 31, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'logunan', label: 'Logunã', type: 'date', required: false, order: 32, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'iansa', label: 'Iansã', type: 'date', required: false, order: 33, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'nana', label: 'Nanã', type: 'date', required: false, order: 34, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'oxumare', label: 'Oxumaré', type: 'date', required: false, order: 35, isSystem: true, section: 'Consagrações (Orixás)' },
-                { key: 'oroina', label: 'Oroiná (Egunitá)', type: 'date', required: false, order: 36, isSystem: true, section: 'Consagrações (Orixás)' }
+      // Orixás
+      { key: 'oxossi', label: 'Oxóssi', type: 'date', required: false, order: 25, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'iemanja', label: 'Iemanjá', type: 'date', required: false, order: 26, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'oxala', label: 'Oxalá', type: 'date', required: false, order: 27, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'ogum', label: 'Ogum', type: 'date', required: false, order: 28, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'obaluae', label: 'Obaluaê', type: 'date', required: false, order: 29, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'oxum', label: 'Oxum', type: 'date', required: false, order: 30, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'xango', label: 'Xangô', type: 'date', required: false, order: 31, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'oba', label: 'Obá', type: 'date', required: false, order: 32, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'omulu', label: 'Omulú', type: 'date', required: false, order: 33, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'logunan', label: 'Logunã', type: 'date', required: false, order: 34, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'iansa', label: 'Iansã', type: 'date', required: false, order: 35, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'nana', label: 'Nanã', type: 'date', required: false, order: 36, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'oxumare', label: 'Oxumaré', type: 'date', required: false, order: 37, isSystem: true, section: 'Consagrações (Orixás)' },
+      { key: 'oroina', label: 'Oroiná (Egunitá)', type: 'date', required: false, order: 38, isSystem: true, section: 'Consagrações (Orixás)' }
             ];
         } else if (moduleId === 'pdv') {
             fields = [
@@ -289,10 +291,19 @@ export class ConfigService {
             ];
         }
 
-        return {
+        const config: ModuleConfig = {
             id: moduleId,
             fields: fields,
             updatedAt: new Date()
         };
+
+        if (moduleId === 'finance') {
+            (config as any).customParams = {
+                defaultDuesValue: 80,
+                courseDiscountPercent: 50
+            };
+        }
+
+        return config;
     }
 }

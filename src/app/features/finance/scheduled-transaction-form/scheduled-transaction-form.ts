@@ -203,6 +203,32 @@ export class ScheduledTransactionFormComponent implements OnInit {
             memberName: member.name,
             description: `${category} - ${member.name}`.toUpperCase()
         });
+
+        // Preenche automaticamente o valor da mensalidade caso a categoria seja MENSALIDADE
+        if (category && category.toUpperCase() === 'MENSALIDADE') {
+            this.configService.getConfig('finance').subscribe({
+                next: (config) => {
+                    const params = (config as any).customParams || {};
+                    const defaultValue = params.defaultDuesValue ?? 80;
+                    const discount = params.courseDiscountPercent ?? 50;
+
+                    let finalValue = defaultValue;
+                    if (member.isExempt) {
+                        finalValue = 0;
+                    } else if (member.duesDiscountPercent !== undefined && member.duesDiscountPercent > 0) {
+                        finalValue = defaultValue * (1 - member.duesDiscountPercent / 100);
+                    } else if (member.status === 'Em Curso') {
+                        finalValue = defaultValue * (1 - discount / 100);
+                    }
+
+                    this.form.patchValue({
+                        value: finalValue,
+                        valueDisplay: finalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    });
+                }
+            });
+        }
+
         this.filteredMembers.set([]);
     }
 

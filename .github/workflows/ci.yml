@@ -76,14 +76,27 @@ jobs:
       - name: Setup Environment Config
         run: cp src/app/app.config.example.ts src/app/app.config.ts
 
+      - name: Build Cloud Functions
+        run: |
+          npm install --prefix functions
+          npm run build --prefix functions
+
+      - name: Start Firebase Emulators
+        run: docker compose up --build -d firebase-emulators
+
+      - name: Wait for Emulators and Run Seed
+        run: |
+          npx wait-on http://localhost:9099 -t 60000
+          node scripts/seed-master.mjs
+
       - name: Start Angular App for ZAP
         run: npm start &
         
       - name: Wait for App to be ready
         run: npx wait-on http://localhost:4200 -t 90000
 
-      - name: OWASP ZAP (Baseline Scan)
-        run: npm run scan:owasp || true
+      - name: OWASP ZAP (Full Scan)
+        run: npm run scan:owasp-full || true
 
       - name: Nuclei (Vulnerability Scan)
         run: npm run scan:nuclei || true

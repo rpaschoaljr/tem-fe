@@ -17,6 +17,7 @@ export class AuthService {
   private firestore = inject(Firestore);
   private functions = inject(Functions);
   private logger = inject(LoggerService);
+  private duesStatusCache: { status: 'overdue' | 'warning' | 'ok' | 'exempt', alertMsg: string, timestamp: number } | null = null;
 
   user$ = authState(this.auth);
 
@@ -181,6 +182,7 @@ export class AuthService {
   }
 
   logout(): Observable<void> {
+    this.duesStatusCache = null;
     return from(FbUtils.signOut(this.auth));
   }
 
@@ -207,6 +209,32 @@ export class AuthService {
           isFirstAccess: false, 
           updatedAt: new Date() 
         });
+      })
+    );
+  }
+
+  getMyDuesStatus(): Observable<{ status: 'overdue' | 'warning' | 'ok' | 'exempt', alertMsg: string }> {
+    const cacheDuration = 60 * 60 * 1000; // 1 hora
+    const now = Date.now();
+
+    if (this.duesStatusCache && (now - this.duesStatusCache.timestamp < cacheDuration)) {
+      return of({ status: this.duesStatusCache.status, alertMsg: this.duesStatusCache.alertMsg });
+    }
+
+    const fn = httpsCallable(this.functions, 'getMyDuesStatus');
+    return from(fn()).pipe(
+      map((res: any) => {
+        const data = res.data || { status: 'ok', alertMsg: '' };
+        this.duesStatusCache = {
+          status: data.status,
+          alertMsg: data.alertMsg,
+          timestamp: now
+        };
+        return { status: data.status, alertMsg: data.alertMsg };
+      }),
+      catchError(err => {
+        this.logger.error('Erro ao buscar status de mensalidade via Cloud Function', err);
+        return of({ status: 'ok' as const, alertMsg: '' });
       })
     );
   }

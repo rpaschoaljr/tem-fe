@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ConfigService } from '../../core/services/config.service';
 import { StockService } from '../../core/services/stock.service';
 import { MembersService } from '../../core/services/members.service';
+import { AuditService } from '../../core/services/audit.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { LoggerService } from '../../core/services/logger.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,6 +17,7 @@ describe('SettingsComponent', () => {
   let mockConfig: jasmine.SpyObj<ConfigService>;
   let mockStock: jasmine.SpyObj<StockService>;
   let mockMembers: jasmine.SpyObj<MembersService>;
+  let mockAudit: jasmine.SpyObj<AuditService>;
   let mockNotify: jasmine.SpyObj<NotificationService>;
   let mockLogger: jasmine.SpyObj<LoggerService>;
   let mockDialog: jasmine.SpyObj<MatDialog>;
@@ -28,11 +30,16 @@ describe('SettingsComponent', () => {
     updatedAt: new Date()
   };
 
-  const mockFinanceConfig: ModuleConfig = {
+  const mockFinanceConfig: any = {
     id: 'finance',
     fields: [
       { key: 'category', label: 'Finance Cat', type: 'select', order: 1, options: [{ label: 'DOAÇÃO', deleted: false }], required: true }
     ],
+    customParams: {
+      defaultDuesValue: 80,
+      courseDiscountPercent: 50,
+      defaultDuesDueDay: 10
+    },
     updatedAt: new Date()
   };
 
@@ -75,6 +82,7 @@ describe('SettingsComponent', () => {
     ]);
     mockStock = jasmine.createSpyObj('StockService', ['getStock', 'save', 'mergeItems', 'softDelete', 'restore']);
     mockMembers = jasmine.createSpyObj('MembersService', ['getMembers']);
+    mockAudit = jasmine.createSpyObj('AuditService', ['getLogs']);
     mockNotify = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError', 'showWarning']);
     mockLogger = jasmine.createSpyObj('LoggerService', ['error']);
     mockDialog = jasmine.createSpyObj('MatDialog', ['open'], { openDialogs: [] });
@@ -88,6 +96,7 @@ describe('SettingsComponent', () => {
     mockConfig.getAllRolePermissions.and.returnValue(of([mockRolePerm]));
     mockStock.getStock.and.returnValue(of([{ id: '1', name: 'Item1', category: 'CAT1', quantity: 10, unit: 'UN', deleted: false, updatedAt: new Date() }]));
     mockMembers.getMembers.and.returnValue(of([{ id: '1', name: 'John Doe', email: 'test@test.com', role: 'ADMIN', deleted: false } as any]));
+    mockAudit.getLogs.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [SettingsComponent, NoopAnimationsModule],
@@ -95,6 +104,7 @@ describe('SettingsComponent', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: StockService, useValue: mockStock },
         { provide: MembersService, useValue: mockMembers },
+        { provide: AuditService, useValue: mockAudit },
         { provide: NotificationService, useValue: mockNotify },
         { provide: LoggerService, useValue: mockLogger },
         { provide: MatDialog, useValue: mockDialog }
@@ -347,6 +357,81 @@ describe('SettingsComponent', () => {
       component.restoreField(mockMembersConfig, field);
       tick();
       expect(field.deleted).toBeFalse();
+    }));
+  });
+
+  describe('Auditoria tab', () => {
+    it('should load audit logs on init', () => {
+      expect(mockAudit.getLogs).toHaveBeenCalled();
+    });
+
+    it('should filter audit logs correctly', () => {
+      const mockLogs = [
+        { id: '1', timestamp: new Date(), action: 'CREATE', collection: 'members', documentId: 'doc1', userId: 'uid1', userName: 'João', userEmail: 'joao@test.com' },
+        { id: '2', timestamp: new Date(), action: 'UPDATE', collection: 'stock', documentId: 'doc2', userId: 'uid2', userName: 'Maria', userEmail: 'maria@test.com' }
+      ] as any[];
+      component.auditLogs.set(mockLogs);
+
+      component.auditFilter = 'members';
+      expect(component.getFilteredLogs().length).toBe(1);
+      expect(component.getFilteredLogs()[0].id).toBe('1');
+
+      component.auditFilter = 'Maria';
+      expect(component.getFilteredLogs().length).toBe(1);
+      expect(component.getFilteredLogs()[0].id).toBe('2');
+
+      component.auditFilter = 'NON_EXISTENT';
+      expect(component.getFilteredLogs().length).toBe(0);
+    });
+
+    it('should format values and extract keys correctly', () => {
+      expect(component.objectKeys({ a: 1, b: 2 })).toEqual(['a', 'b']);
+      expect(component.formatValue(null)).toBe('vazio');
+      expect(component.formatValue('test')).toBe('test');
+      expect(component.formatValue({ x: 1 })).toBe('{"x":1}');
+    });
+  });
+
+  describe('Dues Configurations', () => {
+    it('should initialize dues values from finance config', () => {
+      expect(component.duesValue()).toBe(80);
+      expect(component.duesValueDisplay()).toBe('80,00');
+      expect(component.courseDiscountPercent()).toBe(50);
+      expect(component.defaultDuesDueDay()).toBe(10);
+    });
+
+    it('should handle dues value input change', () => {
+      const event = { target: { value: '15000' } } as any;
+      component.onDuesValueInput(event);
+      expect(component.duesValue()).toBe(150);
+      expect(component.duesValueDisplay()).toBe('150,00');
+    });
+
+    it('should handle discount percentage change', () => {
+      const event = { target: { value: '25' } } as any;
+      component.onDiscountChange(event);
+      expect(component.courseDiscountPercent()).toBe(25);
+    });
+
+    it('should handle due day change', () => {
+      const event = { target: { value: '15' } } as any;
+      component.onDueDayChange(event);
+      expect(component.defaultDuesDueDay()).toBe(15);
+    });
+
+    it('should save dues configurations successfully', fakeAsync(() => {
+      mockConfig.saveConfig.and.returnValue(of(undefined));
+      component.duesValue.set(120);
+      component.courseDiscountPercent.set(40);
+      component.defaultDuesDueDay.set(15);
+
+      component.saveDuesConfig();
+      tick();
+
+      expect(mockConfig.saveConfig).toHaveBeenCalled();
+      expect(component.financeConfig()?.customParams?.['defaultDuesValue']).toBe(120);
+      expect(component.financeConfig()?.customParams?.['courseDiscountPercent']).toBe(40);
+      expect(component.financeConfig()?.customParams?.['defaultDuesDueDay']).toBe(15);
     }));
   });
 });

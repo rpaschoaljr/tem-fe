@@ -11,6 +11,7 @@ import { of, throwError } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import * as auth from '@angular/fire/auth';
 import { FbUtils } from '../../shared/utils/firebase-utils';
+
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
@@ -27,7 +28,9 @@ describe('DashboardComponent', () => {
     mockFinanceService = jasmine.createSpyObj('FinanceService', ['getTransactions']);
     mockStockService = jasmine.createSpyObj('StockService', ['getStock']);
     mockNoticesService = jasmine.createSpyObj('NoticesService', ['getActiveNotices']);
-    mockAuthService = jasmine.createSpyObj('AuthService', ['canManageNotices', 'hasPermission', 'logout']);
+    mockAuthService = jasmine.createSpyObj('AuthService', ['canManageNotices', 'hasPermission', 'logout', 'getMyDuesStatus'], {
+      member$: of(null)
+    });
 
     mockMembersService.getMembers.and.returnValue(of([
       { id: '1', name: 'A', deleted: false } as any,
@@ -47,6 +50,7 @@ describe('DashboardComponent', () => {
     mockAuthService.canManageNotices.and.returnValue(of(true));
     mockAuthService.hasPermission.and.returnValue(of(true));
     mockAuthService.logout.and.returnValue(of(undefined));
+    mockAuthService.getMyDuesStatus.and.returnValue(of({ status: 'ok', alertMsg: '' }));
 
     await TestBed.configureTestingModule({
       imports: [DashboardComponent, NoopAnimationsModule],
@@ -122,6 +126,38 @@ describe('DashboardComponent', () => {
       expect(component.kpis.activeMembers).toBe(1);
       expect(component.kpis.balance).toBe(50);
       expect(component.kpis.outOfStock).toBe(0); // This should fail gracefully to 0
+    });
+  });
+
+  describe('Mensalidade Alerts', () => {
+    it('should set status ok and no message if status is ok', () => {
+      mockAuthService.getMyDuesStatus.and.returnValue(of({ status: 'ok', alertMsg: '' }));
+
+      component.ngOnInit();
+      expect(component.paymentStatus()).toBe('ok');
+      expect(component.paymentAlertMsg()).toBe('');
+    });
+
+    it('should set status overdue if status is overdue', () => {
+      mockAuthService.getMyDuesStatus.and.returnValue(of({
+        status: 'overdue',
+        alertMsg: 'Atenção: Sua mensalidade está atrasada (venceu em 10/07/2026).'
+      }));
+
+      component.ngOnInit();
+      expect(component.paymentStatus()).toBe('overdue');
+      expect(component.paymentAlertMsg()).toContain('atrasada');
+    });
+
+    it('should set status warning if status is warning', () => {
+      mockAuthService.getMyDuesStatus.and.returnValue(of({
+        status: 'warning',
+        alertMsg: 'Aviso: Sua mensalidade vence em 3 dias (12/07/2026).'
+      }));
+
+      component.ngOnInit();
+      expect(component.paymentStatus()).toBe('warning');
+      expect(component.paymentAlertMsg()).toContain('vence em 3 dias');
     });
   });
 });

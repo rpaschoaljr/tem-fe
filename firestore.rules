@@ -58,6 +58,11 @@ service cloud.firestore {
       allow write: if hasPerm('finance', 'write');
     }
 
+    match /scheduled_transactions/{schedId} {
+      allow read: if hasPerm('finance', 'read');
+      allow write: if hasPerm('finance', 'write');
+    }
+
     match /stock/{itemId} {
       allow read: if hasPerm('stock', 'read');
       allow write: if hasPerm('stock', 'write');
@@ -77,6 +82,11 @@ service cloud.firestore {
       // Usuário pode ler seu próprio documento de permissão (necessário para fallback)
       allow read: if isMasterAdmin() || (isLoggedIn() && permId == request.auth.uid);
       allow write: if isMasterAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isMasterAdmin();
+      allow write: if false; // Apenas backend escreve
     }
   }
 }

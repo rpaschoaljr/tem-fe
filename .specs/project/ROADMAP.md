@@ -5,15 +5,15 @@
 - [x] Cadastro e Edição
 - [x] Fatiamento de Dados (Basic, Private, Spiritual)
 - [x] Sincronização em Tempo Real (onSnapshot)
-- [ ] Upload de Foto para o Firebase Storage
-- [ ] Exportação de Ficha de Membro (PDF)
+- [x] Upload de Foto para o Firebase Storage
+- [ ] Exportação de Ficha de Membro (PDF) (Adiado pós-lançamento)
 
 ## Gestão Financeira
 - [x] Lançamentos de Entradas/Saídas
 - [x] Categorias Customizáveis
 - [x] Agendamentos de Transações Recorrentes
 - [x] Sincronização em Tempo Real (onSnapshot)
-- [ ] Relatórios e Gráficos Mensais (DRE)
+- [x] Relatórios e Gráficos Mensais (DRE)
 - [x] Lançamento Automático via Cloud Function (Cron)
 
 ## Gestão de Estoque
@@ -29,9 +29,12 @@
 - [x] Migração para Plano Blaze
 - [x] Resolução de Acesso (UI de Permissões)
 - [x] Implementação de Custom Claims (Token JWT via Functions)
-- [ ] Checkov (IaC Security)
-- [ ] Snyk (Dependency Scan)
-- [ ] Gitleaks (Secret Detection)
-- [ ] Configuração de CI/CD (GitHub Actions/GCP)
+- [x] Checkov (IaC Security)
+- [x] Snyk (Dependency Scan)
+- [x] Gitleaks (Secret Detection)
+- [x] Configuração de CI/CD (GitHub Actions/GCP)
 - [ ] Cobertura de Testes Unitários > 80%
-- [ ] Pentest Approval (OWASP/Nuclei)
+- [x] Pentest Approval (OWASP/Nuclei)
+- [ ] Resolver vulnerabilidades e débitos técnicos em pacotes legados reportados pelo Socket Security (tar, xlsx, form-data, zone.js)
+- [x] Auditoria Geral (Triggers no Backend & Aba de Auditoria com Diffs)
+

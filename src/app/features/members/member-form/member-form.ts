@@ -123,7 +123,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
           group = consecrationsGroup;
           validators = [CustomValidators.dateNotFuture, CustomValidators.dateAfterEntry];
         } else {
-          const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'isExempt', 'entryDate', 'exitDate', 'observations'];
+          const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'isExempt', 'entryDate', 'exitDate', 'observations', 'duesDiscountPercent', 'duesDueDay'];
           if (rootFields.includes(field.key)) {
             if (!this.form.contains(field.key)) {
               if (field.key === 'cpf') validators.push(CustomValidators.cpf);
@@ -260,7 +260,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
     let isValid = true;
     fieldsInTab.forEach(f => {
       let control;
-      const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'isExempt', 'entryDate', 'exitDate', 'observations'];
+      const rootFields = ['name', 'cpf', 'email', 'phone', 'status', 'role', 'showSpiritualData', 'isExempt', 'entryDate', 'exitDate', 'observations', 'duesDiscountPercent', 'duesDueDay'];
       
       if (f.section === 'Endereço') control = this.form.get(`address.${f.key}`);
       else if (f.section === 'Rituais') control = this.form.get(`rituals.${f.key}`);

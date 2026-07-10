@@ -27,7 +27,9 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/robots.txt",
+              "src/sitemap.xml"
             ],
             "styles": [
               "src/styles.scss"
@@ -47,7 +49,16 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "subresourceIntegrity": true,
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,
@@ -59,6 +70,16 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "headers": {
+              "Content-Security-Policy": "default-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.googleapis.com https://*.firebaseapp.com https://*.google.com; frame-src 'self' https://*.firebaseapp.com; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com ws://*.firebaseio.com https://viacep.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';",
+              "X-Frame-Options": "DENY",
+              "X-Content-Type-Options": "nosniff",
+              "Referrer-Policy": "strict-origin-when-cross-origin",
+              "Permissions-Policy": "geolocation=(), microphone=(), camera=(), interest-cohort=()",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
+            }
+          },
           "configurations": {
             "production": {
               "buildTarget": "tem-fe:build:production"

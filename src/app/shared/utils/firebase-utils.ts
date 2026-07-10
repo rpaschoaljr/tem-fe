@@ -11,6 +11,7 @@ import {
     query, 
     where, 
     limit, 
+    orderBy,
     writeBatch,
     runTransaction,
     collectionData
@@ -33,6 +34,7 @@ export const FbUtils = {
     query, 
     where, 
     limit, 
+    orderBy,
     writeBatch,
     runTransaction,
     collectionData,

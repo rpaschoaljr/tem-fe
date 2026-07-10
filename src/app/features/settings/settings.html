@@ -154,6 +154,55 @@
                                     </div>
                                 </div>
                             </mat-tab>
+
+                            <!-- SUB-ABA CONFIGURAÇÕES DE MENSALIDADE -->
+                            <mat-tab label="Mensalidades">
+                                <div class="tab-content-inner" style="margin-top: 20px; max-width: 480px; display: flex; flex-direction: column; gap: 16px;">
+                                    <div>
+                                        <h3 style="margin-bottom: 4px;">Configurações de Mensalidade</h3>
+                                        <p class="subtitle" style="margin: 0; opacity: 0.7; font-size: 0.9rem;">
+                                            Defina o valor base de mensalidade e o percentual de desconto padrão para médiuns aspirantes.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+                                        <mat-form-field appearance="outline" style="width: 100%;">
+                                            <mat-label>Valor Base da Mensalidade (R$)</mat-label>
+                                            <input matInput type="text" 
+                                                   [value]="duesValueDisplay()" 
+                                                   (input)="onDuesValueInput($event)" 
+                                                   placeholder="0,00">
+                                            <mat-icon matSuffix>monetization_on</mat-icon>
+                                        </mat-form-field>
+
+                                        <mat-form-field appearance="outline" style="width: 100%;">
+                                            <mat-label>Desconto para Membros "Em Curso" (%)</mat-label>
+                                            <input matInput type="number" 
+                                                   [value]="courseDiscountPercent()" 
+                                                   (change)="onDiscountChange($event)"
+                                                   min="0" max="100" 
+                                                   placeholder="50">
+                                            <mat-icon matSuffix>percent</mat-icon>
+                                        </mat-form-field>
+
+                                        <mat-form-field appearance="outline" style="width: 100%;">
+                                            <mat-label>Dia de Vencimento Padrão (Mês Corrente)</mat-label>
+                                            <input matInput type="number" 
+                                                   [value]="defaultDuesDueDay()" 
+                                                   (change)="onDueDayChange($event)"
+                                                   min="1" max="31" 
+                                                   placeholder="10">
+                                            <mat-icon matSuffix>calendar_month</mat-icon>
+                                        </mat-form-field>
+                                        
+                                        <div style="display: flex; justify-content: flex-end;">
+                                            <button mat-flat-button color="primary" [disabled]="savingDues()" (click)="saveDuesConfig()">
+                                                <mat-icon>save</mat-icon> {{ savingDues() ? 'Salvando...' : 'Salvar Configurações' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
                         </mat-tab-group>
 
                     </div>
@@ -461,6 +510,84 @@
                         <div *ngIf="rolesList().length === 0" style="padding: 20px; text-align: center; opacity: 0.7;">
                             <p>Nenhum cargo encontrado. Configure as Funções na aba Membros primeiro.</p>
                         </div>
+                    </div>
+                </mat-tab>
+
+                <!-- ABA 5: AUDITORIA -->
+                <mat-tab label="Auditoria">
+                    <div class="tab-content" style="padding: 24px 0 0 0;">
+                        <div class="header-actions" style="display: flex; gap: 16px; margin-bottom: 24px; align-items: center;">
+                            <mat-form-field appearance="outline" style="flex: 1; margin-bottom: -1.25em;">
+                                <mat-label>Filtrar logs (Coleção, Usuário, Ação, ID...)</mat-label>
+                                <input matInput [(ngModel)]="auditFilter" placeholder="Ex: members, UPDATE, João...">
+                                <button *ngIf="auditFilter" matSuffix mat-icon-button aria-label="Limpar" (click)="auditFilter = ''">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </mat-form-field>
+                            <button mat-stroked-button (click)="loadAuditLogs()">
+                                <mat-icon>refresh</mat-icon> Atualizar Logs
+                            </button>
+                        </div>
+
+                        <div *ngIf="getFilteredLogs().length === 0" style="padding: 40px; text-align: center; opacity: 0.7;">
+                            <mat-icon style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5;">history</mat-icon>
+                            <p>Nenhum log de auditoria encontrado.</p>
+                        </div>
+
+                        <mat-accordion *ngIf="getFilteredLogs().length > 0" multi="false">
+                            <mat-expansion-panel *ngFor="let log of getFilteredLogs()" style="margin-bottom: 8px; border: 1px solid rgba(0,0,0,0.06); box-shadow: none !important;">
+                                <mat-expansion-panel-header>
+                                    <mat-panel-title style="display: flex; align-items: center; gap: 12px; font-weight: 500;">
+                                        <mat-icon *ngIf="log.action === 'CREATE'" style="color: #2e7d32;" matTooltip="Criação">add_circle</mat-icon>
+                                        <mat-icon *ngIf="log.action === 'UPDATE'" style="color: #f9a825;" matTooltip="Edição">edit</mat-icon>
+                                        <mat-icon *ngIf="log.action === 'DELETE'" style="color: #c62828;" matTooltip="Exclusão">delete</mat-icon>
+                                        
+                                        <span>
+                                            <strong>{{ log.action }}</strong> na coleção 
+                                            <code style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;">{{ log.collection }}</code>
+                                        </span>
+                                    </mat-panel-title>
+                                    <mat-panel-description style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="opacity: 0.8;">Por: {{ log.userName || log.userEmail || 'Sistema' }}</span>
+                                        <span style="opacity: 0.6; font-size: 0.85rem;">{{ log.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                                    </mat-panel-description>
+                                </mat-expansion-panel-header>
+
+                                <div class="log-details" style="padding: 12px 0;">
+                                    <p style="margin: 4px 0;"><strong>ID do Documento:</strong> <code style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px;">{{ log.documentId }}</code></p>
+                                    <p style="margin: 4px 0;"><strong>Usuário:</strong> {{ log.userName }} ({{ log.userEmail || 'N/A' }}) - ID: <code style="font-size: 0.9em;">{{ log.userId }}</code></p>
+                                    
+                                    <!-- Exibição de Diferenças (Diff) -->
+                                    <div *ngIf="log.action === 'UPDATE' && log.diff && objectKeys(log.diff).length > 0" style="margin-top: 16px;">
+                                        <h4 style="margin-bottom: 8px; font-weight: 600; color: rgba(0,0,0,0.7);">Campos Alterados:</h4>
+                                        <div style="overflow-x: auto;">
+                                            <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+                                                <thead>
+                                                    <tr style="border-bottom: 2px solid rgba(0,0,0,0.08); text-align: left;">
+                                                        <th style="padding: 8px;">Campo</th>
+                                                        <th style="padding: 8px;">De (Antigo)</th>
+                                                        <th style="padding: 8px;">Para (Novo)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr *ngFor="let key of objectKeys(log.diff)" style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                                                        <td style="padding: 8px; font-family: monospace; font-weight: 500;">{{ key }}</td>
+                                                        <td style="padding: 8px; color: #c62828; background: #ffebee; border-radius: 4px; display: inline-block; margin: 4px;">{{ formatValue(log.diff[key].old) }}</td>
+                                                        <td style="padding: 8px; color: #2e7d32; background: #e8f5e9; border-radius: 4px; display: inline-block; margin: 4px;">{{ formatValue(log.diff[key].new) }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Exibição de Dados Completos para CREATE ou DELETE -->
+                                    <div *ngIf="(log.action === 'CREATE' || log.action === 'DELETE') && (log.newData || log.oldData)" style="margin-top: 16px;">
+                                        <h4 style="margin-bottom: 8px; font-weight: 600; color: rgba(0,0,0,0.7);">Dados do Registro:</h4>
+                                        <pre style="background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; max-height: 250px; font-size: 0.85rem; font-family: monospace;">{{ (log.newData || log.oldData) | json }}</pre>
+                                    </div>
+                                </div>
+                            </mat-expansion-panel>
+                        </mat-accordion>
                     </div>
                 </mat-tab>
 

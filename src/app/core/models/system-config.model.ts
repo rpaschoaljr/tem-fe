@@ -28,6 +28,7 @@ export interface ModuleConfig {
     id: string;
     fields: DynamicField[];
     updatedAt: Date;
+    customParams?: Record<string, any>;
 }
 
 export interface ModulePermissions {

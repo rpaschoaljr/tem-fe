@@ -87,7 +87,7 @@ export class MembersComponent implements OnInit {
         }
 
         this.roles = [...new Set(res.members.map(m => m.role).filter((role): role is string => !!role))].sort();
-        this.totalActive = res.members.filter(m => !m.deleted && m.status === 'Ativo').length;
+        this.totalActive = res.members.filter(m => !m.deleted && (m.status === 'Ativo' || m.status === 'Em Curso')).length;
 
         // Se puder escrever no financeiro, busca transações para cruzar dados
         if (res.canWriteFinance) {
@@ -123,7 +123,7 @@ export class MembersComponent implements OnInit {
       let financeStatus = '-';
       let financeClass = '';
 
-      if (showFinance && m.status === 'Ativo' && !m.deleted) {
+      if (showFinance && (m.status === 'Ativo' || m.status === 'Em Curso') && !m.deleted) {
         const isPaid = currentMensalidades.some(t => t.memberId === m.id);
         const isExempt = m.isExempt ?? false;
 

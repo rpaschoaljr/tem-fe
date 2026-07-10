@@ -24,6 +24,8 @@ import { StockService } from '../../core/services/stock.service';
 import { MembersService } from '../../core/services/members.service';
 import { StockItem } from '../../core/models/stock-item.model';
 import { Member } from '../../core/models/member.model';
+import { AuditService } from '../../core/services/audit.service';
+import { AuditLog } from '../../core/models/audit-log.model';
 import { StockFormComponent } from '../stock/stock-form/stock-form';
 import { MergeStockDialogComponent } from '../stock/merge-stock-dialog/merge-stock-dialog';
 import { GenericListComponent, ColumnDef } from '../../shared/components/generic-list/generic-list';
@@ -61,15 +63,23 @@ export class SettingsComponent implements OnInit {
   private configService = inject(ConfigService);
   private stockService = inject(StockService);
   private membersService = inject(MembersService);
+  private auditService = inject(AuditService);
   private notify = inject(NotificationService);
   private dialog = inject(MatDialog);
   private logger = inject(LoggerService);
 
   stockConfig = signal<ModuleConfig | null>(null);
   financeConfig = signal<ModuleConfig | null>(null);
+  duesValue = signal<number>(80);
+  duesValueDisplay = signal<string>('80,00');
+  courseDiscountPercent = signal<number>(50);
+  defaultDuesDueDay = signal<number>(10);
+  savingDues = signal<boolean>(false);
   membersConfig = signal<ModuleConfig | null>(null);
   stockItems = signal<StockItem[]>([]);
   members = signal<Member[]>([]);
+  auditLogs = signal<AuditLog[]>([]);
+  auditFilter = '';
   
   loading = signal(true);
   mainTabIndex = 0;
@@ -115,6 +125,38 @@ export class SettingsComponent implements OnInit {
     this.loadConfigs(true);
     this.loadStockItems();
     this.loadMembers();
+    this.loadAuditLogs();
+  }
+
+  loadAuditLogs() {
+    this.auditService.getLogs().subscribe(logs => {
+      this.auditLogs.set(logs);
+    });
+  }
+
+  getFilteredLogs(): AuditLog[] {
+    const filter = this.auditFilter.toLowerCase().trim();
+    if (!filter) return this.auditLogs();
+    
+    return this.auditLogs().filter(log => {
+      return (
+        log.collection?.toLowerCase().includes(filter) ||
+        log.documentId?.toLowerCase().includes(filter) ||
+        log.action?.toLowerCase().includes(filter) ||
+        log.userName?.toLowerCase().includes(filter) ||
+        log.userEmail?.toLowerCase().includes(filter)
+      );
+    });
+  }
+
+  objectKeys(obj: any): string[] {
+    return obj ? Object.keys(obj) : [];
+  }
+
+  formatValue(val: any): string {
+    if (val === null || val === undefined) return 'vazio';
+    if (typeof val === 'object') return JSON.stringify(val);
+    return String(val);
   }
 
   loadStockItems() {
@@ -137,7 +179,17 @@ export class SettingsComponent implements OnInit {
       complete: () => this.checkLoading()
     });
     this.configService.getConfig('finance').subscribe({
-      next: (conf) => this.financeConfig.set(conf),
+      next: (conf) => {
+        this.financeConfig.set(conf);
+        if (conf) {
+          const params = (conf as any).customParams || {};
+          const val = params.defaultDuesValue ?? 80;
+          this.duesValue.set(val);
+          this.duesValueDisplay.set(val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          this.courseDiscountPercent.set(params.courseDiscountPercent ?? 50);
+          this.defaultDuesDueDay.set(params.defaultDuesDueDay ?? 10);
+        }
+      },
       complete: () => this.checkLoading()
     });
     this.configService.getConfig('members').subscribe({
@@ -340,6 +392,54 @@ export class SettingsComponent implements OnInit {
     if (this.stockConfig() && this.financeConfig() && this.membersConfig()) {
       this.loading.set(false);
     }
+  }
+
+  onDuesValueInput(event: Event) {
+    let value = (event.target as HTMLInputElement).value.replace(/\D/g, '');
+    if (value === '') value = '0';
+    const floatValue = parseFloat(value) / 100;
+    this.duesValue.set(floatValue);
+    const formatted = floatValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    this.duesValueDisplay.set(formatted);
+  }
+
+  onDiscountChange(event: Event) {
+    const val = parseInt((event.target as HTMLInputElement).value, 10);
+    this.courseDiscountPercent.set(isNaN(val) ? 0 : Math.max(0, Math.min(100, val)));
+  }
+
+  onDueDayChange(event: Event) {
+    const val = parseInt((event.target as HTMLInputElement).value, 10);
+    this.defaultDuesDueDay.set(isNaN(val) ? 10 : Math.max(1, Math.min(31, val)));
+  }
+
+  saveDuesConfig() {
+    const config = this.financeConfig();
+    if (!config) return;
+
+    this.savingDues.set(true);
+    const updated: any = {
+      ...config,
+      customParams: {
+        ...((config as any).customParams || {}),
+        defaultDuesValue: this.duesValue(),
+        courseDiscountPercent: this.courseDiscountPercent(),
+        defaultDuesDueDay: this.defaultDuesDueDay()
+      }
+    };
+
+    this.configService.saveConfig(updated).subscribe({
+      next: () => {
+        this.notify.showSuccess('Configurações de mensalidade salvas com sucesso!');
+        this.financeConfig.set(updated);
+        this.savingDues.set(false);
+      },
+      error: (err) => {
+        this.logger.error('Erro ao salvar configurações de mensalidade', err);
+        this.notify.showError('Erro ao salvar configurações.');
+        this.savingDues.set(false);
+      }
+    });
   }
 
   onNewStockItem() {

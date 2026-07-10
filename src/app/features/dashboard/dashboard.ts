@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,6 +40,9 @@ export class DashboardComponent implements OnInit {
   kpis = { activeMembers: 0, balance: 0, outOfStock: 0 };
   activeNotices$: Observable<Notice[]> | undefined;
   
+  paymentStatus = signal<'overdue' | 'warning' | 'ok'>('ok');
+  paymentAlertMsg = signal<string>('');
+  
   // Observables de Permissão
   canManageNotices$: Observable<boolean> = this.authService.canManageNotices();
   canAccessMembers$: Observable<boolean> = this.authService.hasPermission('members', 'read');
@@ -49,6 +52,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit() {
     this.activeNotices$ = this.noticesService.getActiveNotices();
 
+    // Carrega os KPIs gerais
     forkJoin({
       members: this.membersService.getMembers().pipe(take(1), catchError(() => of([]))),
       transactions: this.financeService.getTransactions().pipe(take(1), catchError(() => of([]))),
@@ -60,6 +64,18 @@ export class DashboardComponent implements OnInit {
       this.kpis.balance = active.reduce((sum, t) => sum + t.value, 0);
 
       this.kpis.outOfStock = stock.filter(i => !i.deleted && i.quantity <= 0).length;
+    });
+
+    // Verificação de mensalidade do próprio usuário logado via Cloud Function
+    this.authService.getMyDuesStatus().subscribe({
+      next: (res) => {
+        this.paymentStatus.set(res.status === 'exempt' ? 'ok' : res.status);
+        this.paymentAlertMsg.set(res.alertMsg);
+      },
+      error: () => {
+        this.paymentStatus.set('ok');
+        this.paymentAlertMsg.set('');
+      }
     });
   }
 

@@ -211,3 +211,38 @@
     background: rgba(0,0,0,0.03);
     border-radius: 8px;
 }
+
+.payment-alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    border-radius: 12px;
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.3s ease-in;
+
+    mat-icon {
+        font-size: 24px;
+        height: 24px;
+        width: 24px;
+    }
+
+    .alert-message {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    &.overdue {
+        background-color: #ffebee;
+        color: #c62828;
+        border: 1px solid rgba(198, 40, 40, 0.15);
+    }
+
+    &.warning {
+        background-color: #fffde7;
+        color: #f57f17; /* Tom de ouro escuro legível */
+        border: 1px solid rgba(245, 127, 23, 0.15);
+    }
+}

@@ -245,6 +245,7 @@ export class TransactionFormComponent implements OnInit {
         }
 
         this.checkMemberRequirement(catLabel!);
+        this.autoFillDues();
       }
     });
   }
@@ -341,7 +342,39 @@ export class TransactionFormComponent implements OnInit {
       memberName: member.name,
       description: `${category} - ${member.name}`.toUpperCase()
     });
+    this.autoFillDues();
     this.filteredMembers.set([]);
+  }
+
+  autoFillDues() {
+    const category = this.form.get('category')?.value;
+    const memberId = this.form.get('memberId')?.value;
+    if (category && category.toUpperCase() === 'MENSALIDADE' && memberId) {
+      const member = this.allMembers().find(m => m.id === memberId);
+      if (!member) return;
+
+      this.configService.getConfig('finance').subscribe({
+        next: (config) => {
+          const params = (config as any).customParams || {};
+          const defaultValue = params.defaultDuesValue ?? 80;
+          const discount = params.courseDiscountPercent ?? 50;
+
+          let finalValue = defaultValue;
+          if (member.isExempt) {
+            finalValue = 0;
+          } else if (member.duesDiscountPercent !== undefined && member.duesDiscountPercent > 0) {
+            finalValue = defaultValue * (1 - member.duesDiscountPercent / 100);
+          } else if (member.status === 'Em Curso') {
+            finalValue = defaultValue * (1 - discount / 100);
+          }
+
+          this.form.patchValue({
+            value: finalValue,
+            valueDisplay: finalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          });
+        }
+      });
+    }
   }
 
   get isEdit() { return !!this.transaction; }

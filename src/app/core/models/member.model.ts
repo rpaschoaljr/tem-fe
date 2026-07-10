@@ -18,11 +18,13 @@ export interface Member {
         state: string;
     };
 
-    status: 'Ativo' | 'Inativo';
+    status: 'Ativo' | 'Inativo' | 'Em Curso';
     deleted: boolean;
     isFirstAccess?: boolean;
     showSpiritualData?: boolean;
     isExempt?: boolean;
+    duesDiscountPercent?: number;
+    duesDueDay?: number;
 
     role: string;
     entryDate: Date;
