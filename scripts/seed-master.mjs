@@ -5,6 +5,13 @@
  */
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT || 'demo-sistematemfe';
+
+// Guarda de segurança: seed só pode rodar contra projetos de emulador (prefixo "demo-").
+if (!PROJECT_ID.startsWith('demo-')) {
+  console.error(`❌ ABORTADO: FIREBASE_PROJECT="${PROJECT_ID}" não é um projeto de emulador (esperado prefixo "demo-"). Este script NUNCA deve rodar contra produção.`);
+  process.exit(1);
+}
+
 const AUTH_PORT = process.env.FIREBASE_AUTH_PORT || '9099';
 const FIRESTORE_PORT = process.env.FIREBASE_FIRESTORE_PORT || '8080';
 const AUTH_EMULATOR = `http://localhost:${AUTH_PORT}`;

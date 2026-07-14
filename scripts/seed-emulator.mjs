@@ -5,6 +5,13 @@
  */
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT || 'demo-sistematemfe';
+
+// Guarda de segurança: seed só pode rodar contra projetos de emulador (prefixo "demo-").
+if (!PROJECT_ID.startsWith('demo-')) {
+  console.error(`❌ ABORTADO: FIREBASE_PROJECT="${PROJECT_ID}" não é um projeto de emulador (esperado prefixo "demo-"). Este script NUNCA deve rodar contra produção.`);
+  process.exit(1);
+}
+
 const AUTH_EMULATOR = `http://localhost:${process.env.FIREBASE_AUTH_PORT || '9099'}`;
 const FIRESTORE_EMULATOR = `http://localhost:${process.env.FIREBASE_FIRESTORE_PORT || '8080'}`;
 const API_KEY = 'fake-api-key-emulator';
@@ -88,20 +95,26 @@ async function firestoreCreate(collection, id, data) {
   };
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // "Bearer owner" = bypass de rules exclusivo do emulador (sem efeito em produção)
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer owner' },
     body: JSON.stringify(body),
   });
-  return res.json();
+  const json = await res.json();
+  if (!res.ok) {
+    console.error(`❌ Erro ao salvar ${collection}/${id}:`, JSON.stringify(json.error || json));
+  }
+  return json;
 }
 
 async function firestoreDeleteAll(collectionName) {
   const url = `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collectionName}`;
-  const res = await fetch(url);
+  const headers = { 'Authorization': 'Bearer owner' };
+  const res = await fetch(url, { headers });
   const json = await res.json();
   const docs = json.documents || [];
-  
+
   for (const doc of docs) {
-    await fetch(`${FIRESTORE_EMULATOR}/v1/${doc.name}`, { method: 'DELETE' });
+    await fetch(`${FIRESTORE_EMULATOR}/v1/${doc.name}`, { method: 'DELETE', headers });
   }
 }
 

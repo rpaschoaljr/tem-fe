@@ -2,9 +2,51 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // Admin Mestre (Verifica Claim injetada ou HierarchyLevel) — espelha firestore.rules
+    function isMasterAdmin() {
+      return isLoggedIn() && (
+        ('admin' in request.auth.token && request.auth.token.admin == true) ||
+        ('hierarchyLevel' in request.auth.token && request.auth.token.hierarchyLevel >= 10)
+      );
+    }
+
+    // Usa 'in' + indexação (em vez de Map.get com default) por compatibilidade
+    // com o runtime de rules do emulador de Storage.
+    function hasPerm(module, action) {
+      return isLoggedIn() && (
+        ('hierarchyLevel' in request.auth.token && request.auth.token.hierarchyLevel >= 10) ||
+        ('perms' in request.auth.token &&
+         module in request.auth.token.perms &&
+         action in request.auth.token.perms[module] &&
+         request.auth.token.perms[module][action] == true)
+      );
+    }
+
+    // O id do arquivo é o id do documento do membro (não o uid do Auth);
+    // o dono é identificado pelo e-mail do documento em members/{memberId}.
+    function isOwnProfile(memberId) {
+      return isLoggedIn() &&
+        firestore.get(/databases/(default)/documents/members/$(memberId)).data.email == request.auth.token.email;
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+        request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /profile-pictures/{memberId} {
+      allow read: if isLoggedIn();
+      allow write: if isValidImage() &&
+        (isMasterAdmin() || hasPerm('members', 'write') || isOwnProfile(memberId));
+    }
+
+    // Qualquer outro caminho: negado por padrão
     match /{allPaths=**} {
-      // Exigir autenticação para leitura e gravação
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

@@ -75,7 +75,7 @@ service cloud.firestore {
 
     match /system_configs/{configId} {
       allow read: if isLoggedIn();
-      allow write: if hasPerm('settings', 'read');
+      allow write: if hasPerm('settings', 'write');
     }
 
     match /permissions/{permId} {

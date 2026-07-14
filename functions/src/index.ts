@@ -1,7 +1,6 @@
 import {setGlobalOptions} from "firebase-functions";
 import {onDocumentWritten, FirestoreEvent, onDocumentWrittenWithAuthContext} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {Change} from "firebase-functions/v2/firestore";
@@ -11,18 +10,6 @@ admin.initializeApp({
 });
 
 setGlobalOptions({region: "southamerica-east1", maxInstances: 10});
-
-/**
- * FUNÇÃO DE TESTE: Acesse http://localhost:5001/demo-sistematemfe/southamerica-east1/helloWorld
- */
-export const helloWorld = onRequest({cors: true}, (req, res) => {
-  logger.info("👋 HELLO WORLD: O Emulador de Functions está vivo!");
-  res.status(200).send({
-    message: "Axé! O backend de Functions está funcionando perfeitamente.",
-    timestamp: new Date().toISOString(),
-    projectId: "demo-sistematemfe",
-  });
-});
 
 /**
  * Trigger para atualizar os Custom Claims de um usuário quando suas permissões mudam.

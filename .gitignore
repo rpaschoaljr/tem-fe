@@ -45,6 +45,9 @@ Thumbs.db
 
 # Firebase credentials
 src/app/app.config.ts
+
+# Logs de debug do Firebase/emuladores (nunca commitar — já vazaram credenciais no histórico)
+*-debug.log
 firebase-debug.log
 
 # Environment

@@ -75,8 +75,8 @@ describe('FirstAccessComponent', () => {
 
   it('passwordMatchValidator should return mismatch if passwords do not match', () => {
     fixture.detectChanges();
-    component.form.controls['password'].setValue('123456');
-    component.form.controls['confirmPassword'].setValue('654321');
+    component.form.controls['password'].setValue('12345678');
+    component.form.controls['confirmPassword'].setValue('87654321');
     expect(component.form.errors).toEqual({ mismatch: true });
     expect(component.form.valid).toBeFalse();
   });
@@ -97,8 +97,8 @@ describe('FirstAccessComponent', () => {
       const auth = TestBed.inject(fireAuth.Auth);
       (auth as any).currentUser = { uid: '123' };
 
-      component.form.controls['password'].setValue('123456');
-      component.form.controls['confirmPassword'].setValue('123456');
+      component.form.controls['password'].setValue('12345678');
+      component.form.controls['confirmPassword'].setValue('12345678');
     });
 
     it('should submit successfully and update document', fakeAsync(() => {
