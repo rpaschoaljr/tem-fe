@@ -38,14 +38,12 @@ Observações importantes:
 
 ## 4. Apontar a CLI para o projeto de produção
 
-O `.firebaserc` só conhece o alias `default` → `demo-sistematemfe`. Adicione um alias de produção:
+O `.firebaserc` já tem os dois aliases configurados:
 
-```bash
-npx firebase use --add
-# selecione o projeto de produção e nomeie o alias como "prod"
-```
+- `default` → `demo-sistematemfe` (emulador)
+- `prod` → `sistematemfe` (produção)
 
-Isso grava o alias no `.firebaserc`. Todos os comandos de deploy abaixo usam `-P prod` explicitamente — assim o alias `default` continua sendo o emulador e ninguém publica em produção por acidente.
+Todos os comandos de deploy usam `-P prod` explicitamente — assim o alias `default` continua sendo o emulador e ninguém publica em produção por acidente. Se o project id de produção for outro, ajuste o valor de `prod` no `.firebaserc`.
 
 ## 5. Checklist de segurança pré-deploy
 
@@ -55,7 +53,7 @@ Faça **antes** do primeiro deploy:
    - Se a chave pertencer a um projeto real, **regenere-a**.
    - Em **todas** as API keys (incluindo a nova de produção), aplique **restrição de aplicativo** (HTTP referrers: seu domínio `*.web.app` / `*.firebaseapp.com` / domínio próprio) e **restrição de APIs** (apenas Identity Toolkit, Token Service, Firestore, Storage).
    - Opcional, recomendado: reescrever o histórico do git com [BFG](https://rtyley.github.io/bfg-repo-cleaner/) ou `git filter-repo` para remover o log de vez.
-2. **CSP em `firebase.json`**: o header `Content-Security-Policy` do Hosting inclui origens de desenvolvimento (`http://localhost:*`, `ws://localhost:*`, `http://127.0.0.1:*`) em `connect-src`. Remova-as antes do deploy de produção (mantenha as origens do Firebase/Google e `https://viacep.com.br`).
+2. **CSP em `firebase.json`**: já limpa — as origens de desenvolvimento (`localhost`/`127.0.0.1`) foram removidas do `connect-src`. Consequência local: o *preview via emulador de Hosting* de um build dev não consegue mais falar com os emuladores (o fluxo normal de dev é `ng serve`, que não usa esses headers e não é afetado).
 3. **Rules**: confira que `firestore.rules` e `storage.rules` do repo são as versões atuais (as regras restritivas por permissão). O deploy abaixo publica exatamente esses arquivos.
 4. **Dependência `xlsx`**: a versão `0.18.5` do npm tem CVEs conhecidos sem correção publicada no npm (Prototype Pollution CVE-2023-30533 e ReDoS CVE-2024-22363). O risco se aplica ao *parsear* planilhas de terceiros; se o app só *exporta*, o risco é baixo. Mitigações: migrar para o build oficial do CDN da SheetJS (`https://cdn.sheetjs.com`) ou para a lib `exceljs`.
 5. **App Check** (recomendado): habilite o [Firebase App Check](https://firebase.google.com/docs/app-check) com reCAPTCHA Enterprise para Firestore/Storage/Functions, reduzindo abuso das APIs fora do app.
@@ -98,13 +96,44 @@ Verifique também:
 - **Functions logs** no console (erros de região/permissão aparecem lá).
 - Alerta de orçamento ativo no Google Cloud Billing.
 
-## 8. Opcional: deploy automático no CI
+## 8. Deploy automático no CI (já implementado)
 
-O workflow atual (`.github/workflows/ci.yml`) builda e roda scans, mas não publica. Para automatizar:
+O workflow `.github/workflows/ci.yml` tem um job **`deploy`** que publica hosting, rules, indexes e functions no projeto `prod` (`sistematemfe`). Ele roda **após** build/testes e scans passarem, em push na `master` ou disparo manual (aba *Actions → Run workflow*), e fica **desligado** até a variável `DEPLOY_ENABLED` ser `true`.
 
-1. Gere uma service account de deploy: `npx firebase init hosting:github` (configura o secret `FIREBASE_SERVICE_ACCOUNT_*` e o workflow) — ou crie manualmente uma SA com papéis *Firebase Hosting Admin* / *Cloud Functions Developer* e guarde o JSON em **GitHub Secrets** (nunca no repo).
-2. Adicione um job de deploy condicionado a push na `master` **após** os jobs de build/testes/scans passarem, usando `FirebaseExtended/action-hosting-deploy@v0` (hosting) ou `npx firebase deploy` com `GOOGLE_APPLICATION_CREDENTIALS`.
-3. Lembre que o CI copia `app.config.example.ts` → `app.config.ts`; para deploy real, o job precisa gerar um `app.config.ts` com a config de produção (por exemplo, a partir de um secret).
+### Ativação (uma única vez)
+
+1. **Crie a service account de deploy** no projeto de produção (requer [gcloud CLI](https://cloud.google.com/sdk) logado, ou faça o equivalente no console IAM):
+
+   ```bash
+   gcloud iam service-accounts create github-deploy --project sistematemfe
+
+   for role in roles/firebase.admin roles/cloudfunctions.admin roles/iam.serviceAccountUser roles/run.admin; do
+     gcloud projects add-iam-policy-binding sistematemfe \
+       --member "serviceAccount:github-deploy@sistematemfe.iam.gserviceaccount.com" --role "$role"
+   done
+
+   gcloud iam service-accounts keys create sa-key.json \
+     --iam-account github-deploy@sistematemfe.iam.gserviceaccount.com
+   ```
+
+2. **Cadastre os secrets no GitHub** (rode você mesmo, os valores são sensíveis):
+
+   ```bash
+   gh secret set GCP_SA_KEY < sa-key.json && rm sa-key.json
+   gh secret set PROD_APP_CONFIG_TS < src/app/app.config.ts   # versão com credenciais REAIS de produção
+   ```
+
+   > O `PROD_APP_CONFIG_TS` é o conteúdo completo do `app.config.ts` de produção. Monte-o a partir do `app.config.example.ts` com o `firebaseConfig` real do console (seção 3) antes de cadastrar.
+
+3. **(Recomendado)** Em *Settings → Environments → production*, adicione proteção (required reviewers) para exigir aprovação manual antes de cada deploy.
+
+4. **Ligue o deploy**:
+
+   ```bash
+   gh variable set DEPLOY_ENABLED --body true
+   ```
+
+Para desligar em emergência: `gh variable set DEPLOY_ENABLED --body false`.
 
 ## Solução de problemas
 

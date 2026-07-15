@@ -5,9 +5,9 @@ import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {Change} from "firebase-functions/v2/firestore";
 
-admin.initializeApp({
-  projectId: "demo-sistematemfe",
-});
+// Sem projectId fixo: no emulador o runtime injeta GCLOUD_PROJECT (demo-*),
+// e em produção o projeto é resolvido pelas credenciais do ambiente.
+admin.initializeApp();
 
 setGlobalOptions({region: "southamerica-east1", maxInstances: 10});
 
