@@ -1,6 +1,25 @@
 # Guia de Publicação no Firebase (Produção)
 
-Este guia descreve como publicar o **Tem-Fé** em um projeto Firebase de produção. Hoje todo o setup do repositório aponta para o projeto de emulador `demo-sistematemfe` — nada aqui afeta seu ambiente local de desenvolvimento.
+Este guia descreve como publicar o **Tem-Fé** no projeto Firebase de produção (`sistematemfe`). O ambiente local de desenvolvimento continua usando o projeto de emulador `demo-sistematemfe` — nada aqui afeta esse fluxo.
+
+## Estado atual do setup (atualizado em 2026-07-15)
+
+Já provisionado e configurado:
+
+- [x] Projeto Firebase `sistematemfe` (Web App "Tem fé" registrado)
+- [x] Database Firestore `(default)` criado em `southamerica-east1`
+- [x] Auth com provedor e-mail/senha habilitado
+- [x] API do Firebase Storage habilitada
+- [x] API key web restrita (referrers `sistematemfe.web.app`/`sistematemfe.firebaseapp.com`; APIs: identitytoolkit, securetoken, firestore, firebasestorage, firebaseinstallations) — mitiga a chave exposta no histórico do git
+- [x] Service account `github-deploy@sistematemfe.iam.gserviceaccount.com` com `roles/firebase.admin`, `roles/cloudfunctions.admin`, `roles/iam.serviceAccountUser`, `roles/run.admin`
+- [x] Secrets no GitHub: `GCP_SA_KEY` e `PROD_APP_CONFIG_TS`
+- [x] Job `deploy` no CI (gatilho: push na master ou manual), desligado por `DEPLOY_ENABLED=false`
+
+**Pendente (bloqueado pelo plano de billing):**
+
+- [ ] **Ativar o plano Blaze**: <https://console.firebase.google.com/project/sistematemfe/usage/details> — necessário para Functions e para o bucket do Storage. Com ~3 usuários o custo esperado é R$ 0 (as cotas gratuitas continuam no Blaze; só o storage em São Paulo e o registro de imagens de deploy custam centavos).
+- [ ] Após o Blaze, na ordem: criar o bucket padrão do Storage (região `southamerica-east1`), configurar alerta de orçamento (R$ 10–20), rodar `gh variable set DEPLOY_ENABLED --body true` e disparar o primeiro deploy (aba Actions → Run workflow).
+- [ ] Pós-primeiro-deploy: criar o usuário admin (seção 7) e validar o fluxo de login.
 
 ## 1. Pré-requisitos
 
@@ -101,6 +120,8 @@ Verifique também:
 O workflow `.github/workflows/ci.yml` tem um job **`deploy`** que publica hosting, rules, indexes e functions no projeto `prod` (`sistematemfe`). Ele roda **após** build/testes e scans passarem, em push na `master` ou disparo manual (aba *Actions → Run workflow*), e fica **desligado** até a variável `DEPLOY_ENABLED` ser `true`.
 
 ### Ativação (uma única vez)
+
+> **Passos 1 e 2 já executados** (service account criada e secrets `GCP_SA_KEY`/`PROD_APP_CONFIG_TS` gravados — ver "Estado atual do setup" no topo). Ficam documentados abaixo para reprodutibilidade (ex.: rotação da chave da SA).
 
 1. **Crie a service account de deploy** no projeto de produção (requer [gcloud CLI](https://cloud.google.com/sdk) logado, ou faça o equivalente no console IAM):
 
