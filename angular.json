@@ -50,7 +50,6 @@
                 }
               ],
               "outputHashing": "all",
-              "subresourceIntegrity": true,
               "optimization": {
                 "scripts": true,
                 "styles": {
