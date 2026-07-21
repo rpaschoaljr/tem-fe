@@ -1,14 +1,13 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ForgotPasswordDialogComponent } from './forgot-password-dialog';
-import { provideFirebaseMocks } from '../../../core/services/firebase-testing';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoggerService } from '../../../core/services/logger.service';
-import { MembersService } from '../../../core/services/members.service';
 import { MatDialogRef } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import * as fireAuth from '@angular/fire/auth';
-import { FbUtils } from '../../../shared/utils/firebase-utils';
+
+const GENERIC_MSG = 'Se o e-mail estiver cadastrado, enviamos um link de acesso. Verifique sua caixa de entrada e o spam.';
 
 describe('ForgotPasswordDialogComponent', () => {
   let component: ForgotPasswordDialogComponent;
@@ -16,22 +15,21 @@ describe('ForgotPasswordDialogComponent', () => {
   let dialogRefSpy: jasmine.SpyObj<MatDialogRef<ForgotPasswordDialogComponent>>;
   let notifySpy: jasmine.SpyObj<NotificationService>;
   let loggerSpy: jasmine.SpyObj<LoggerService>;
-  let membersServiceSpy: jasmine.SpyObj<MembersService>;
+  let authSpy: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
     dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
     notifySpy = jasmine.createSpyObj('NotificationService', ['showSuccess', 'showError']);
     loggerSpy = jasmine.createSpyObj('LoggerService', ['error']);
-    membersServiceSpy = jasmine.createSpyObj('MembersService', ['getMembers']);
+    authSpy = jasmine.createSpyObj('AuthService', ['ensureFirstAccessAccount', 'resetPassword']);
 
     await TestBed.configureTestingModule({
       imports: [ForgotPasswordDialogComponent, NoopAnimationsModule],
       providers: [
-        provideFirebaseMocks(),
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: NotificationService, useValue: notifySpy },
         { provide: LoggerService, useValue: loggerSpy },
-        { provide: MembersService, useValue: membersServiceSpy }
+        { provide: AuthService, useValue: authSpy }
       ]
     }).compileComponents();
 
@@ -52,97 +50,49 @@ describe('ForgotPasswordDialogComponent', () => {
   it('should not proceed if email is empty', async () => {
     component.email = '';
     await component.onConfirm();
-    expect(membersServiceSpy.getMembers).not.toHaveBeenCalled();
+    expect(authSpy.ensureFirstAccessAccount).not.toHaveBeenCalled();
   });
 
   describe('onConfirm', () => {
-    it('should show error if member not found', fakeAsync(() => {
-      component.email = 'notfound@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([]));
-      
-      component.onConfirm();
-      tick();
-
-      expect(notifySpy.showError).toHaveBeenCalledWith('Este e-mail não está cadastrado como membro do sistema.');
-      expect(component.loading).toBeFalse();
-    }));
-
-    it('should send reset email successfully', fakeAsync(() => {
+    it('ensures the account then sends the link and shows the generic message', fakeAsync(() => {
       component.email = 'found@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([{ email: 'found@test.com' } as any]));
-      
-      try { (((FbUtils.sendPasswordResetEmail as any)?.and ? FbUtils.sendPasswordResetEmail : spyOn(FbUtils, 'sendPasswordResetEmail')) as any).and.returnValue(Promise.resolve()); } catch (e) {}
-      
+      authSpy.ensureFirstAccessAccount.and.returnValue(of({ ok: true }));
+      authSpy.resetPassword.and.returnValue(of(undefined));
+
       component.onConfirm();
       tick();
 
-      expect(notifySpy.showSuccess).toHaveBeenCalledWith('Link enviado com sucesso! Verifique seu e-mail.');
+      expect(authSpy.ensureFirstAccessAccount).toHaveBeenCalledWith('found@test.com');
+      expect(authSpy.resetPassword).toHaveBeenCalledWith('found@test.com');
+      expect(notifySpy.showSuccess).toHaveBeenCalledWith(GENERIC_MSG);
       expect(dialogRefSpy.close).toHaveBeenCalled();
       expect(component.loading).toBeFalse();
     }));
 
-    it('should handle generic sendPasswordResetEmail error', fakeAsync(() => {
+    it('still shows the generic message if sending the link fails', fakeAsync(() => {
       component.email = 'found@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([{ email: 'found@test.com' } as any]));
-      
-      try { (((FbUtils.sendPasswordResetEmail as any)?.and ? FbUtils.sendPasswordResetEmail : spyOn(FbUtils, 'sendPasswordResetEmail')) as any).and.returnValue(Promise.reject({ code: 'auth/invalid-email' })); } catch (e) {}
-      
-      component.onConfirm();
-      tick();
-
-      expect(notifySpy.showError).toHaveBeenCalledWith('Erro ao processar solicitação: auth/invalid-email');
-      expect(component.loading).toBeFalse();
-    }));
-
-    it('should handle user-not-found error by creating a user and sending reset email', fakeAsync(() => {
-      component.email = 'found@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([{ email: 'found@test.com' } as any]));
-      
-      try { 
-        let calls = 0;
-        (((FbUtils.sendPasswordResetEmail as any)?.and ? FbUtils.sendPasswordResetEmail : spyOn(FbUtils, 'sendPasswordResetEmail')) as any).and.callFake(() => {
-          calls++;
-          if (calls === 1) return Promise.reject({ code: 'auth/user-not-found' });
-          return Promise.resolve();
-        });
-      } catch (e) {}
-      
-      try { (((FbUtils.createUserWithEmailAndPassword as any)?.and ? FbUtils.createUserWithEmailAndPassword : spyOn(FbUtils, 'createUserWithEmailAndPassword')) as any).and.returnValue(Promise.resolve({} as any)); } catch (e) {}
+      authSpy.ensureFirstAccessAccount.and.returnValue(of({ ok: true }));
+      authSpy.resetPassword.and.returnValue(throwError(() => ({ code: 'auth/invalid-email' })));
 
       component.onConfirm();
       tick();
 
-      expect(notifySpy.showSuccess).toHaveBeenCalledWith('Conta ativada! Enviamos um link para você definir sua senha.');
+      expect(notifySpy.showSuccess).toHaveBeenCalledWith(GENERIC_MSG);
       expect(dialogRefSpy.close).toHaveBeenCalled();
       expect(component.loading).toBeFalse();
     }));
 
-    it('should handle error when creating a user after user-not-found', fakeAsync(() => {
+    it('falls back to sending the link (and logs) if ensuring the account fails', fakeAsync(() => {
       component.email = 'found@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([{ email: 'found@test.com' } as any]));
-      
-      try { (((FbUtils.sendPasswordResetEmail as any)?.and ? FbUtils.sendPasswordResetEmail : spyOn(FbUtils, 'sendPasswordResetEmail')) as any).and.returnValue(Promise.reject({ code: 'auth/user-not-found' })); } catch (e) {}
-      try { (((FbUtils.createUserWithEmailAndPassword as any)?.and ? FbUtils.createUserWithEmailAndPassword : spyOn(FbUtils, 'createUserWithEmailAndPassword')) as any).and.returnValue(Promise.reject(new Error('Create error'))); } catch (e) {}
+      authSpy.ensureFirstAccessAccount.and.returnValue(throwError(() => new Error('backend down')));
+      authSpy.resetPassword.and.returnValue(of(undefined));
 
       component.onConfirm();
       tick();
 
       expect(loggerSpy.error).toHaveBeenCalled();
-      expect(notifySpy.showError).toHaveBeenCalledWith('Erro ao ativar sua conta. Procure o administrador.');
-      expect(component.loading).toBeFalse();
-    }));
-
-    it('should handle global error in the subscription block', fakeAsync(() => {
-      component.email = 'found@test.com';
-      membersServiceSpy.getMembers.and.returnValue(of([{ email: 'found@test.com' } as any]));
-      
-      try { (((FbUtils.sendPasswordResetEmail as any)?.and ? FbUtils.sendPasswordResetEmail : spyOn(FbUtils, 'sendPasswordResetEmail')) as any).and.throwError('Global sync error'); } catch (e) {}
-
-      component.onConfirm();
-      tick();
-
-      expect(loggerSpy.error).toHaveBeenCalled();
-      expect(notifySpy.showError).toHaveBeenCalledWith('Erro inesperado.');
+      expect(authSpy.resetPassword).toHaveBeenCalledWith('found@test.com');
+      expect(notifySpy.showSuccess).toHaveBeenCalledWith(GENERIC_MSG);
       expect(component.loading).toBeFalse();
     }));
   });

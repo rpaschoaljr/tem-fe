@@ -19,6 +19,7 @@ import { MembersService } from '../../../core/services/members.service';
 import { ConfigService } from '../../../core/services/config.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LoggerService } from '../../../core/services/logger.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Member } from '../../../core/models/member.model';
 import { DynamicField } from '../../../core/models/system-config.model';
 import { CepResponse } from '../../../core/models/common';
@@ -62,6 +63,7 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
   private route = inject(ActivatedRoute);
   private logger = inject(LoggerService);
   private dialog = inject(MatDialog);
+  private authService = inject(AuthService);
 
   form!: FormGroup;
   isEditMode = false;
@@ -306,7 +308,19 @@ export class MemberFormComponent implements OnInit, ComponentCanDeactivate {
         this.formSubmitted = true;
         this.membersService.save(dataWithoutId as Member).subscribe({
           next: () => {
-            this.notify.showSuccess(this.isEditMode ? 'Membro atualizado!' : 'Membro cadastrado!');
+            // Dispara o primeiro acesso: garante a conta de Auth e envia o link
+            // de definição de senha para o e-mail do novo membro.
+            const email = (dataWithoutId as Member).email;
+            if (email) {
+              this.authService.ensureFirstAccessAccount(email).subscribe({
+                next: () => this.authService.resetPassword(email).subscribe({
+                  next: () => {},
+                  error: (err: unknown) => this.logger.error('Falha ao enviar e-mail de primeiro acesso', err)
+                }),
+                error: (err: unknown) => this.logger.error('Falha ao preparar primeiro acesso', err)
+              });
+            }
+            this.notify.showSuccess('Membro cadastrado! Enviamos um e-mail de primeiro acesso.');
             this.router.navigate(['/members']);
           },
           error: (e: unknown) => {

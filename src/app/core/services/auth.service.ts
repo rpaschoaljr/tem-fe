@@ -195,6 +195,13 @@ export class AuthService {
     return from(FbUtils.sendPasswordResetEmail(this.auth, email));
   }
 
+  // Garante (no backend) que o membro tenha conta de Auth antes de enviar o link
+  // de primeiro acesso. A resposta é sempre genérica (não revela se o e-mail existe).
+  ensureFirstAccessAccount(email: string): Observable<unknown> {
+    const fn = httpsCallable(this.functions, 'ensureFirstAccessAccount');
+    return from(fn({ email }));
+  }
+
   createUser(email: string, pass: string): Observable<any> {
     return from(FbUtils.createUserWithEmailAndPassword(this.auth, email, pass));
   }

@@ -49,6 +49,46 @@ export const onPermissionUpdate = onDocumentWritten("permissions/{permId}", asyn
 });
 
 import { onCall } from "firebase-functions/v2/https";
+import { randomBytes } from "crypto";
+
+/**
+ * Chamável no primeiro acesso / "esqueci a senha" (não exige login).
+ * Garante que um membro cadastrado tenha conta de Auth, para poder receber o
+ * e-mail de definição de senha (o Admin SDK não é afetado pela proteção de
+ * enumeração de e-mail). Só age sobre e-mails já cadastrados como membro; para
+ * qualquer outro responde genericamente, sem revelar se o e-mail existe.
+ */
+export const ensureFirstAccessAccount = onCall(async (request) => {
+  const email = String(request.data?.email || "").trim().toLowerCase();
+  if (!email) return { ok: true };
+
+  try {
+    const memberSnap = await admin.firestore().collection("members")
+        .where("email", "==", email).limit(1).get();
+    if (memberSnap.empty) {
+      logger.info("ensureFirstAccessAccount: e-mail não é de membro (ignorado).");
+      return { ok: true };
+    }
+
+    try {
+      await admin.auth().getUserByEmail(email);
+      // Conta já existe: nada a fazer, o cliente segue com o envio do link.
+    } catch (e: unknown) {
+      if ((e as { code?: string })?.code === "auth/user-not-found") {
+        const randomPass = randomBytes(24).toString("base64") + "Aa1!";
+        await admin.auth().createUser({ email, password: randomPass, emailVerified: false });
+        logger.info("ensureFirstAccessAccount: conta de Auth criada para o membro.");
+      } else {
+        throw e;
+      }
+    }
+    return { ok: true };
+  } catch (err) {
+    logger.error("Erro em ensureFirstAccessAccount:", err);
+    // Resposta genérica mesmo em erro, para não vazar o estado da conta.
+    return { ok: true };
+  }
+});
 
 /**
  * Função chamável pelo frontend para forçar a sincronização de Claims
