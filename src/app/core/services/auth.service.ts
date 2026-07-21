@@ -202,6 +202,19 @@ export class AuthService {
     return from(fn({ email }));
   }
 
+  // Links de e-mail do Firebase (tela própria em /auth/action)
+  verifyPasswordResetCode(oobCode: string): Observable<string> {
+    return from(FbUtils.verifyPasswordResetCode(this.auth, oobCode));
+  }
+
+  confirmPasswordReset(oobCode: string, newPassword: string): Observable<void> {
+    return from(FbUtils.confirmPasswordReset(this.auth, oobCode, newPassword));
+  }
+
+  applyActionCode(oobCode: string): Observable<void> {
+    return from(FbUtils.applyActionCode(this.auth, oobCode));
+  }
+
   createUser(email: string, pass: string): Observable<any> {
     return from(FbUtils.createUserWithEmailAndPassword(this.auth, email, pass));
   }

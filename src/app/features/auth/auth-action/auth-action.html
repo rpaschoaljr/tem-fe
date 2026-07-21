@@ -1,0 +1,60 @@
+<div class="auth-action-container">
+  <mat-card class="auth-action-card">
+    <mat-card-header>
+      <mat-card-title>Definir Senha</mat-card-title>
+      <mat-card-subtitle *ngIf="state === 'formulario' || state === 'salvando'">
+        Escolha a senha que você usará para acessar o sistema.
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Validando o link -->
+      <div class="status-box" *ngIf="state === 'verificando'">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Validando seu link de acesso...</p>
+      </div>
+
+      <!-- Link inválido/expirado -->
+      <div class="status-box" *ngIf="state === 'invalido'">
+        <mat-icon class="error-icon">link_off</mat-icon>
+        <p>{{ errorMsg }}</p>
+        <button mat-flat-button color="primary" type="button" (click)="voltarAoLogin()">
+          VOLTAR AO LOGIN
+        </button>
+      </div>
+
+      <!-- Formulário de nova senha -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="state === 'formulario' || state === 'salvando'">
+        <p>Definindo a senha da conta <strong>{{ email }}</strong>:</p>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nova Senha</mat-label>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Mínimo 8 caracteres">
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+          <mat-error *ngIf="form.get('password')?.hasError('required')">A senha é obrigatória.</mat-error>
+          <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mínimo de 8 caracteres.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Confirmar Senha</mat-label>
+          <input matInput [type]="hideConfirm ? 'password' : 'text'" formControlName="confirmPassword">
+          <button mat-icon-button matSuffix (click)="hideConfirm = !hideConfirm" type="button">
+            <mat-icon>{{hideConfirm ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+          <mat-error *ngIf="form.get('confirmPassword')?.hasError('required')">Confirmação obrigatória.</mat-error>
+          <mat-error *ngIf="form.hasError('mismatch')">As senhas não conferem.</mat-error>
+        </mat-form-field>
+
+        <div class="actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || state === 'salvando'">
+            <mat-icon *ngIf="state !== 'salvando'">save</mat-icon>
+            <span *ngIf="state !== 'salvando'">DEFINIR SENHA</span>
+            <span *ngIf="state === 'salvando'">SALVANDO...</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

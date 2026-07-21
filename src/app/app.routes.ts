@@ -10,6 +10,11 @@ import { permissionGuard } from './core/guards/permission.guard';
 export const routes: Routes = [
   // Rota Pública (Sem Layout)
   { path: 'login', component: LoginComponent },
+  // Trata os links de e-mail do Firebase (definir senha, verificar e-mail)
+  {
+    path: 'auth/action',
+    loadComponent: () => import('./features/auth/auth-action/auth-action').then(m => m.AuthActionComponent),
+  },
   { path: 'first-access', component: FirstAccessComponent, canActivate: [authGuard] },
 
   // Rotas Protegidas (Dentro do Layout com Menu)

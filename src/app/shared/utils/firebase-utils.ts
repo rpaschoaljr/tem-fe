@@ -17,7 +17,7 @@ import {
     collectionData
 } from '@angular/fire/firestore';
 import { uploadBytes, getDownloadURL, ref as storageRef } from '@angular/fire/storage';
-import { signInWithEmailAndPassword, updatePassword, signOut, sendPasswordResetEmail, updateProfile, authState, createUserWithEmailAndPassword } from '@angular/fire/auth';
+import { signInWithEmailAndPassword, updatePassword, signOut, sendPasswordResetEmail, updateProfile, authState, createUserWithEmailAndPassword, verifyPasswordResetCode, confirmPasswordReset, applyActionCode } from '@angular/fire/auth';
 
 export const FbUtils = {
     uploadBytes: (ref: any, data: any, metadata?: any) => uploadBytes(ref, data, metadata),
@@ -44,5 +44,8 @@ export const FbUtils = {
     sendPasswordResetEmail,
     updateProfile,
     authState,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    verifyPasswordResetCode,
+    confirmPasswordReset,
+    applyActionCode
 };
