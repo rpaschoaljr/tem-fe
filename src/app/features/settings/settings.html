@@ -39,10 +39,37 @@
                             </mat-tab>
 
                             <mat-tab label="Opções do Catálogo">
-                                <div class="options-container" *ngIf="stockConfig() as config">
+                                <div class="options-container" *ngIf="stockConfig() as config" style="margin-top: 20px;">
+                                    
+                                    <div class="tab-header" style="margin-bottom: 20px;">
+                                        <div>
+                                            <h3>Opções do Catálogo</h3>
+                                            <p class="subtitle">Gerencie os campos e categorias dos itens de estoque.</p>
+                                        </div>
+                                        <div class="actions">
+                                            <button mat-flat-button color="primary" (click)="addField('stock')">
+                                                <mat-icon>add</mat-icon> Novo Campo Personalizado
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="config.fields.length === 0" style="padding: 40px; text-align: center; opacity: 0.7;">
+                                        <mat-icon style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5;">list_alt</mat-icon>
+                                        <p>Nenhuma opção de catálogo configurada.</p>
+                                        <p style="font-size: 0.9rem;">Clique no botão acima para criar novas listas (Ex: Categoria, Unidade de Medida, etc).</p>
+                                    </div>
+
                                     <div class="option-section" *ngFor="let field of config.fields">
                                         <div class="section-header">
-                                            <h4>{{ field.label }}</h4>
+                                            <div style="display: flex; align-items: center; gap: 12px;">
+                                                <h4 style="margin: 0;">{{ field.label }}</h4>
+                                                <button mat-icon-button color="primary" (click)="editField(config, field)" matTooltip="Editar campo">
+                                                    <mat-icon style="font-size: 18px;">edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button color="warn" (click)="deleteField(config, field)" matTooltip="Excluir campo">
+                                                    <mat-icon style="font-size: 18px;">delete</mat-icon>
+                                                </button>
+                                            </div>
                                             <button mat-icon-button 
                                                     [color]="isTrashVisible(field.key) ? 'warn' : ''" 
                                                     (click)="toggleOptionsTrash(field.key)"
@@ -116,10 +143,37 @@
                             <!-- SUB-ABA OPÇÕES FINANCEIRAS -->
                             <mat-tab label="Opções Adicionais (DRE)">
                                 <div class="options-container" *ngIf="financeConfig() as config" style="margin-top: 20px;">
+                                    
+                                    <div class="tab-header" style="margin-bottom: 20px;">
+                                        <div>
+                                            <h3>Opções Adicionais</h3>
+                                            <p class="subtitle">Gerencie os campos de detalhamento financeiro para o DRE.</p>
+                                        </div>
+                                        <div class="actions">
+                                            <button mat-flat-button color="primary" (click)="addField('finance')">
+                                                <mat-icon>add</mat-icon> Novo Campo Personalizado
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="config.fields.length <= 1" style="padding: 40px; text-align: center; opacity: 0.7;">
+                                        <mat-icon style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5;">list_alt</mat-icon>
+                                        <p>Nenhuma opção adicional configurada.</p>
+                                        <p style="font-size: 0.9rem;">Clique no botão acima para criar novas listas (Ex: Contas Bancárias, Centros de Custo).</p>
+                                    </div>
+
                                     <!-- Pula o primeiro field que é a categoria -->
                                     <div class="option-section" *ngFor="let field of config.fields.slice(1)">
                                         <div class="section-header">
-                                            <h4>{{ field.label }}</h4>
+                                            <div style="display: flex; align-items: center; gap: 12px;">
+                                                <h4 style="margin: 0;">{{ field.label }}</h4>
+                                                <button mat-icon-button color="primary" (click)="editField(config, field)" matTooltip="Editar campo">
+                                                    <mat-icon style="font-size: 18px;">edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button color="warn" (click)="deleteField(config, field)" matTooltip="Excluir campo">
+                                                    <mat-icon style="font-size: 18px;">delete</mat-icon>
+                                                </button>
+                                            </div>
                                             <button mat-icon-button 
                                                     [color]="isTrashVisible(field.key) ? 'warn' : ''" 
                                                     (click)="toggleOptionsTrash(field.key)"
@@ -128,6 +182,7 @@
                                                 <mat-icon>{{ isTrashVisible(field.key) ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
                                             </button>
                                         </div>
+
                                         
                                         <div class="chips-grid">
                                             <div class="option-chip" *ngFor="let opt of getActiveOptions(field)">

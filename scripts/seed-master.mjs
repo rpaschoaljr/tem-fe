@@ -473,28 +473,12 @@ async function seed() {
       { 
         key: 'paymentMethod', label: 'Forma de Pagamento', type: 'select', required: true, order: 2, isSystem: true,
         options: [
-          { label: 'DINHEIRO', deleted: false }, { label: 'PIX', deleted: false },
-          { label: 'CARTÃO DE CRÉDITO', deleted: false }, { label: 'CARTÃO DE DÉBITO', deleted: false },
-          { label: 'BOLETO', deleted: false }, { label: 'TRANSFERÊNCIA', deleted: false }
+          { label: 'DINHEIRO', deleted: false }, { label: 'PIX', deleted: false }
         ]
       },
       { 
-        key: 'bankAccount', label: 'Conta Bancária / Caixa', type: 'select', required: true, order: 3, isSystem: true,
-        options: [
-          { label: 'CAIXA FÍSICO', deleted: false }, { label: 'NUBANK', deleted: false },
-          { label: 'MERCADO PAGO', deleted: false }, { label: 'BRADESCO', deleted: false }
-        ]
-      },
-      { 
-        key: 'costCenter', label: 'Centro de Custo (DRE)', type: 'select', required: true, order: 4, isSystem: true,
-        options: [
-          { label: 'RECEITAS OPERACIONAIS', deleted: false, meta: 'Entrada' },
-          { label: 'DESPESAS ADMINISTRATIVAS', deleted: false, meta: 'Saída' },
-          { label: 'DESPESAS RELIGIOSAS', deleted: false, meta: 'Saída' },
-          { label: 'DESPESAS FINANCEIRAS', deleted: false, meta: 'Saída' },
-          { label: 'DESPESAS COM PESSOAL', deleted: false, meta: 'Saída' },
-          { label: 'MANUTENÇÃO E OBRAS', deleted: false, meta: 'Saída' }
-        ]
+        key: 'costCenter', label: 'Centro de Custo (DRE)', type: 'select', required: true, order: 3, isSystem: true,
+        options: []
       }
     ]
   });

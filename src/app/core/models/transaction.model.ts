@@ -23,6 +23,7 @@ export interface Transaction {
     receiptUrl?: string;
     
     pdvDetails?: { saleId: string; totalCost: number }; // Links to the Sale and stores total cost (CMV) for DRE
+    customFields?: Record<string, any>; // Stores dynamically added DRE fields
 }
 
 export type FirestoreTransaction = Omit<Transaction, 'date'> & {

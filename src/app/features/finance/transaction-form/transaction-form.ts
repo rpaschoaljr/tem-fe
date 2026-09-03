@@ -17,7 +17,7 @@ import { ConfigService } from '../../../core/services/config.service';
 import { MembersService } from '../../../core/services/members.service';
 import { LoggerService } from '../../../core/services/logger.service';
 import { Member } from '../../../core/models/member.model';
-import { FieldOption } from '../../../core/models/system-config.model';
+import { FieldOption, DynamicField } from '../../../core/models/system-config.model';
 
 const MONTHS = [
   { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
@@ -117,9 +117,7 @@ export class TransactionFormComponent implements OnInit {
 
   transaction: Transaction | null = inject(MAT_DIALOG_DATA);
   categoryOptions = signal<FieldOption[]>([]);
-  paymentMethodOptions = signal<FieldOption[]>([]);
-  bankAccountOptions = signal<FieldOption[]>([]);
-  costCenterOptions = signal<FieldOption[]>([]);
+  dynamicFields = signal<DynamicField[]>([]);
 
   allMembers = signal<Member[]>([]);
   filteredMembers = signal<Member[]>([]);
@@ -134,10 +132,6 @@ export class TransactionFormComponent implements OnInit {
     date:        [this.transaction?.date ?? new Date(), Validators.required],
     value:       [Math.abs(this.transaction?.value ?? 0), [Validators.required, Validators.min(0.01)]],
     valueDisplay: [this.formatInitialValue(this.transaction?.value), Validators.required],
-    
-    paymentMethod: [this.transaction?.paymentMethod ?? '', Validators.required],
-    bankAccount: [this.transaction?.bankAccount ?? '', Validators.required],
-    costCenter: [this.transaction?.costCenter ?? '', Validators.required],
     fee: [this.transaction?.fee ?? 0, Validators.min(0)],
     feeDisplay: [this.formatInitialValue(this.transaction?.fee)],
 
@@ -151,7 +145,6 @@ export class TransactionFormComponent implements OnInit {
     this.loadCategories();
     this.loadMembers();
     this.setupAutoType();
-    this.setupFeeCalculation();
     this.setupDescriptionSearch();
   }
 
@@ -203,18 +196,19 @@ export class TransactionFormComponent implements OnInit {
       const catField = config.fields.find(f => f.key === 'category');
       if (catField?.options) this.categoryOptions.set(catField.options.filter(o => !o.deleted));
 
-      const payField = config.fields.find(f => f.key === 'paymentMethod');
-      if (payField?.options) this.paymentMethodOptions.set(payField.options.filter(o => !o.deleted));
-
-      const bankField = config.fields.find(f => f.key === 'bankAccount');
-      if (bankField?.options) this.bankAccountOptions.set(bankField.options.filter(o => !o.deleted));
-
-      const costField = config.fields.find(f => f.key === 'costCenter');
-      if (costField?.options) this.costCenterOptions.set(costField.options.filter(o => !o.deleted));
+      const dynFields = config.fields.slice(1).filter(f => !f.deleted);
+      this.dynamicFields.set(dynFields);
+      
+      dynFields.forEach(f => {
+        const legacyVal = ['paymentMethod', 'bankAccount', 'costCenter'].includes(f.key) ? (this.transaction as any)?.[f.key] : null;
+        const val = this.transaction?.customFields?.[f.key] ?? legacyVal ?? '';
+        (this.form as any).addControl(f.key, this.fb.control(val, f.required ? Validators.required : null));
+      });
 
       if (this.transaction) {
          this.checkMemberRequirement(this.transaction.category);
       }
+      this.setupFeeCalculation();
     });
   }
 
@@ -234,14 +228,14 @@ export class TransactionFormComponent implements OnInit {
         }
         
         // Auto-preenchimento do DRE
-        if (option.costCenter) {
-          this.form.patchValue({ costCenter: option.costCenter });
+        if (option.costCenter && this.form.contains('costCenter')) {
+          (this.form as any).patchValue({ costCenter: option.costCenter });
         }
-        if (option.defaultPaymentMethod) {
-          this.form.patchValue({ paymentMethod: option.defaultPaymentMethod });
+        if (option.defaultPaymentMethod && this.form.contains('paymentMethod')) {
+          (this.form as any).patchValue({ paymentMethod: option.defaultPaymentMethod });
         }
-        if (option.defaultBankAccount) {
-          this.form.patchValue({ bankAccount: option.defaultBankAccount });
+        if (option.defaultBankAccount && this.form.contains('bankAccount')) {
+          (this.form as any).patchValue({ bankAccount: option.defaultBankAccount });
         }
 
         this.checkMemberRequirement(catLabel!);
@@ -258,8 +252,11 @@ export class TransactionFormComponent implements OnInit {
       const bankLabel = this.form.get('bankAccount')?.value;
       const val = this.form.get('value')?.value || 0;
 
-      const payOpt = this.paymentMethodOptions().find(o => o.label === payLabel);
-      const bankOpt = this.bankAccountOptions().find(o => o.label === bankLabel);
+      const payField = this.dynamicFields().find(f => f.key === 'paymentMethod');
+      const bankField = this.dynamicFields().find(f => f.key === 'bankAccount');
+      
+      const payOpt = payField?.options?.find(o => o.label === payLabel);
+      const bankOpt = bankField?.options?.find(o => o.label === bankLabel);
 
       // Procura a primeira configuração que tenha taxa, dando prioridade para Forma de Pagamento, depois Conta.
       const feeSource = [payOpt, bankOpt].find(o => o?.feeType && o.feeValue);
@@ -281,8 +278,12 @@ export class TransactionFormComponent implements OnInit {
       }
     };
 
-    this.form.get('paymentMethod')?.valueChanges.subscribe(() => recalcFee());
-    this.form.get('bankAccount')?.valueChanges.subscribe(() => recalcFee());
+    if (this.form.contains('paymentMethod')) {
+      this.form.get('paymentMethod')?.valueChanges.subscribe(() => recalcFee());
+    }
+    if (this.form.contains('bankAccount')) {
+      this.form.get('bankAccount')?.valueChanges.subscribe(() => recalcFee());
+    }
     this.form.get('value')?.valueChanges.subscribe(() => recalcFee());
   }
 
@@ -399,14 +400,22 @@ export class TransactionFormComponent implements OnInit {
       value: signedValue,
       fee: feeValue,
       netValue: netValue,
-      paymentMethod: raw.paymentMethod!,
-      bankAccount: raw.bankAccount!,
-      costCenter: raw.costCenter!,
       memberId: raw.memberId || undefined,
       memberName: raw.memberName || undefined,
       refMonth: raw.refMonth ?? undefined,
-      refYear: raw.refYear ?? undefined
+      refYear: raw.refYear ?? undefined,
+      customFields: {}
     };
+
+    // Iterate over dynamic fields to save them
+    this.dynamicFields().forEach(f => {
+      const val = (raw as any)[f.key];
+      if (['costCenter', 'paymentMethod', 'bankAccount'].includes(f.key)) {
+        (result as any)[f.key] = val;
+      }
+      result.customFields![f.key] = val;
+    });
+
     this.dialogRef.close(result);
   }
 

@@ -203,6 +203,27 @@ export class ConfigService {
                     required: true, 
                     order: 1, 
                     isSystem: true 
+                },
+                { 
+                    key: 'paymentMethod', 
+                    label: 'Forma de Pagamento', 
+                    type: 'select', 
+                    options: [
+                        { label: 'DINHEIRO', deleted: false },
+                        { label: 'PIX', deleted: false }
+                    ], 
+                    required: true, 
+                    order: 2, 
+                    isSystem: true 
+                },
+                { 
+                    key: 'costCenter', 
+                    label: 'Centro de Custo (DRE)', 
+                    type: 'select', 
+                    options: [], 
+                    required: true, 
+                    order: 3, 
+                    isSystem: true 
                 }
             ];
         } else if (moduleId === 'members') {

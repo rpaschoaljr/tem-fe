@@ -83,32 +83,16 @@
           <mat-panel-description>Centro de Custo, Contas, Taxas</mat-panel-description>
         </mat-expansion-panel-header>
 
-        <div class="row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Centro de Custo (DRE)</mat-label>
-            <mat-select formControlName="costCenter">
-              <mat-option *ngFor="let opt of costCenterOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
-            </mat-select>
-            <mat-error>Obrigatório</mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Forma de Pagamento</mat-label>
-            <mat-select formControlName="paymentMethod">
-              <mat-option *ngFor="let opt of paymentMethodOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
-            </mat-select>
-            <mat-error>Obrigatório</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Conta Bancária / Caixa</mat-label>
-            <mat-select formControlName="bankAccount">
-              <mat-option *ngFor="let opt of bankAccountOptions()" [value]="opt.label">{{ opt.label }}</mat-option>
-            </mat-select>
-            <mat-error>Obrigatório</mat-error>
-          </mat-form-field>
+        <div class="row" *ngIf="dynamicFields().length > 0">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%;">
+            <mat-form-field appearance="outline" *ngFor="let field of dynamicFields()">
+              <mat-label>{{ field.label }}</mat-label>
+              <mat-select [formControlName]="field.key">
+                <mat-option *ngFor="let opt of field.options" [value]="opt.label">{{ opt.label }}</mat-option>
+              </mat-select>
+              <mat-error *ngIf="form.get(field.key)?.hasError('required')">Obrigatório</mat-error>
+            </mat-form-field>
+          </div>
         </div>
 
         <div class="row">
