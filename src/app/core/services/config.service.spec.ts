@@ -49,7 +49,7 @@ describe('ConfigService', () => {
 
       service.getConfig('finance').subscribe((config) => {
         expect(config.id).toBe('finance');
-        expect(config.fields.length).toBe(1); // Default finance config has 1 field
+        expect(config.fields.length).toBe(3); // Default finance config has 3 fields agora
         done();
       });
     });

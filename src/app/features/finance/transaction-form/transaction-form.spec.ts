@@ -40,7 +40,10 @@ describe('TransactionFormComponent', () => {
           { label: 'OUTROS', deleted: true },
           { label: 'DOAÇÃO', deleted: false }
         ]
-      }
+      },
+      { key: 'paymentMethod', label: 'Payment Method', type: 'select', required: true, order: 2, options: [] },
+      { key: 'bankAccount', label: 'Bank Account', type: 'select', required: true, order: 3, options: [] },
+      { key: 'costCenter', label: 'Cost Center', type: 'select', required: true, order: 4, options: [] }
     ]
   };
 
@@ -174,7 +177,7 @@ describe('TransactionFormComponent', () => {
   });
 
   it('should submit and map values correctly (Saída gets negative value)', () => {
-    component.form.patchValue({
+    (component.form as any).patchValue({
       description: 'Conta de luz',
       type: 'Saída',
       category: 'CONTAS',
